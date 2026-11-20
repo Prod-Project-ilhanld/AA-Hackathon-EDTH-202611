@@ -3,27 +3,33 @@
 Greedy planner of the kit, made faster and wider:
 - a cheap pre-filter (validate only the touched routes, check R8 only against the others) runs
   before the authoritative full validation, so many more scouts and options can be tried;
-- randomised restarts under an internal time budget keep the best valid plan;
-- every accepted step passed `evaluate`, the final plan is re-validated, and the fallback is
+- restarts under an internal time budget keep the best valid plan: a few deterministic orders of
+  the contacts (points per effector needed), then hill-climbing around the best order, spread over
+  the available cores (serial fallback);
+- every accepted step passed the kit scorer, the final plan is re-validated, and the fallback is
   the best valid plan found so far (an empty plan if nothing else).
 """
+import multiprocessing
 import os
 import random
 import sys
 import time
 from typing import Dict, List, Optional
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    import fleetkit  # noqa: F401
+except ImportError:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fleetkit.baseline import (EFFECTOR_LAYERS, SCOUT_LAYERS, _effector_route, _Planner)  # noqa: E402
+from fleetkit.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
 from fleetkit.geometry import hdist  # noqa: E402
-from fleetkit.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, save_json  # noqa: E402
+from fleetkit.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.validator import separation_item, separation_violation, validate  # noqa: E402
-from fleetkit.model import parse_plan  # noqa: E402
 
 BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))
 N_SCOUTS = 6
+MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
 
 
 class OutOfTime(Exception):
@@ -40,7 +46,7 @@ class FastPlanner(_Planner):
         self.items: Dict[str, tuple] = {}
 
     def _check_time(self) -> None:
-        if time.time() > self.deadline:
+        if time.monotonic() > self.deadline:
             raise OutOfTime()
 
     def _scout_candidates(self, contact: Contact, limit: int = 0) -> List[Aircraft]:
@@ -108,46 +114,107 @@ class FastPlanner(_Planner):
         return False
 
 
-def build(scenario: Scenario, order_key, deadline: float, n_scouts: int) -> Optional[dict]:
+def build(scenario: Scenario, order_key, deadline: float, n_scouts: int):
     """One greedy construction; returns the plan built so far (valid by construction) at the deadline."""
     planner = FastPlanner(scenario, deadline, n_scouts)
     hostiles = sorted((c for c in scenario.contacts if c.cls == HOSTILE), key=order_key)
     unknowns = sorted((c for c in scenario.contacts if c.cls == UNKNOWN), key=lambda c: -c.points)
     try:
-        for c in hostiles:
-            planner.serve_hostile(c)
-        for c in unknowns:
-            planner.serve_unknown(c)
+        for c in hostiles + unknowns:
+            try:
+                if c.cls == HOSTILE:
+                    planner.serve_hostile(c)
+                else:
+                    planner.serve_unknown(c)
+            except OutOfTime:
+                raise
+            except Exception:  # a contact that breaks the routing is skipped, never fatal
+                continue
     except OutOfTime:
         pass
     return planner._plan({}), planner.score
 
 
-def solve(scenario: Scenario, budget_s: float = BUDGET_S) -> dict:
-    t0 = time.time()
-    deadline = t0 + budget_s
-    best_plan, best_score = {"seed": scenario.seed, "routes": []}, 0.0
-    rng = random.Random(0)
+def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
+    return lambda c: -noise.get(c.id, 1.0) * c.points / max(1, sum(c.needs.values())) ** alpha
+
+
+def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
+    """Builds plans until the deadline; returns the best valid (score, plan) of this worker."""
+    alphas = [0.0, 1.0, 0.5, 1.5]
+    rng = random.Random(1000 + worker)
+    best = (-1.0, {"seed": scenario.seed, "routes": []})
+    best_alpha, best_noise = alphas[worker % len(alphas)], {}
     attempt = 0
-    while time.time() < deadline:
+    while time.monotonic() < deadline:
         if attempt == 0:
-            key = lambda c: -c.points
+            alpha, noise = best_alpha, {}
         else:
-            noise = {c.id: rng.uniform(0.6, 1.4) for c in scenario.contacts}
-            key = lambda c, noise=noise: -c.points * noise[c.id]
-        plan, score = build(scenario, key, deadline, N_SCOUTS)
-        res = evaluate(scenario, plan)
-        if res.valid and res.score > best_score:
-            best_plan, best_score = plan, res.score
+            sigma = 0.12 if worker % 2 == 0 else 0.3
+            alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-0.2, 0.2)))
+            noise = {c.id: max(0.2, best_noise.get(c.id, 1.0) * rng.gauss(1.0, sigma)) for c in scenario.contacts}
+        plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS)
+        try:
+            res = evaluate(scenario, plan)
+        except Exception:
+            res = None
+        if res is not None and res.valid and res.score > best[0]:
+            best, best_alpha, best_noise = (res.score, plan), alpha, noise
         attempt += 1
-        if attempt == 1 and time.time() - t0 > 0.5 * budget_s:
-            break
-    return best_plan
+    return best
+
+
+def _worker(args):
+    scenario_dict, deadline, worker, n_workers = args
+    try:
+        return _search(Scenario.from_dict(scenario_dict), deadline, worker, n_workers)
+    except Exception:
+        return (-1.0, None)
+
+
+def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
+    deadline = time.monotonic() + budget_s
+    empty = {"seed": scenario.seed, "routes": []}
+    best = (0.0, empty)
+    n_workers = max(1, min(MAX_WORKERS, os.cpu_count() or 1))
+    results = []
+    if n_workers > 1:
+        pool = None
+        try:
+            ctx = multiprocessing.get_context("fork")
+            pool = ctx.Pool(n_workers)
+            jobs = [pool.apply_async(_worker, ((scenario_dict, deadline, w, n_workers),)) for w in range(n_workers)]
+            for job in jobs:
+                try:
+                    results.append(job.get(timeout=max(0.5, deadline + 8.0 - time.monotonic())))
+                except Exception:
+                    pass
+        except Exception:
+            results = []
+        finally:
+            if pool is not None:
+                pool.terminate()
+    if not results:
+        results = [_search(scenario, deadline, 0, 1)] if time.monotonic() < deadline else []
+    for score, plan in results:
+        if plan is not None and score > best[0]:
+            best = (score, plan)
+    # last guard: the plan we write was validated by the kit's own scorer
+    try:
+        if not evaluate(scenario, best[1]).valid:
+            return empty
+    except Exception:
+        return empty
+    return best[1]
 
 
 def main() -> None:
-    scenario = Scenario.from_dict(load_json(sys.argv[1]))
-    plan = solve(scenario)
+    data = load_json(sys.argv[1])
+    scenario = Scenario.from_dict(data)
+    try:
+        plan = solve(scenario, data)
+    except Exception:
+        plan = {"seed": scenario.seed, "routes": []}
     save_json(plan, sys.argv[2])
 
 
