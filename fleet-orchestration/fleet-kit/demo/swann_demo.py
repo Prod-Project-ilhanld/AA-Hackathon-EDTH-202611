@@ -17,6 +17,7 @@ import argparse
 import math
 import os
 import sys
+import time
 
 # Rend `fleetkit` importable quand le script est lancé depuis fleet-kit/ ou fleet-kit/demo/.
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,15 +32,27 @@ from fleetkit.model import CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, SCOUT, UNKNOWN
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.viewer import Viewer  # noqa: E402
 
-GREEN, RED, AMBER, GREY = "#3fb950", "#f85149", "#d29922", "#8b949e"
+# Le vrai planificateur (branche feature/planner-v1 de Louis) n'est pas fusionné dans cette
+# branche : on ne duplique pas son code ici. S'il est présent sur le disque (dépôt fusionné,
+# ou handin/ copié pour un test local), le diagnostic rejoue le vrai routage ; sinon il retombe
+# sur l'heuristique en ligne directe ci-dessous.
+try:
+    from handin.planner import FastPlanner, OutOfTime  # noqa: E402
+    HAS_REAL_PLANNER = True
+except Exception:
+    FastPlanner, OutOfTime, HAS_REAL_PLANNER = None, Exception, False
+
+DIAG_BUDGET_S = float(os.environ.get("DIAG_BUDGET_S", "8.0"))
+
+GREEN, RED, AMBER, TEAL, GREY = "#3fb950", "#f85149", "#d29922", "#39c5cf", "#8b949e"
 
 DEFAULT_STRATEGY = (
-    "Glouton large et relances randomisées sous budget de temps (planner v1, Louis) : réutilise le "
-    "routage du glouton de base (détours de zones, couches d'altitude) ; teste beaucoup plus "
-    "d'éclaireurs candidats par contact plutôt que les 3 plus proches ; valide à bas coût (routes "
-    "touchées seulement) avant la validation complète des 10 règles ; relance plusieurs fois avec un "
-    "ordre de contacts randomisé et garde le meilleur plan valide ; replie sur le glouton si rien de "
-    "mieux n'est trouvé dans le budget."
+    "Construction gloutonne élargie (planner v2, Louis) : jusqu'à 6 éclaireurs testés par hostile "
+    "(couches d'altitude, angles et décalages de départ multiples) ; contacts triés par points par "
+    "effecteur requis ; relances par petites variations autour du meilleur ordre trouvé, réparties "
+    "sur plusieurs processus, sous un budget de 38 s. Chaque plan construit est revalidé par le "
+    "scorer du kit ; au final, on écrit le meilleur plan valide trouvé (plan vide si aucun ne "
+    "l'est)."
 )
 
 
@@ -91,14 +104,10 @@ def _scout_confirm_ok(ac, contact, window_end, rules):
     return t_out + rules.obs_dwell_s + rules.confirm_margin_s <= window_end + 1e-6
 
 
-def diagnose(scenario, routes, c):
-    """Raison simple et vérifiable pour laquelle un contact n'est pas servi : (texte, gagnable ?).
-
-    Vérifie R7 (collatéral) et la disponibilité des drones, puis teste si un trajet direct vers le
-    contact tient dans la fenêtre et dans la batterie utilisable d'un drone encore au sol. Condition
-    nécessaire mais pas suffisante : R6 (détour autour des zones), R8 (séparation) et la synchronisation
-    R10 entre plusieurs effecteurs ne sont pas vérifiés ici.
-    """
+def _diagnose_heuristic(scenario, routes, c):
+    """Repli utilisé quand `handin.planner` (Louis) n'est pas sur le disque : borne optimiste par
+    trajet direct, sans rejouer le vrai routage. Mêmes limites que l'ancienne version : ignore R6
+    (détour de zones), R8 (séparation) et R10 (synchronisation entre effecteurs)."""
     rules = scenario.rules
     window_end = c.window[1] if c.window else scenario.horizon_s
 
@@ -107,27 +116,78 @@ def diagnose(scenario, routes, c):
                 if a.id not in routes and a.type == actype and (subtype is None or a.subtype == subtype)]
 
     if c.cls == HOSTILE:
-        protected = [f for f in scenario.contacts if f.cls in (FRIENDLY, CIVILIAN)]
-        near = [f for f in protected if hdist(c.pos, f.pos) < rules.collateral_radius_m]
-        if near:
-            return f"interdit par R7 (à {hdist(c.pos, near[0].pos):.0f} m de {near[0].id}, {near[0].cls})", False
         short = [sub for sub, need in c.needs.items()
                  if sum(1 for a in idle(EFFECTOR, sub) if _effector_reach(a, c, window_end)) < need]
         if short:
-            return f"pas assez d'effecteurs {', '.join(short)} au sol capables d'arriver à temps et en énergie", False
+            return (f"pas assez d'effecteurs {', '.join(short)} au sol capables d'arriver à temps et en "
+                     "énergie (estimation en ligne directe, routage réel non disponible)"), False, "hors_de_portee"
         scouts = idle(SCOUT)
-        if not scouts:
-            return "aucun éclaireur au sol pour confirmer avant l'engagement", False
-        if not any(_scout_confirm_ok(a, c, window_end, rules) for a in scouts):
-            return "aucun éclaireur au sol ne peut confirmer à temps (fenêtre ou énergie)", False
-        return "drones au sol, fenêtre et énergie compatibles en ligne directe : à gagner", True
+        if not scouts or not any(_scout_confirm_ok(a, c, window_end, rules) for a in scouts):
+            return ("aucun éclaireur au sol ne peut confirmer à temps (estimation en ligne directe, "
+                     "routage réel non disponible)"), False, "hors_de_portee"
+        return ("drones au sol, fenêtre et énergie compatibles en ligne directe (routage réel non "
+                 "disponible) : à gagner, à confirmer"), True, "a_gagner"
 
     scouts = idle(SCOUT)
-    if not scouts:
-        return "aucun éclaireur au sol", False
-    if not any(_scout_observe_ok(a, c, window_end, rules) for a in scouts):
-        return "hors de portée d'un éclaireur au sol (fenêtre ou énergie), même en ligne directe", False
-    return "éclaireur disponible, fenêtre et énergie compatibles en ligne directe : à gagner", True
+    if not scouts or not any(_scout_observe_ok(a, c, window_end, rules) for a in scouts):
+        return ("hors de portée d'un éclaireur au sol, même en ligne directe (routage réel non "
+                 "disponible)"), False, "hors_de_portee"
+    return ("éclaireur disponible, fenêtre et énergie compatibles en ligne directe (routage réel non "
+             "disponible) : à gagner, à confirmer"), True, "a_gagner"
+
+
+def _real_routing_ok(scenario, c, used):
+    """Rejoue le vrai routage de Louis (planner v2) sur ce contact seul, `used` déjà pris par ailleurs.
+
+    True/False = verdict ; None = budget dépassé (indéterminé, pas une preuve d'échec).
+    """
+    deadline = time.monotonic() + DIAG_BUDGET_S
+    p = FastPlanner(scenario, deadline)
+    p.used = set(used)
+    try:
+        return p.serve_hostile(c) if c.cls == HOSTILE else p.serve_unknown(c)
+    except OutOfTime:
+        return None
+
+
+def diagnose(scenario, routes, c):
+    """Raison vérifiable pour laquelle un contact n'est pas servi : (texte, gagnable ?, catégorie).
+
+    Catégories : "r7" (collatéral, HOSTILE seulement), "a_gagner" (routage réel réussi avec des
+    drones encore au sol, zéro conflit), "concurrence" (routable seul, mais les drones nécessaires
+    sont déjà pris par un autre contact dans notre plan), "hors_de_portee" (aucun routage trouvé
+    même avec tous les drones disponibles).
+
+    Si `handin.planner` (Louis) n'est pas sur le disque de cette branche, ou si le budget de test
+    par contact est dépassé, retombe sur une borne optimiste par trajet direct (voir
+    `_diagnose_heuristic`) : nécessaire mais pas suffisante, ne vérifie pas R6/R8/R10.
+    """
+    rules = scenario.rules
+    if c.cls == HOSTILE:
+        protected = [f for f in scenario.contacts if f.cls in (FRIENDLY, CIVILIAN)]
+        near = [f for f in protected if hdist(c.pos, f.pos) < rules.collateral_radius_m]
+        if near:
+            return (f"interdit par R7 (à {hdist(c.pos, near[0].pos):.0f} m de {near[0].id}, "
+                     f"{near[0].cls})"), False, "r7"
+
+    if not HAS_REAL_PLANNER:
+        return _diagnose_heuristic(scenario, routes, c)
+
+    ok_idle = _real_routing_ok(scenario, c, routes.keys())
+    if ok_idle is None:
+        text, win, cat = _diagnose_heuristic(scenario, routes, c)
+        return text + " [routage réel : budget de test dépassé]", win, cat
+    if ok_idle:
+        return "routage réel réussi avec des drones encore au sol, sans conflit : à gagner", True, "a_gagner"
+
+    ok_full = _real_routing_ok(scenario, c, [])
+    if ok_full is None:
+        text, win, cat = _diagnose_heuristic(scenario, routes, c)
+        return text + " [routage réel : budget de test dépassé]", win, cat
+    if ok_full:
+        return ("routable seul, mais les drones nécessaires sont déjà pris par un autre contact dans "
+                 "notre plan (concurrence de ressources)"), False, "concurrence"
+    return "aucun routage trouvé, même avec tous les drones disponibles (routage réel testé)", False, "hors_de_portee"
 
 
 def build_view(scenario, ours, res_ours, greedy, res_greedy, path):
@@ -152,20 +212,24 @@ def build_view(scenario, ours, res_ours, greedy, res_greedy, path):
             labels=[tag(c, f"-{contacts[c].points:g} pts") for c in lost], color=RED)
     routes_ours, _ = parse_plan(ours)
     routes_ours = routes_ours or {}
-    open_c = [c for c in missed if diagnose(scenario, routes_ours, c)[1]]
-    blocked = [c for c in missed if not diagnose(scenario, routes_ours, c)[1]]
+    diag = {c.id: diagnose(scenario, routes_ours, c) for c in missed}
+    open_c = [c for c in missed if diag[c.id][2] == "a_gagner"]
+    contested = [c for c in missed if diag[c.id][2] == "concurrence"]
+    blocked = [c for c in missed if diag[c.id][2] in ("r7", "hors_de_portee")]
     v.layer("À gagner", circles=[ring(c.id, 120) for c in open_c],
             labels=[tag(c.id, f"{c.id} · {c.points:g} pts") for c in open_c], color=AMBER)
-    v.layer("Bloqués (R7 ou drones épuisés)", circles=[ring(c.id, 120) for c in blocked],
+    v.layer("Concurrence ressources", circles=[ring(c.id, 120) for c in contested],
+            labels=[tag(c.id, f"{c.id} en concurrence") for c in contested], color=TEAL, visible=False)
+    v.layer("Bloqués (R7 ou hors de portée)", circles=[ring(c.id, 120) for c in blocked],
             labels=[tag(c.id, f"{c.id} bloqué") for c in blocked], color=GREY, visible=False)
     routes, _ = parse_plan(greedy)
     v.layer("Routes du glouton", lines=[[(w.x, w.y) for w in r.waypoints] for r in routes.values()],
             color=GREY, visible=False)
     v.save(path)
-    return gained, lost, missed
+    return gained, lost, missed, diag
 
 
-def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, path, strategy=None):
+def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, diag, path, strategy=None):
     aircraft, contacts = scenario.aircraft_by_id(), scenario.contact_by_id()
     rules = scenario.rules
     routes, _ = parse_plan(ours)
@@ -237,17 +301,25 @@ def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, pat
     w("## Contacts non servis\n")
     if not missed:
         w("Tous les contacts qui rapportent des points sont servis.")
-    open_pts = 0.0
+    open_pts, contested_pts = 0.0, 0.0
     for c in sorted(missed, key=lambda c: -c.points):
         need = ", ".join(f"{n} {k}" for k, n in c.needs.items()) if c.needs else "observation"
         window = f"{c.window[0]:.0f}–{c.window[1]:.0f} s" if c.window else "sans fenêtre"
-        why, possible = diagnose(scenario, routes, c)
-        open_pts += c.points if possible else 0.0
+        why, possible, cat = diag[c.id]
+        if cat == "a_gagner":
+            open_pts += c.points
+        elif cat == "concurrence":
+            contested_pts += c.points
         w(f"- **{c.id}** · {c.cls}, {c.points:g} pts, besoin : {need}, fenêtre {window} · {why}")
     if missed:
-        w(f"\nPoints non servis sans blocage évident (R7, drones épuisés, fenêtre ou énergie en ligne "
-          f"directe) : **{open_pts:g} pts**. À vérifier : détour autour des zones (R6), séparation (R8) "
-          "et synchronisation entre effecteurs (R10).")
+        source = "routage réel rejoué sur chaque contact" if HAS_REAL_PLANNER else \
+            "estimation en ligne directe, routage réel non disponible sur cette branche"
+        w(f"\nPoints réellement gagnables sans toucher au plan actuel ({source}) : "
+          f"**{open_pts:g} pts**. En concurrence avec un contact déjà servi pour les mêmes drones : "
+          f"**{contested_pts:g} pts** (gagnable seulement en sacrifiant un autre contact).")
+        if not HAS_REAL_PLANNER:
+            w("À vérifier avec le vrai routage (R6 détour de zones, R8 séparation, R10 "
+              "synchronisation entre effecteurs non couverts par l'estimation).")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
 
@@ -269,9 +341,9 @@ def main() -> None:
 
     os.makedirs(args.out, exist_ok=True)
     view_path, report_path = os.path.join(args.out, "view.html"), os.path.join(args.out, "explication.md")
-    gained, lost, missed = build_view(scenario, ours, res_ours, greedy, res_greedy, view_path)
+    gained, lost, missed, diag = build_view(scenario, ours, res_ours, greedy, res_greedy, view_path)
     strategy = None if args.no_strategy or not args.plan else args.strategy
-    build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, report_path, strategy)
+    build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, diag, report_path, strategy)
     print(f"Glouton {res_greedy.score:.1f} · notre plan {res_ours.score:.1f} "
           f"({'valide' if res_ours.valid else 'INVALIDE'})")
     print(f"-> {view_path}\n-> {report_path}")
