@@ -27,6 +27,17 @@ from fleetkit.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario,
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.validator import separation_item, separation_violation, validate  # noqa: E402
 
+try:  # routing module of the team (3D minimum-energy routes); the planner works without it
+    from fleetkit.baseline import EFFECTOR_LAYERS
+    try:
+        from . import routing as _routing  # type: ignore
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import routing as _routing  # type: ignore
+except Exception:  # noqa: BLE001
+    _routing = None
+    EFFECTOR_LAYERS = ()
+
 BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))
 N_SCOUTS = 6
 MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
@@ -114,9 +125,62 @@ class FastPlanner(_Planner):
         return False
 
 
-def build(scenario: Scenario, order_key, deadline: float, n_scouts: int):
+class RoutedPlanner(FastPlanner):
+    """Same search, routes built by the team's routing module (minimum energy, visibility-graph detours)."""
+
+    def __init__(self, scenario: Scenario, deadline: float, n_scouts: int = N_SCOUTS):
+        super().__init__(scenario, deadline, n_scouts)
+        self.eng = _routing.get_engine(scenario)
+        self.layers = (None,) + tuple(EFFECTOR_LAYERS)
+
+    def _add_observation(self, scout, contact, z, angle, dep_shift):
+        tasks = self.tasks[scout.id] + [contact]
+        try:
+            route = _routing.build_scout_route(scout, tasks, self.sc, z_layer=z, depart_shift=dep_shift,
+                                               engine=self.eng, angle_offset_deg=angle)
+        except Exception:  # noqa: BLE001  a route that cannot be built is simply not tried
+            route = None
+        return (tasks, route) if route is not None else None
+
+    def _place_effectors(self, contact, effectors, obs_end, scout, tasks, scout_route) -> bool:
+        lo, hi = contact.window
+        base = max(obs_end + self.sc.rules.confirm_margin_s + 2.0, lo)
+        for delay in (0.0, 8.0, 20.0, 45.0, 90.0):
+            arrive = base + delay
+            if arrive + 5.0 * len(effectors) > hi:
+                break
+            for angle in (0.0, 35.0, -35.0):
+                for rotation in range(3):
+                    extra = {scout.id: scout_route}
+                    ok = True
+                    for i, eff in enumerate(effectors):
+                        z = self.layers[(i + rotation) % len(self.layers)]
+                        try:
+                            route, _ = _routing.build_effector_route(
+                                eff, contact, arrive + 5.0 * i, self.sc, z_layer=z,
+                                approach_angle=angle, engine=self.eng)
+                        except Exception:  # noqa: BLE001
+                            route = None
+                        if route is None:
+                            ok = False
+                            break
+                        extra[eff.id] = route
+                    if not ok:
+                        continue
+                    new = self._try(extra)
+                    if new is not None and new > self.score:
+                        self.routes.update(extra)
+                        self.tasks[scout.id] = tasks
+                        self.used.update(e.id for e in effectors)
+                        self.score = new
+                        return True
+        return False
+
+
+
+def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner_cls=None):
     """One greedy construction; returns the plan built so far (valid by construction) at the deadline."""
-    planner = FastPlanner(scenario, deadline, n_scouts)
+    planner = (planner_cls or FastPlanner)(scenario, deadline, n_scouts)
     hostiles = sorted((c for c in scenario.contacts if c.cls == HOSTILE), key=order_key)
     unknowns = sorted((c for c in scenario.contacts if c.cls == UNKNOWN), key=lambda c: -c.points)
     try:
@@ -140,26 +204,34 @@ def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
 
 
 def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
-    """Builds plans until the deadline; returns the best valid (score, plan) of this worker."""
+    """Builds plans until the deadline; returns the best valid (score, plan) of this worker.
+
+    The first two builds use the same contact order with each router (the team's routing module,
+    the kit's own); then the worker hill-climbs around the best (router, order) it has found.
+    """
     alphas = [0.0, 1.0, 0.5, 1.5]
+    classes = [RoutedPlanner, FastPlanner] if _routing is not None else [FastPlanner]
+    first = worker % len(classes)
     rng = random.Random(1000 + worker)
     best = (-1.0, {"seed": scenario.seed, "routes": []})
-    best_alpha, best_noise = alphas[worker % len(alphas)], {}
+    base_alpha = alphas[(worker // len(classes)) % len(alphas)]
+    best_alpha, best_noise, best_cls = base_alpha, {}, classes[first]
     attempt = 0
     while time.monotonic() < deadline:
-        if attempt == 0:
-            alpha, noise = best_alpha, {}
+        if attempt < len(classes):
+            cls, alpha, noise = classes[(first + attempt) % len(classes)], base_alpha, {}
         else:
+            cls = best_cls
             sigma = 0.12 if worker % 2 == 0 else 0.3
             alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-0.2, 0.2)))
             noise = {c.id: max(0.2, best_noise.get(c.id, 1.0) * rng.gauss(1.0, sigma)) for c in scenario.contacts}
-        plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS)
         try:
+            plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS, cls)
             res = evaluate(scenario, plan)
-        except Exception:
+        except Exception:  # a failing router never costs the whole run
             res = None
         if res is not None and res.valid and res.score > best[0]:
-            best, best_alpha, best_noise = (res.score, plan), alpha, noise
+            best, best_alpha, best_noise, best_cls = (res.score, plan), alpha, noise, cls
         attempt += 1
     return best
 
