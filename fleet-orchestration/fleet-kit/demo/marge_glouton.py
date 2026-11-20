@@ -6,9 +6,10 @@
     python demo/marge_glouton.py --levels L3 L4 --seeds 0-9 --csv marge.csv
 
 Pour chaque scénario : score du glouton, contacts servis, éclaireurs et drones d'action utilisés,
-et points non servis sans blocage évident (même diagnostic que swann_demo.py : hors R7 et hors
-drones épuisés). Ce n'est pas un plafond atteignable : fenêtres, énergie et séparation peuvent
-encore bloquer. Bibliothèque standard uniquement.
+et points non servis sans blocage évident (même diagnostic que swann_demo.py : hors R7, hors drones
+épuisés, et avec un trajet direct qui tient dans la fenêtre et la batterie). Ce n'est pas un plafond
+atteignable : les détours (R6), la séparation (R8) et la synchronisation entre effecteurs (R10)
+peuvent encore bloquer. Bibliothèque standard uniquement.
 """
 from __future__ import annotations
 

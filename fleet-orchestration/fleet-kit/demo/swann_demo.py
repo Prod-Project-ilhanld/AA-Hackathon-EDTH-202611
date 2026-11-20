@@ -27,7 +27,7 @@ for candidate in (os.path.dirname(HERE), HERE, os.getcwd()):
 from fleetkit.baseline import greedy_plan  # noqa: E402
 from fleetkit.energy import route_energy_wh  # noqa: E402
 from fleetkit.geometry import hdist  # noqa: E402
-from fleetkit.model import CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, UNKNOWN, Scenario, load_json, parse_plan  # noqa: E402
+from fleetkit.model import CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, SCOUT, UNKNOWN, Scenario, load_json, parse_plan  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.viewer import Viewer  # noqa: E402
 
@@ -44,23 +44,81 @@ def servable(scenario: Scenario):
     return [c for c in scenario.contacts if c.cls in (HOSTILE, UNKNOWN)]
 
 
+def _direct_transit(ac, origin, dest):
+    """Temps (s) et énergie (Wh) d'un trajet direct origine -> destination à la vitesse max de l'appareil.
+
+    Hypothèse optimiste (ligne droite) : ignore les détours imposés par R6 (zones) et par R8 (séparation).
+    """
+    dh = hdist(origin, dest)
+    dz = dest[2] - origin[2]
+    t = max(dh / ac.v_h_mps, (dz / ac.v_up_mps if dz > 0 else -dz / ac.v_down_mps), 0.0)
+    if t <= 0:
+        return 0.0, 0.0
+    speed = dh / t
+    cruise_wh = (ac.power.p0_w + ac.power.k_v * speed * speed) * t / 3600.0
+    return t, cruise_wh + ac.power.e_climb_wh_per_m * max(0.0, dz)
+
+
+def _effector_reach(ac, contact, window_end):
+    """Un effecteur au sol peut-il rejoindre le contact à temps et avec assez de batterie ?"""
+    t, e = _direct_transit(ac, ac.home, contact.pos)
+    return t <= window_end + 1e-6 and e <= ac.usable_wh + 1e-6
+
+
+def _scout_observe_ok(ac, contact, window_end, rules):
+    """Un éclaireur au sol peut-il observer puis rentrer, à temps et avec assez de batterie ?"""
+    t_out, e_out = _direct_transit(ac, ac.home, contact.pos)
+    _, e_back = _direct_transit(ac, contact.pos, ac.home)
+    hover_wh = ac.power.p0_w * rules.obs_dwell_s / 3600.0
+    return (t_out + rules.obs_dwell_s <= window_end + 1e-6
+            and e_out + hover_wh + e_back <= ac.usable_wh + 1e-6)
+
+
+def _scout_confirm_ok(ac, contact, window_end, rules):
+    """Un éclaireur au sol peut-il en plus finir son observation `confirm_margin_s` avant la fin de fenêtre ?"""
+    if not _scout_observe_ok(ac, contact, window_end, rules):
+        return False
+    t_out, _ = _direct_transit(ac, ac.home, contact.pos)
+    return t_out + rules.obs_dwell_s + rules.confirm_margin_s <= window_end + 1e-6
+
+
 def diagnose(scenario, routes, c):
-    """Raison simple et vérifiable pour laquelle un contact n'est pas servi : (texte, gagnable ?)."""
+    """Raison simple et vérifiable pour laquelle un contact n'est pas servi : (texte, gagnable ?).
+
+    Vérifie R7 (collatéral) et la disponibilité des drones, puis teste si un trajet direct vers le
+    contact tient dans la fenêtre et dans la batterie utilisable d'un drone encore au sol. Condition
+    nécessaire mais pas suffisante : R6 (détour autour des zones), R8 (séparation) et la synchronisation
+    R10 entre plusieurs effecteurs ne sont pas vérifiés ici.
+    """
     rules = scenario.rules
+    window_end = c.window[1] if c.window else scenario.horizon_s
+
+    def idle(actype, subtype=None):
+        return [a for a in scenario.aircraft
+                if a.id not in routes and a.type == actype and (subtype is None or a.subtype == subtype)]
+
     if c.cls == HOSTILE:
         protected = [f for f in scenario.contacts if f.cls in (FRIENDLY, CIVILIAN)]
         near = [f for f in protected if hdist(c.pos, f.pos) < rules.collateral_radius_m]
         if near:
             return f"interdit par R7 (à {hdist(c.pos, near[0].pos):.0f} m de {near[0].id}, {near[0].cls})", False
-        left = {}
-        for a in scenario.aircraft:
-            if a.id not in routes and a.type == EFFECTOR:
-                left[a.subtype] = left.get(a.subtype, 0) + 1
-        short = [k for k, n in c.needs.items() if left.get(k, 0) < n]
+        short = [sub for sub, need in c.needs.items()
+                 if sum(1 for a in idle(EFFECTOR, sub) if _effector_reach(a, c, window_end)) < need]
         if short:
-            return f"plus assez de drones {', '.join(short)} au sol", False
-        return "drones disponibles au sol : à gagner", True
-    return "observation possible par un éclaireur", True
+            return f"pas assez d'effecteurs {', '.join(short)} au sol capables d'arriver à temps et en énergie", False
+        scouts = idle(SCOUT)
+        if not scouts:
+            return "aucun éclaireur au sol pour confirmer avant l'engagement", False
+        if not any(_scout_confirm_ok(a, c, window_end, rules) for a in scouts):
+            return "aucun éclaireur au sol ne peut confirmer à temps (fenêtre ou énergie)", False
+        return "drones au sol, fenêtre et énergie compatibles en ligne directe : à gagner", True
+
+    scouts = idle(SCOUT)
+    if not scouts:
+        return "aucun éclaireur au sol", False
+    if not any(_scout_observe_ok(a, c, window_end, rules) for a in scouts):
+        return "hors de portée d'un éclaireur au sol (fenêtre ou énergie), même en ligne directe", False
+    return "éclaireur disponible, fenêtre et énergie compatibles en ligne directe : à gagner", True
 
 
 def build_view(scenario, ours, res_ours, greedy, res_greedy, path):
@@ -166,8 +224,9 @@ def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, pat
         open_pts += c.points if possible else 0.0
         w(f"- **{c.id}** · {c.cls}, {c.points:g} pts, besoin : {need}, fenêtre {window} · {why}")
     if missed:
-        w(f"\nPoints non servis sans blocage évident (R7 ou drones épuisés) : **{open_pts:g} pts**. "
-          "À vérifier : fenêtre atteignable, énergie, séparation.")
+        w(f"\nPoints non servis sans blocage évident (R7, drones épuisés, fenêtre ou énergie en ligne "
+          f"directe) : **{open_pts:g} pts**. À vérifier : détour autour des zones (R6), séparation (R8) "
+          "et synchronisation entre effecteurs (R10).")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
 
