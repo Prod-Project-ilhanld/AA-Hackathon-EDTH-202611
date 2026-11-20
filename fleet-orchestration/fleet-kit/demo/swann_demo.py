@@ -33,6 +33,15 @@ from fleetkit.viewer import Viewer  # noqa: E402
 
 GREEN, RED, AMBER, GREY = "#3fb950", "#f85149", "#d29922", "#8b949e"
 
+DEFAULT_STRATEGY = (
+    "Glouton large et relances randomisées sous budget de temps (planner v1, Louis) : réutilise le "
+    "routage du glouton de base (détours de zones, couches d'altitude) ; teste beaucoup plus "
+    "d'éclaireurs candidats par contact plutôt que les 3 plus proches ; valide à bas coût (routes "
+    "touchées seulement) avant la validation complète des 10 règles ; relance plusieurs fois avec un "
+    "ordre de contacts randomisé et garde le meilleur plan valide ; replie sur le glouton si rien de "
+    "mieux n'est trouvé dans le budget."
+)
+
 
 def route_length_m(waypoints) -> float:
     """Distance 3D parcourue par une route, en mètres."""
@@ -156,7 +165,7 @@ def build_view(scenario, ours, res_ours, greedy, res_greedy, path):
     return gained, lost, missed
 
 
-def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, path):
+def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, path, strategy=None):
     aircraft, contacts = scenario.aircraft_by_id(), scenario.contact_by_id()
     rules = scenario.rules
     routes, _ = parse_plan(ours)
@@ -172,6 +181,13 @@ def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, pat
     w(f"| Drones d'action consommés | {res_greedy.effectors_used} | {res_ours.effectors_used} |")
     w(f"| Contacts servis | {len(res_greedy.served)} | {len(res_ours.served)} |\n")
     w(f"Coût d'1 Wh = {rules.lambda_e:g} pt · coût d'un drone d'action = {rules.c_eff:g} pts.\n")
+
+    if res_ours.valid and res_ours.score > res_greedy.score and strategy:
+        gain_pct = 100.0 * (res_ours.score - res_greedy.score) / res_greedy.score if res_greedy.score else 0.0
+        w("## Stratégie du planificateur\n")
+        w(f"{strategy}\n")
+        w(f"Résultat sur ce scénario : **+{gain_pct:.0f} %** par rapport au glouton "
+          f"({res_greedy.score:.1f} → {res_ours.score:.1f} pts).\n")
 
     if not res_ours.valid:
         w("## Plan invalide\n")
@@ -241,6 +257,9 @@ def main() -> None:
     p.add_argument("scenario")
     p.add_argument("plan", nargs="?", help="notre plan ; absent = le glouton (pour tester)")
     p.add_argument("-o", "--out", default="demo_out")
+    p.add_argument("--strategy", default=DEFAULT_STRATEGY,
+                    help="texte décrivant la stratégie du planificateur, affiché si notre plan gagne")
+    p.add_argument("--no-strategy", action="store_true", help="n'affiche pas la section stratégie")
     args = p.parse_args()
 
     scenario = Scenario.from_dict(load_json(args.scenario))
@@ -251,7 +270,8 @@ def main() -> None:
     os.makedirs(args.out, exist_ok=True)
     view_path, report_path = os.path.join(args.out, "view.html"), os.path.join(args.out, "explication.md")
     gained, lost, missed = build_view(scenario, ours, res_ours, greedy, res_greedy, view_path)
-    build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, report_path)
+    strategy = None if args.no_strategy or not args.plan else args.strategy
+    build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, report_path, strategy)
     print(f"Glouton {res_greedy.score:.1f} · notre plan {res_ours.score:.1f} "
           f"({'valide' if res_ours.valid else 'INVALIDE'})")
     print(f"-> {view_path}\n-> {report_path}")
