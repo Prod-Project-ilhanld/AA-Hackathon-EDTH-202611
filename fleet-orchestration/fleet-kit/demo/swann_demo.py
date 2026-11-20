@@ -160,6 +160,7 @@ def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, pat
     aircraft, contacts = scenario.aircraft_by_id(), scenario.contact_by_id()
     rules = scenario.rules
     routes, _ = parse_plan(ours)
+    routes = routes or {}
     out = []
     w = out.append
     w(f"# Explication du plan · scénario {scenario.level} seed {scenario.seed}\n")
@@ -197,6 +198,10 @@ def build_report(scenario, ours, res_ours, res_greedy, gained, lost, missed, pat
 
     w("## Affectations, drone par drone\n")
     for aid in sorted(routes):
+        if aid not in aircraft:
+            w(f"### {aid}\n")
+            w("Identifiant d'avion inconnu du scénario (voir violations R1 ci-dessus).\n")
+            continue
         r, a = routes[aid], aircraft[aid]
         kind = f"{a.type}" + (f" ({a.subtype})" if a.subtype else "")
         energy = route_energy_wh(r.waypoints, a)
