@@ -1,28 +1,32 @@
 # Script de démo (2 minutes) — Fleet Orchestration
 
-À adapter au scénario choisi avec l'équipe avant le pitch ; les chiffres ci-dessous sont ceux
-mesurés sur L4 seed 3 (100 drones, 70 contacts), à remplacer par ceux du scénario final.
+À adapter au scénario choisi avec l'équipe avant le pitch. Chiffres générés par
+`python demo/gen_script_demo.py` sur L4 seed 3 — ne pas les recopier à la main,
+relancer le générateur à chaque nouveau plan.
 
 ## Accroche (20 s)
 
-« Le kit fournit un glouton de référence. Sur ce scénario L4, il sert 18 contacts sur 70 pour un
-score de 532,9 — et laisse 1 830 points sur la table rien qu'en comptant ceux qu'un drone encore au
-sol pourrait atteindre en ligne droite, fenêtre et batterie comprises. »
+« Le kit fournit un glouton de référence. Sur ce scénario L4, il sert 18 contacts
+sur 70 pour un score de 532,9 — et laisse 1083 points sur
+la table rien qu'en rejouant le vrai routage sur chacun des contacts qu'il manque. »
 
 ## Moment fort (60 s)
 
 1. Ouvrir `view.html` du plan final, calque **Gagnés vs glouton** activé (vert).
-   « Notre planificateur élargit la recherche à tous les éclaireurs disponibles, pas seulement les
-   trois plus proches, et relance plusieurs fois sous un budget de temps. »
+   « Notre planificateur teste jusqu'à 6 éclaireurs par contact hostile, trie les contacts par
+   points par effecteur requis, et relance plusieurs fois sous un budget de temps. »
 2. Ouvrir `explication.md`, section **Contacts non servis**.
-   Montrer un contact bloqué par R7 (collatéral) et un autre marqué « à gagner ».
-   « On sait exactement pourquoi chaque contact est pris ou non — pas seulement que le score est
-   plus bas. »
+   Montrer un contact bloqué par R7 (collatéral), un contact « hors de portée même avec tous les
+   drones disponibles » (routage réel testé, pas une estimation), et si possible un contact
+   « en concurrence » pour les mêmes drones.
+   « On ne devine pas : chaque verdict vient d'un vrai essai de routage sur ce contact, pas d'une
+   ligne droite optimiste. »
 
 ## Preuve chiffrée (30 s)
 
-« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 763,9 points, **+43 %**, plan valide sur
-les 10 règles. » (Afficher le tableau de score en haut de `explication.md`.)
+« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 815,1 points,
+**+53 %**, plan valide sur les 10 règles, 30 contacts servis contre
+18. » (Afficher le tableau de score en haut de `explication.md`.)
 
 ## Clôture (10 s)
 
@@ -32,9 +36,15 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 ## Limites à assumer si on nous les demande
 
 - Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- Le diagnostic « à gagner » est une borne optimiste (trajet direct) : il ne garantit pas R6
-  (détour de zones), R8 (séparation) ni R10 (synchronisation entre effecteurs).
-- +43 % mesuré sur un seul scénario (L4 seed 3). Le banc multi-seed est tenu par Mahmoud.
+- 53 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le banc :
+  planner v1, 200 cas valides, +47,8 % en moyenne sur L4 contre le glouton. Le banc de la v2 est en
+  cours chez Louis.
+- Sur notre propre plan, le diagnostic de routage réel trouve encore ~431 pts
+  librement gagnables (sans toucher au plan actuel) et 62 pts en concurrence
+  avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a
+  un budget de temps (8 s par défaut, `DIAG_BUDGET_S`) ; sous forte charge machine, quelques
+  contacts limites basculent sur l'estimation en ligne directe, ce qui fait varier ce total de
+  quelques dizaines de points d'un lancement à l'autre.
 
 ## Vidéo de secours
 
