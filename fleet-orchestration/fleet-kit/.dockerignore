@@ -1,0 +1,10 @@
+.git
+__pycache__/
+*.pyc
+.pytest_cache/
+view.html
+scenario*.json
+plan*.json
+out/
+validation/
+my-plans/
