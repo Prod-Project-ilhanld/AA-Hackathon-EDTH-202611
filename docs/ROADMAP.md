@@ -89,14 +89,7 @@ Excluded on purpose: learned solvers (RL4CO, RouteFinder, POMO): torch + GPU, no
 
 Lane V (OpenEvolve) is cut: lowest value per hour; T and L cover it.
 
-Loop prompt template (lane L), kept in `tools/loop/program.md`:
-```
-You may edit only handin/<file>.py. Goal: raise `FLEET_ITERS=200 python3 tools/bench.py --suite quick --json`
-total with failures == 0. After each change: run the bench; if better, git commit with the numbers in the
-message; if not, git reset --hard. Never edit tools/, kit/ or other handin files. Never iterate over sets.
-Stop after N tries or at <time>. Log each try to runs/loop-<file>.tsv: time, idea, total, failures, kept.
-Before handing back: run a paired train comparison (>= 20 L4 seeds) of your best commit vs main; report both.
-```
+Loop prompt template (lane L): `fleet-orchestration/fleet-kit/tools/loop/program.md` (uses the real `tools/bench.py` commands and a measured noise level, since the planner's scores vary between runs).
 
 ## 5. Phases and checkpoints
 Each checkpoint has a **verification command** and **pass criteria**. If a checkpoint fails, we fix it before moving on; nobody starts the next phase's risky work on a red `main`.

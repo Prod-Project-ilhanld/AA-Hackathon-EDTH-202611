@@ -5,3 +5,4 @@ scenario.json
 plan.json
 plan.svg
 .fleetkit-board.json
+runs/
