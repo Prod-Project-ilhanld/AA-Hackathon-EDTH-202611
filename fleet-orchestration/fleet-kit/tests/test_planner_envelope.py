@@ -9,8 +9,7 @@ from fleetkit.scorer import evaluate
 import planner as P
 
 class Envelope(unittest.TestCase):
-    @unittest.expectedFailure  # known gap: no greedy_plan last resort; becomes 'unexpected success' once added
-    def test_greedy_plan_of_the_kit_is_never_called(self):
+    def test_planner_has_a_greedy_plan_last_resort(self):  # the gap this test used to document is closed
         with open(KIT + "/handin/planner.py") as f:
             src = f.read()
         calls = re.findall(r"greedy_plan\(", src)

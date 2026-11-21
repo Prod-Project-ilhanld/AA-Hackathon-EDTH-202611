@@ -356,6 +356,22 @@ def _worker(args):
         return (-1.0, None)
 
 
+def _greedy_fallback(scenario: Scenario) -> Optional[dict]:
+    """The kit's greedy plan, validated, or None. Only on a failure path, and only with time left before the alarm.
+
+    Measured at 2.7 s at most on L4. None when the plan is invalid, scores nothing, or the alarm is too close.
+    """
+    if ALARM_S - (time.monotonic() - T0) < params.FALLBACK_MIN_LEFT_S:
+        return None
+    try:
+        from fk.baseline import greedy_plan
+        plan = greedy_plan(scenario)
+        result = evaluate(scenario, plan)
+        return plan if result.valid and result.score > 0 else None
+    except Exception:
+        return None
+
+
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
     # beyond the official L4 (100 aircraft) route building and validation overshoot the deadline more and more
     # (measured: +1 s at 100, +9 s at 300, +11 s at 400 aircraft): shrink the budget so the 60 s limit holds
@@ -391,13 +407,15 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
     for score, plan in results:  # worker-index order, strict >: ties go to the lowest worker
         if plan is not None and score > best[0]:
             best = (score, plan)
+    if best[0] <= 0.0:  # every build failed or found nothing positive: the kit's greedy plan beats an empty one
+        return _greedy_fallback(scenario) or empty
     # last guard: the plan we write was validated by the kit's own scorer
     try:
         res = evaluate(scenario, best[1])
         if not res.valid or res.score < 0:
-            return empty
+            return _greedy_fallback(scenario) or empty
     except Exception:
-        return empty
+        return _greedy_fallback(scenario) or empty
     return best[1]
 
 
@@ -450,7 +468,10 @@ def main() -> None:
         signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
-    plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
+    try:
+        plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
+    except Exception:  # solve crashed: the kit's greedy plan beats the empty one that is already on disk
+        plan = _greedy_fallback(scenario) or {"seed": scenario.seed, "routes": []}
     _keep(plan)  # validated, never negative: the alarm backstop now writes this plan, not the empty one
     while params.INJECT_HANG:  # test hook: the alarm must write the kept plan
         time.sleep(1)
