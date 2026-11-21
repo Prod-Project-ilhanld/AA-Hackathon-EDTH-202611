@@ -1,83 +1,107 @@
-# Vérification R8 / R10 / enveloppe anti-zéro du planner (Martin)
+# R8 / R10 / enveloppe anti-zéro — Martin
 
-Cible : `handin/planner.py` de la branche `feature/planner-v1`, commit `e604228` (v7, Louis).
-Aucune modification de `planner.py` : ce document et les tests ne font que vérifier.
+Chantier : séparation (R8), synchronisation (R10), enveloppe anti-zéro, `check_handin.py` à chaque version.
+Branche : `feature/enveloppe` (contient `main` à `55327de`, la v7 de Louis, et `feature/tests-r8-r10-enveloppe`).
+Code des autres non modifié : `planner.py` et `routing.py` sont identiques à `main`. Tout passe par
+`handin/deconflict.py` (fichier de départ prévu pour ce chantier) et des fichiers de test nouveaux.
 
-## Méthode
+## Résumé
 
-Le planner n'appelle pas le validateur complet à chaque essai : `_try` valide seulement les routes touchées
-et compare en R8 au reste du plan. Les tests forcent des violations directement sur `_try` et comparent
-son verdict au validateur complet du kit (l'oracle). Deux propriétés :
+| Point | Statut |
+|---|---|
+| Audit R8 (séparation 40 m) | Fait : tous les cas rejetés, limite exacte 40 m acceptée |
+| Audit R10 (tout-ou-rien, 20 s) | Fait : désynchronisation, effecteur manquant/en trop, > 25 m rejetés |
+| Faille 1 : R10 entre deux essais | **Corrigée** (garde R10 dans `deconflict.adjust`, active par défaut) |
+| Faille 2 : pas de repli sur `greedy_plan` | **Prouvée, non corrigée** : patch proposé dans `proposals/`, à appliquer par Louis |
+| Ordonnanceur de décollage R8 (CP2 / Going further) | Fait, **désactivé par défaut** : +2,11 % total, +3,42 % L4 |
+| `check_handin.py` sur `main` + les deux branches | **8/8 ok**, 4229,6 vs 2748,6, 38,3 s max, aucune régression |
 
-- solidité : si `_try` accepte, le validateur complet doit accepter ;
-- rejet : les cas qui violent R8 ou R10 doivent être refusés.
+## Faille 1 — R10 entre deux essais : corrigée
 
-Lancer depuis `fleet-kit/` : `python3 tests/test_planner_r8_r10.py` et `python3 tests/test_planner_envelope.py`.
+Le `_try` incrémental valide les routes touchées seules ; sa docstring dit que R8 est la seule règle qui couple les
+routes, mais R10 les couple aussi (un hostile exige exactement ses effecteurs, à 20 s près).
 
-## R8 — séparation (12 tests au total avec R10, 11 passent, 1 échec attendu documenté plus bas)
+- Forcée (`tests/test_latent_guards.py`) : servir deux fois le même contact (ce que ferait une boucle de réparation)
+  est accepté et le plan devient invalide (R10) dans **6 cas sur 6** (scénario manuel, L2-0, L3-0 × RoutedPlanner,
+  FastPlanner). Aujourd'hui `build` sert chaque contact une seule fois, donc elle ne se déclenche pas seule.
+- Correction : `deconflict.adjust`, déjà appelé en premier dans `_try`, rejette un candidat dont les engagements,
+  réunis avec les engagements acceptés du même hostile, cassent R10 (nombre par sous-type ou fenêtre de 20 s).
+  Un tel candidat est invalide pour le validateur officiel : aucun plan valide n'est perdu.
+  Active par défaut, `PLANNER_R10_GUARD=0` la coupe.
+- Vérifié : avec la garde, la seconde passe est rejetée et le plan reste valide ; une construction normale est
+  identique avec ou sans garde ; le test d'audit R10 de `test_planner_r8_r10.py` passe désormais ;
+  `test_planner_robustness.py` de l'équipe : 12 OK.
 
-Tous les cas R8 sont rejetés correctement : routes à 0,5 / 20 / 39,9 m, deux routes nouvelles dans le même essai,
-croisement en vol. La limite exacte de 40 m est acceptée, 39,9 m refusée, un décollage décalé légitime
-est accepté (le planner n'est pas trop strict), et une route remplacée n'est pas comparée à son ancienne version.
+## Faille 2 — pas de repli sur greedy_plan : prouvée, non corrigée
 
-## R10 — engagement synchronisé tout-ou-rien
+L'enveloppe de `main` est solide (plan vide écrit avant la recherche, alarme à 52 s, écritures atomiques,
+validateur officiel en garde finale, sortie toujours à 0), mais le dernier recours reste le plan vide.
 
-Rejetés correctement : écart de synchronisation supérieur à 20 s, effecteur manquant, effecteur en trop,
-engagement à plus de 25 m du contact. Sur C04 (1 léger + 1 lourd) : écart 25 s et 60 s rejetés (R10),
-écart 20,1 s rejeté (R10 et R8 ensemble). Les écarts 5 / 19,9 / 20 s sont rejetés à cause de R8
-(géométrie des pistes de décollage), pas de R10, et le validateur complet est du même avis.
+- Forcée (`tests/test_latent_guards.py`) : si toutes les constructions plantent (régression dans le builder),
+  `solve()` écrit un plan valide à **0,0**, alors que le glouton du kit donne **281,3** sur L2-0.
+- La correction est dans `solve()` de `planner.py` (code de Louis) : non appliquée.
+  Patch proposé : `proposals/greedy_fallback.patch` (repli sur `fk.baseline.greedy_plan` si rien de valide et positif,
+  seulement s'il reste au moins 8 s avant l'alarme ; `greedy_plan` + `evaluate` mesuré à 2,7 s max sur L4, graines 0-2).
+  Vérifié sur une copie jetable : 281,3 au lieu de 0,0. Il s'applique proprement : `git apply fleet-orchestration/fleet-kit/proposals/greedy_fallback.patch`.
+  Le test correspondant est marqué `expectedFailure` et passera en « unexpected success » une fois le patch appliqué.
 
-### Faille latente : R10 n'est pas vérifié entre deux essais
+## Ordonnanceur de décollage R8 (`deconflict.py`)
 
-`_try` documente que R8 est la seule règle qui couple les routes. R10 les couple aussi (nombre d'effecteurs
-et fenêtre de 20 s par contact).
+Pour chaque candidat de `_try` en conflit R8, il retarde le décollage de toute la route jusqu'au premier créneau
+à 40 m de toutes les routes acceptées (saut par intervalle de conflit, pas doublé, puis dichotomie).
+Un groupe d'effecteurs reçoit un retard commun, puis chaque membre encore en conflit avec un voisin est retardé seul,
+sans dépasser la fenêtre de synchronisation de 20 s (R10), la fenêtre de frappe (R9) ni l'horizon ; le scout reste fixe.
+Les candidats sans espoir (R7, confirmation R4 perdue) ne sont pas décalés ; le candidat décalé est re-vérifié.
 
-Scénario : C01 a besoin d'un seul léger. L01 l'engage et est commité. Dans un second essai, `extra` contient
-la route du scout et celle de L02 vers C01 (arrivée 2 s après L01, couche 40 m). `_try` accepte
-(score -11,46) alors que le validateur complet dit R10 seul.
+Bench apparié, `tools/bench.py`, 38 s, `main` actuel, graines 10-13 jamais utilisées pendant le développement :
 
-Mesure : sur 105 variantes (décalage 0 à 40 s, 3 couches, 5 angles), 73 sont invalides en R10 seul, et `_try`
-en accepte à tort.
-Atteignable aujourd'hui : non, `build` sert chaque contact une seule fois et le garde final `evaluate` écarte
-un plan invalide. Atteignable après une boucle de réparation ou un second passage sur un contact.
-Non corrigé ici : à discuter avec Louis. Le test est marqué `expectedFailure` et passera en
-« unexpected success » quand la faille sera corrigée.
+| Niveau | Éteint | Allumé | Écart |
+|---|---|---|---|
+| L1 | 354,1 | 353,3 | -0,23 % |
+| L2 | 965,0 | 968,1 | +0,32 % |
+| L3 | 2032,0 | 2044,9 | +0,63 % |
+| L4 | 4248,0 | 4393,1 | **+3,42 %** |
+| Total | 7599,1 | 7759,4 | **+2,11 %** |
 
-## Enveloppe anti-zéro
+16/16 plans valides dans les deux séries, 38,9 s max ; 12 scénarios en hausse, 1 en baisse, 3 égaux ; les 4 L4 en
+hausse (+70,9, +11,3, +35,4, +27,5). Le bruit entre deux exécutions identiques est de 0,1 à 0,5 % (CP1 du tableau) :
+le gain L4 est au-dessus, L1/L2 est dans le bruit. Même tendance sur l'ancien planner (graines 0-3 : +2,3 %, L4 +3,2 %).
 
-Niveaux de `try/except` présents : par contact, par construction, par worker, création du pool, garde final
-(`evaluate`) et `main`. Un test neutralise exprès le filtre incrémental (L2, graine 0, budget 10 s, 1 worker) :
-le planner écrit un plan valide de 293,1 contre 281,3 pour la baseline du kit, car chaque construction est
-re-validée et seules les valides sont gardées.
+Pourquoi il est encore éteint : la règle de l'équipe demande un gain apparié sur au moins 20 graines L4
+(≤ 40 % de graines en baisse, 0 invalide) ; il n'y en a que 8 (8/8 en hausse, 0 invalide). Et le jury ne transmet
+aucune variable d'environnement (`check_handin.py` non plus) : pour que le gain compte, il faut `ENABLED = True`
+par défaut dans `deconflict.py`. Décision d'équipe, après le bench sur 20 graines L4.
 
-Lacune structurelle : `greedy_plan` du kit n'est appelé nulle part. Si toutes les constructions échouaient,
-le plan écrit serait vide (score 0). Je n'ai pas réussi à le provoquer, donc c'est une lacune de conception,
-pas un bug observé. Test marqué `expectedFailure`.
+## check_handin.py
 
-Limite à surveiller : `_place_effectors` décale les effecteurs de 5 s fixes. Pire cas sur L1 à L4 × 50 graines :
-4 effecteurs, soit 15 s, sous la fenêtre de 20 s. Une fenêtre durcie (`linkloss/harden.py` réduit
-`sync_window_s`) rendrait certains contacts inservables.
-
-## check_handin.py sur e604228
-
-8/8 ok, 0 échec. Total 4229,6 contre 2748,6 pour la baseline. Temps maximum 38,1 s (limite 60 s), mesuré sur
-une machine de 20 cœurs, le planner utilisant jusqu'à 8 workers.
+Sur `feature/enveloppe` (`main` + les deux branches + la garde R10), environnement du jury :
+8/8 ok, 0 échec, total **4229,6** contre 2748,6 pour la baseline, temps max **38,3 s**, code de sortie 0.
+Identique, scénario par scénario, à la v7 seule (même total 4229,6).
 
 | Scénario | Score | Baseline | Temps |
 |---|---|---|---|
-| L1-0 | 125,8 | 123,8 | 12,4 s |
-| L1-1 | 72,0 | 68,8 | 12,2 s |
+| L1-0 | 125,8 | 123,8 | 12,5 s |
+| L1-1 | 72,0 | 68,8 | 12,4 s |
 | L2-0 | 293,8 | 281,3 | 38,1 s |
 | L2-1 | 349,3 | 338,9 | 38,1 s |
 | L3-0 | 608,0 | 449,1 | 38,1 s |
 | L3-1 | 514,0 | 463,9 | 38,1 s |
-| L4-0 | 1137,8 | 590,3 | 38,1 s |
-| L4-1 | 1129,0 | 432,5 | 38,1 s |
+| L4-0 | 1137,8 | 590,3 | 38,2 s |
+| L4-1 | 1129,0 | 432,5 | 38,3 s |
 
-Seules les graines 0 et 1 ont été lancées : ce n'est pas comparable aux 50 graines mesurées par Louis.
+## Tests (depuis `fleet-kit/`, unittest, sans pytest)
+
+| Fichier | Résultat |
+|---|---|
+| `tests/test_deconflict.py` | 10 OK |
+| `tests/test_latent_guards.py` | 4 OK + 1 échec attendu (repli glouton, patch non appliqué) |
+| `tests/test_planner_r8_r10.py` | 12 OK |
+| `tests/test_planner_envelope.py` | 1 OK + 1 échec attendu (`greedy_plan` jamais appelé) |
+| `tests/test_planner_robustness.py` (équipe) | 12 OK |
 
 ## Avec plus de temps
 
-- relancer `check_handin.py` sur plusieurs graines et sur une machine à moins de cœurs pour confirmer la marge de temps ;
-- proposer à Louis un correctif de R10 inter-essais et un repli sur `greedy_plan` ;
-- tester une fenêtre de synchronisation réduite (version durcie).
+- bench apparié sur 20 graines L4 (critère de l'équipe) puis, s'il passe, `ENABLED = True` par défaut ;
+- phase 2 du scheduler (CP3) : retard au sol → couche d'altitude → détour ; strike groups sur couches séparées ;
+- réduire le coût du scheduler (il divise le nombre d'essais par seconde sur L4) ;
+- mode déterministe (CP1) pour distinguer les gains < 1 % du bruit.
