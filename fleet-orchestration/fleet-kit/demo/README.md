@@ -68,3 +68,11 @@ rapport l'indique explicitement dans chaque ligne concernée.
   ci-dessus, vidéo de secours et script alignés dessus).
 - Rejouer sur les scénarios de la grille publique (L1-101 à L4-402) dès qu'ils sont disponibles.
 - Script de démo minuté : voir `SCRIPT_DEMO.md` (régénéré par `gen_script_demo.py`).
+
+## Pitch : slides, vidéo de secours, répétition (CP3.5)
+
+- `SLIDES_METHODE_ROBUSTESSE.md` : slides de méthode et de robustesse, notes orales, chiffres rejouables, cadre
+  « À revérifier avant le pitch ».
+- `VIDEO_SECOURS.md` : préparation vérifiée, découpage de 2 minutes, règles de tournage (la vidéo n'est pas dans le dépôt).
+- `REPETITION_22H.md` : feuille de répétition de 22 h, réponses à « pourquoi cette cible ? », questions pièges.
+- Pourcentage de la borne : `python3 tools/bound.py --bench bench.json` (voir `tools/bound.py`).
