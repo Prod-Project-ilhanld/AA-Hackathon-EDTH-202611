@@ -29,6 +29,8 @@ from fk.geometry import hdist  # noqa: E402
 from fk.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
 from fk.scorer import evaluate  # noqa: E402
 from fk.validator import separation_item, separation_violation, validate  # noqa: E402
+import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
+import targets  # noqa: E402     starter: which hostiles to try, priorities (off by default)
 
 try:  # routing module of the team (3D minimum-energy routes); the planner works without it
     from fk.baseline import EFFECTOR_LAYERS
@@ -99,11 +101,13 @@ class FastPlanner(_Planner):
         return True
 
     def _try(self, extra: Dict[str, List[dict]]) -> Optional[float]:
-        if not self._prefilter(extra):
+        if not deconflict.adjust(self, extra) or not self._prefilter(extra):
             return None
         return super()._try(extra)
 
     def serve_hostile(self, contact: Contact) -> bool:
+        if targets.skip(self.sc, contact):
+            return False
         sc = self.sc
         pool = {}
         for sub, n in contact.needs.items():
@@ -212,7 +216,7 @@ def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner
 
 
 def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
-    return lambda c: -noise.get(c.id, 1.0) * c.points / max(1, sum(c.needs.values())) ** alpha
+    return lambda c: -noise.get(c.id, 1.0) * targets.weight(scenario, c) * c.points / max(1, sum(c.needs.values())) ** alpha
 
 
 def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
