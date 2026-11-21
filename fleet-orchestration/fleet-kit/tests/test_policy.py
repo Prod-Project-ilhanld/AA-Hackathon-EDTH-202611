@@ -130,9 +130,34 @@ def test_l4_message_size_and_step_latency() -> None:
     assert avg_ms < 50.0, f"Step took {avg_ms:.2f} ms >= 50 ms"
 
 
+def test_compact_list_roundtrip_and_bytes() -> None:
+    sc, plan = _make_simple_scenario()
+    p_tx = Policy(sc, plan, "S01")
+    p_rx = Policy(sc, plan, "L01")
+    obs_tx = {
+        "t": 60.0, "t_loss": 25.0, "pos": p_tx.clock.position(60.0), "vel": (0.0, 0.0, 0.0),
+        "tau": 60.0, "next_wp": 1, "mode": "return", "energy_left_wh": 80.0,
+        "own_observed": ["C01"],
+        "sensed": [{"kind": "reclassify", "contact": "C01"}, {"kind": "popup_zone", "center": [500.0, 10.0], "radius_m": 80.0, "top_m": 200.0}],
+        "inbox": [], "last_heard": {},
+    }
+    _, msg = p_tx.step(obs_tx)
+    assert isinstance(msg, list) and len(json.dumps(msg, separators=(",", ":")).encode()) <= 64
+    p_rx.step({
+        "t": 61.0, "t_loss": 25.0, "pos": p_rx.clock.position(61.0), "vel": (12.0, 0.0, 0.0),
+        "tau": 61.0, "next_wp": 1, "mode": "route", "energy_left_wh": 80.0,
+        "own_observed": [], "sensed": [],
+        "inbox": [{"from": "S01", "sent_t": 60.0, "payload": msg}],
+        "last_heard": {},
+    })
+    assert "C01" in p_rx.observed and "C01" in p_rx.reclassified
+    assert (500, 10, 80, 200) in p_rx.zones and p_rx.peer_state["S01"][2] == "return"
+
+
 if __name__ == "__main__":
     test_lower_id_breaks_mutual_hold_when_not_closing()
     test_effector_aborts_without_ob_and_accepts_relayed_ob()
     test_scout_failure_causes_zero_r4_failures()
     test_l4_message_size_and_step_latency()
+    test_compact_list_roundtrip_and_bytes()
     print("OK - all policy unit tests passed!")

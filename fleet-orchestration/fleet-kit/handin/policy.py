@@ -41,23 +41,30 @@ def _seg_min_dist3(
     return (dx * dx + dy * dy + dz * dz) ** 0.5
 
 
-def _pack_msg(d: dict) -> Optional[dict]:
-    """Ensures compact JSON fits within 64 bytes."""
-    if not d:
+def _pack_msg(msg: Any) -> Optional[Any]:
+    """Ensures compact JSON (list or dict) fits within 64 bytes."""
+    if not msg:
         return None
-    if len(json.dumps(d, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
-        return d
-    # Trim optional fields if over budget.
-    trimmed = dict(d)
-    for k in ("zn", "rc", "ob", "u"):
-        if k in trimmed:
-            val = trimmed[k]
-            if isinstance(val, list) and len(val) > 1:
-                trimmed[k] = val[:1]
-            else:
-                del trimmed[k]
+    if len(json.dumps(msg, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
+        return msg
+    if isinstance(msg, list):
+        trimmed = list(msg)
+        while len(trimmed) > 2:
+            trimmed.pop()
             if len(json.dumps(trimmed, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
                 return trimmed
+        return None
+    # Trim optional fields if dict over budget.
+    trimmed_d = dict(msg)
+    for k in ("zn", "rc", "ob", "u"):
+        if k in trimmed_d:
+            val = trimmed_d[k]
+            if isinstance(val, list) and len(val) > 1:
+                trimmed_d[k] = val[:1]
+            else:
+                del trimmed_d[k]
+            if len(json.dumps(trimmed_d, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
+                return trimmed_d
     return None
 
 
@@ -68,6 +75,8 @@ class Policy:
         self.scenario = scenario
         self.aircraft_id = aircraft_id
         self.rules = scenario.rules
+        self._i2c: List[str] = [c.id for c in scenario.contacts]
+        self._c2i: Dict[str, int] = {cid: i for i, cid in enumerate(self._i2c)}
         routes, _ = parse_plan(plan)
         self.routes = routes
         self.clocks: Dict[str, RouteClock] = {aid: RouteClock(rt) for aid, rt in routes.items()}
@@ -152,6 +161,37 @@ class Policy:
             src = msg["from"]
             sent_t = float(msg["sent_t"])
             p = msg["payload"]
+            if isinstance(p, list) and len(p) >= 2:
+                st = int(p[0])
+                u = float(p[1]) * 0.1
+                rc_raw = p[2] if len(p) > 2 and isinstance(p[2], list) else ()
+                zn_raw = p[3] if len(p) > 3 and isinstance(p[3], list) else ()
+                ob_raw = p[4] if len(p) > 4 and isinstance(p[4], list) else ()
+                for idx in rc_raw:
+                    if isinstance(idx, int) and 0 <= idx < len(self._i2c):
+                        c = self._i2c[idx]
+                        if c not in self.reclassified:
+                            self.reclassified.add(c)
+                            self._rc_ttl[c] = 2
+                for z_item in zn_raw:
+                    z = (int(z_item[0]), int(z_item[1]), int(z_item[2]), int(z_item[3]))
+                    if z not in self.zones:
+                        self.zones.append(z)
+                        self._zn_ttl[z] = 2
+                for idx in ob_raw:
+                    if isinstance(idx, int) and 0 <= idx < len(self._i2c):
+                        c = self._i2c[idx]
+                        if c not in self.observed:
+                            self.observed.add(c)
+                            self._ob_ttl[c] = 2
+                if st == 2:
+                    self.aborted_peers.add(src)
+                    self.peer_state[src] = (sent_t, u, "return")
+                elif st == 1:
+                    self.peer_state[src] = (sent_t, u, "hold")
+                elif st == 3:
+                    self.peer_state[src] = (sent_t, u, "route")
+                continue
             if not isinstance(p, dict):
                 continue
             for c in p.get("rc", ()):
@@ -289,53 +329,64 @@ class Policy:
                     break
         return False
 
-    def _build_message(self, t: float, tau: float, mode: str, action_kind: str) -> Optional[dict]:
-        msg: Dict[str, Any] = {}
-
+    def _build_message(self, t: float, tau: float, mode: str, action_kind: str) -> Optional[Any]:
+        """Builds a compact positional list `[st, u_tenths, rc_idx, zn, ob_idx]` (<= 64 B)."""
+        rc_idx: List[int] = []
         if self._rc_ttl:
             rc_list = sorted(self._rc_ttl)[:2]
-            msg["rc"] = rc_list
+            rc_idx = [self._c2i[c] for c in rc_list if c in self._c2i]
             for c in rc_list:
                 self._rc_ttl[c] -= 1
                 if self._rc_ttl[c] <= 0:
                     del self._rc_ttl[c]
 
+        zn_list: List[List[int]] = []
         if self._zn_ttl:
             z = next(iter(self._zn_ttl))
-            msg["zn"] = [list(z)]
+            zn_list = [list(z)]
             self._zn_ttl[z] -= 1
             if self._zn_ttl[z] <= 0:
                 del self._zn_ttl[z]
 
+        ob_idx: List[int] = []
         if self._ob_ttl:
             ob_list = sorted(self._ob_ttl)[:2]
-            msg["ob"] = ob_list
+            ob_idx = [self._c2i[c] for c in ob_list if c in self._c2i]
             for c in ob_list:
                 self._ob_ttl[c] -= 1
                 if self._ob_ttl[c] <= 0:
                     del self._ob_ttl[c]
 
+        st = 0
+        u_tenths = 0
         if action_kind == "hold":
             if self._hold_streak <= 3 or t - self._last_hd_sent >= 3.0:
-                msg["hd"] = 1
-                msg["u"] = round(tau, 1)
+                st = 1
+                u_tenths = int(round(tau * 10.0))
                 self._last_hd_sent = t
         elif mode == "return" or action_kind == "return":
             if self._rt_ttl > 0 or (t - self._last_rt_sent >= 5.0):
-                msg["rt"] = 1
-                msg["u"] = round(tau, 1)
+                st = 2
+                u_tenths = int(round(tau * 10.0))
                 self._last_rt_sent = t
                 if self._rt_ttl > 0:
                     self._rt_ttl -= 1
-
         elif self._rs_ttl > 0:
-            msg["rs"] = 1
-            msg["u"] = round(tau, 1)
+            st = 3
+            u_tenths = int(round(tau * 10.0))
             self._rs_ttl -= 1
 
-        if not msg:
+        if st == 0 and not rc_idx and not zn_list and not ob_idx:
             return None
-        return _pack_msg(msg)
+
+        payload: List[Any] = [st, u_tenths]
+        if ob_idx:
+            payload.extend([rc_idx or 0, zn_list or 0, ob_idx])
+        elif zn_list:
+            payload.extend([rc_idx or 0, zn_list])
+        elif rc_idx:
+            payload.append(rc_idx)
+        return _pack_msg(payload)
 
     def step(self, obs: dict) -> Tuple[dict, Optional[dict]]:
         t = float(obs["t"])
