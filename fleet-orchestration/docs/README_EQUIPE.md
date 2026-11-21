@@ -44,7 +44,7 @@ Un scénario à la main : `python3 -m fleetkit generate L4 3 -o scenario.json &&
 
 ## Limites connues
 - Heuristique gloutonne avec relances, pas d'optimum prouvé ; aucune borne supérieure calculée.
-- Utilise toujours 38 s, même sur L1 (ne change que les égalités de temps).
+- Utilise 38 s sur L2 à L4 ; sur L1 (5 avions) la recherche s'arrête quand rien de mieux n'a été trouvé depuis 12 s (12 s en moyenne, mêmes scores que 38 s sur 50 graines). Un arrêt anticipé sur L2 a coûté 0,3 % et n'a pas été gardé.
 - Les versions 2 à 4 profitent de plusieurs cœurs ; à 1 cœur la v4 reste au-dessus de la v3 sur L4 (graines 0 à 7 : 6940,9 contre 6273,6 pour la v3 à 2 cœurs).
 - Sur L4 graine 3, 10 hostiles sont interdits par R7 et plusieurs autres sont hors d'atteinte (aller-retour au-delà de 900 s) : le plafond réel est plus bas que le total des points.
 - Perte de liaison : modélisée dans NOTRE simulateur (une seule perturbation, le ralentissement) ; le kit ne la note pas, l'interface du banc officiel est inconnue, non confirmée par Axel Durand-Allize. Les chiffres ne se transfèrent pas tels quels.
