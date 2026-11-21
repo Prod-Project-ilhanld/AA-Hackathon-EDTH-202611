@@ -1,6 +1,6 @@
-# Open tasks (Sat 21 Nov, 23:45: night and Sunday morning)
+# Open tasks (Sun 22 Nov, 00:40: night and Sunday morning)
 
-GitHub Issues are off in this repo, so the open tasks live here. Pick one, put your name next to it in the team chat, work on a `feature/...` branch from current `main`, and open a PR with the evidence each task asks for. Progress is tracked on the checkpoint board: https://claude.ai/artifact/7VzgyqXg2owcpXosdeK2sc
+GitHub Issues are off in this repo, so the open tasks live here. Pick one, put your name next to it in the team chat, work on a `feature/...` branch from current `main`, and open a PR with the evidence each task asks for. **This file is the source of truth.** The checkpoint board (https://claude.ai/artifact/7VzgyqXg2owcpXosdeK2sc) can't be opened from outside the owner's organisation, so not everyone can see it.
 
 Rules for every task:
 - Train seeds 0–199 only. The holdout (5000–5049) is run only at checkpoints, by Mahmoud.
@@ -55,6 +55,28 @@ Setup: both PRs were re-run on the official sizing grid with `tools/linkloss_dia
   - L3-6 drops to retention 0.611. It was 0.780 on main, and broadcast gets 1.000. That's task 9.
 - **Policy cost per step:** at most 0.045 ms per call. The limit is 50 ms.
 
+### Cross-check on seeds 20–29 (Louis, re-run by Mahmoud at 00:30)
+Setup: `check_policy.py --levels L1,L2,L3,L4 --seeds 20-29`, at the leaderboard setting (1000×200), 2 runs per scenario. Louis's numbers for main and #23 reproduce exactly; #19 alone is added here.
+
+|  | main | #19 | #19 + #23 |
+|---|---|---|---|
+| Mean retention | 0.871 | **0.974** | 0.969 |
+| Failed runs (of 80) | 8 | **0** | **0** |
+| Messages per aircraft per minute | 6.5 | 8.0 | 18.7 |
+| Mean S_loss | 0.858 | **0.958** | 0.932 |
+
+- **At the leaderboard setting, #19 alone has the best S_loss.** #23's lead is robustness across the sizing grid (failed runs 0 / 20 against 31 / 118). Its S_loss deficit is messages only, which is task 8.
+- **L2-21: 1.000 on main, 0.148 on both #19 and #23.** It comes from #19 and is folded into task 9.
+- **L4-21: 0.901 with #19, 0.620 with #23.** That's a #23-only regression: task 12.
+- **The decision stands:** ship #19 + #23, then tasks 8, 9 and 12 against the gate. If task 8 can't bring messages down by 08:00, we revisit shipping #19 alone at the 08:00 review, with the numbers.
+
+### Numbers for the slides (Swann)
+Use these two benches, and say which one each number comes from:
+- **Unseen seeds (CP4 holdout, 5000–5049, `cdc0671`):** ×1.59 total, L4 ×2.13.
+- **Train 0–49 on `cdc0671` (Louis, `bench50_main_cdc0671.json`):** ×1.616 over the kit greedy, **81.7 % of the bound** (greedy 50.6 %). By level, ratio and share of the bound: L1 ×1.069 (93.6 %), L2 ×1.107 (94.8 %), L3 ×1.276 (93.4 %), L4 ×2.188 (74.6 %).
+
+The 71.4 % (L4) and 79.4 % (total) quoted earlier come from an older bench (before the R8 scheduler): drop them.
+
 ### Still open
 - Organiser answers (task 5).
 - The live board submission (Louis): post the total from the frozen planner.
@@ -91,15 +113,16 @@ Done when, compared with #19 + #23 (numbers above):
 |---|---|---|---|
 | 1 | Link-loss: R8 separation failures and mutual-hold deadlocks | Martin (#19), Youcef (#23) | Reviewed. Merge once #23's tests are fixed |
 | 2 | Link-loss: deliver `ob` at short range | Youcef (#23) | Reviewed, same merge |
-| 3 | Planner: Squeaky Wheel feedback in the order search | Louis | No branch at 23:45. PR with gate evidence by 08:00, or dropped |
+| 3 | Planner: Squeaky Wheel feedback in the order search | Louis | **Dropped**: +0.13 % on 40 L4 seeds (15 better, 12 worse), within noise. Not merged |
 | 4 | Shift suite in jury conditions | Martin | **Go now** on `cdc0671`, all 50 seeds |
 | 5 | Organiser answers: cores, multiprocessing, format, Python | Ilhan | Blocking |
 | 6 | CP4 holdout on current main + L1-0 check | Mahmoud | **Done**: ×1.59, L4 ×2.13, 0 failures, max 40.0 s |
 | 7 | Link-loss: compact messages | Youcef (#23) | Done in #23: 8.3–8.5 bytes per message |
 | 8 | Link-loss: cut the hover heartbeat (S_loss) | Youcef | **New, link-loss priority 1** |
-| 9 | Link-loss: L3-6 retention drop after hover-on-abort | Martin | New, priority 2 |
+| 9 | Link-loss: L3-6 and L2-21 retention drops after hover-on-abort | Martin | New, priority 2 |
 | 10 | Link-loss: L3-21 enters a pop-up zone at 2000 m | free | New, priority 3 |
 | 11 | Planner: never below the kit baseline on a seed | Louis | New, optional, by 08:00 |
+| 12 | Link-loss: L4-21 retention drop in #23 (0.901 → 0.620) | Youcef | New, priority 2 |
 
 Tasks 1, 2 and 7: the full briefs are in git history (`git show cdc0671:docs/TASKS.md`); the evidence is in PRs #19 and #23.
 
@@ -129,7 +152,7 @@ In `_build_message`, an aborted hoverer beacons at 1 Hz while any peer is predic
 
 ---
 
-## 9. Link-loss: L3-6 retention drop after hover-on-abort (policy.py)
+## 9. Link-loss: L3-6 and L2-21 retention drops after hover-on-abort (policy.py)
 
 **Owner:** Martin. **Priority:** link-loss 2. **Effort:** ~1 h.
 
@@ -141,13 +164,23 @@ In `check_policy`, L3-6 (events `popup_zone` + `reclassify`):
 
 Every other scenario in seeds 0–9 is clean or unchanged.
 
+**L2-21** (events seed 22: failures of S03 at 286 s and L02 at 303 s; found by Louis): main **1.000**, #19 and #19 + #23 **0.148** (only C08 served).
+
+Traced by Mahmoud. **This isn't an aborted aircraft blocking traffic.** Two **on-plan** aircraft wait for each other until the end:
+- From t = 537 s, S01 holds for H02, and from 538 s H02 holds for S01, 72 m apart. H02 is C05's effector.
+- #23's id order doesn't break it. H02 has the lower id, but moving would close on S01, so it yields. S01 always yields to a holding lower id. Their routes pass within separation of each other's held positions, so one of them has to **back off** first. Today only aborted aircraft back off (`_blocking`, from #19).
+- Separately, L05 (C01) is in abort mode from about 572 s, hovering 60 m from L03, so C01 is lost. That abort's cause isn't known yet.
+- A quick probe that lets aborted hoverers back off for *holding* peers changes nothing here. The fix belongs to the on-plan pair.
+
 ### Task
-1. Trace the run (`python3 -m fleetkit linkloss ... --trace`, or the viewer).
-2. Find who stops serving C19 and why. Suspect the group abort: an `ab` flag making a co-effector abort a contact that was still servable.
-3. Fix it without adding failed runs.
+1. **L2-21:** when two non-aborted aircraft hold for each other for more than ~10 s, let the higher id back off along its route (rate −1), if that path is clear. Then resume once the lower id has passed. Also find why L05 aborts.
+2. **L3-6:** trace the run (`python3 -m fleetkit linkloss ... --trace`, or the viewer) and find who stops serving C19 and why. Suspects: the group abort (`ab`), or the same mutual hold as L2-21.
+3. Fix both without adding failed runs.
+
+Repro, from `fleet-kit/`: `python3 diag/stuck.py . handin/policy.py L2 21` lists who ends frozen and who is near them. `python3 diag/who.py . handin/policy.py L2 21 S01,H02 535 545` prints who each aircraft holds for, every second.
 
 ### Done when
-- L3-6 is back to ≥ 0.780.
+- L3-6 is ≥ 0.780 and L2-21 is ≥ 0.9.
 - The link-loss gate holds.
 
 ---
@@ -171,6 +204,22 @@ Trace the run and find why H03 doesn't stop. Check:
 
 ### Done when
 - 0 failed runs on L3-21 in every cell.
+- The link-loss gate holds.
+
+---
+
+## 12. Link-loss: L4-21 retention drop in #23 (policy.py)
+
+**Owner:** Youcef. **Priority:** link-loss 2. **Effort:** ~1 h.
+
+### Why
+`check_policy` seeds 20–29, L4-21: main 0.620, #19 **0.901**, #19 + #23 **0.620**. Something in #23's additions gives back what #19 won here. The candidates: the id order in `_r8_conflict`, the 6 s return lookahead, `SEP_PAD_M` 4.5 → 6.0, and `ob` delivery.
+
+### Task
+Bisect #23's four additions on L4-21 (events seed 22, 1000×200, run seeds 0–1). Find the culprit and fix it. Don't just revert it: it carries the sizing gains.
+
+### Done when
+- L4-21 ≥ 0.9.
 - The link-loss gate holds.
 
 ---
@@ -199,7 +248,14 @@ The money is negligible (0.7 points out of 101,909). But "never below the baseli
 
 ## 3. Planner: Squeaky Wheel feedback in the order search, on half the workers (planner.py)
 
-**Status (Sat 23:45):** no branch or PR yet. The night runs use `cdc0671` without it. A PR that passes the gate below by **08:00** gets merged and re-checked at CP5; otherwise it stays out of this hand-in.
+**Status (Sun 00:40): dropped.**
+- Louis built it behind a flag, with 5 tests. In real time on 40 L4 seeds: +0.13 % (15 better, 12 worse), inside the usual 0.1–0.5 % noise. No PR, and `handin/` is unchanged.
+- Louis's **budget curve** (L3/L4 seeds 0–19, 2 workers, score against 38 s):
+  - 10 s: L3 −0.56 %, L4 −5.12 %;
+  - 20 s: L3 −0.30 %, L4 −1.37 %;
+  - 30 s: L3 −0.05 %, L4 −0.35 %;
+  - 45 s: L3 +0.05 %, L4 +0.12 %.
+  - So **38 s stays**. An adaptive budget would gain nothing measurable.
 
 **Owner suggestion:** Louis (`_search` in `handin/planner.py` is his code). **Priority: 3** (planner, last planner change before the freeze). **Effort:** 1–2 h.
 
