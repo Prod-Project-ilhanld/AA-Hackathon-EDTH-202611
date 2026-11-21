@@ -1,4 +1,4 @@
-"""R8 separation (40 m in 3D between airborne aircraft). Starter file: planner.py calls it, OFF by default.
+"""R8 separation (40 m in 3D between airborne aircraft). planner.py calls it; the scheduler is ON by default.
 
 R8 is the main wall at L4: all aircraft start from one pad grid (pads 11.1 m apart at L4) and most rejected
 candidates fail on separation near the pads (docs/ROADMAP.md §3, WS4 phase 1).
@@ -28,7 +28,8 @@ a candidate is invalid for the official validator anyway, so rejecting it never 
 planner serves each contact once per build, so this only fires for a second pass on a contact (a repair loop):
 without it, that second pass is accepted and the whole build is invalid.
 
-Turn the scheduler on with ENABLED = True (or PLANNER_DECONFLICT=1) and compare with tools/bench.py on many seeds.
+Scheduler ON by default (paired bench, deterministic mode, L4 seeds 0-19: +5.9% ± 0.9%, 1/20 worse, 0 invalid);
+PLANNER_DECONFLICT=0 turns it off.
 Python 3.9, standard library only; kit code from `fk`, never `fleetkit`.
 """
 import params
@@ -177,8 +178,9 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
             items[aid] = it
     if not items:
         return {}
-    effectors = {a for a in items if aircraft[a].type == EFFECTOR}
-    moving = effectors or {a for a in items if _scout_may_shift(planner, a)}
+    # sorted lists, not sets: the first conflict found sets the delay, so the order must not depend on PYTHONHASHSEED
+    effectors = sorted(a for a in items if aircraft[a].type == EFFECTOR)
+    moving = effectors or sorted(a for a in items if _scout_may_shift(planner, a))
     if not moving:
         return {}
     fixed = {a: it for a, it in items.items() if a not in moving}
@@ -214,12 +216,12 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
 
     # step B: members of the group that still conflict with each other are delayed one by one inside R10's window
     if len(moving) > 1 and _intra_conflict(rules, contacts, items, moving, delays):
-        if not aircraft[next(iter(moving))].type == EFFECTOR:
+        if not aircraft[moving[0]].type == EFFECTOR:
             return {}
         strikes = {a: extra[a][-1]["t"] for a in moving}
         window_end = min(strikes.values()) + shared + rules.sync_window_s - SYNC_MARGIN_S
         placed: List[Item] = []
-        for aid in sorted(moving, key=lambda a: items[a][2]):
+        for aid in sorted(moving, key=lambda a: (items[a][2], a)):
             cap_i = min(_cap(planner, extra[aid]), window_end - strikes[aid])
             if cap_i < shared:
                 return {}
