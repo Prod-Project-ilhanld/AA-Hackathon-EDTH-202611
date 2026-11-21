@@ -103,31 +103,31 @@ class GreedyFallback(unittest.TestCase):
 
     def run_broken(self, data):
         sc = Scenario.from_dict(data)
-        orig, workers = P.build, P.MAX_WORKERS
+        orig, workers, t0 = P.build, P.MAX_WORKERS, P.T0
 
         def broken_build(*args, **kwargs):
             raise RuntimeError("simulated regression in the builder")
 
         P.build = broken_build
         P.MAX_WORKERS = 1
+        P.T0 = time.monotonic()  # the fallback needs time before the alarm, counted from process start
         try:
             plan = P.solve(sc, data, budget_s=3.0)
         finally:
-            P.build, P.MAX_WORKERS = orig, workers
+            P.build, P.MAX_WORKERS, P.T0 = orig, workers, t0
         got = official(OfficialScenario.from_dict(data), plan)
         base = official(OfficialScenario.from_dict(data), greedy_plan(OfficialScenario.from_dict(data)))
         return got, base
 
-    def test_without_a_fallback_every_broken_build_scores_zero(self):
+    def test_every_broken_build_writes_the_kit_greedy_plan(self):
         data = generate("L2", 0)
         got, base = self.run_broken(data)
         print(f"    all builds broken: solve() writes a valid plan scoring {got.score:.1f}; kit greedy plan "
               f"{base.score:.1f}")
         self.assertTrue(got.valid)
-        self.assertEqual(got.score, 0.0)
         self.assertGreater(base.score, 0.0)
+        self.assertEqual(got.score, base.score)
 
-    @unittest.expectedFailure  # needs a greedy_plan fallback in solve() (planner.py, Louis's code): not applied
     def test_with_a_fallback_the_score_never_drops_below_the_kit_greedy(self):
         data = generate("L2", 0)
         got, base = self.run_broken(data)

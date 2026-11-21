@@ -66,9 +66,21 @@ def assert_valid(data, text):
     return plan
 
 
-def test_injected_failure_writes_empty_valid_plan():
+def test_injected_failure_writes_the_greedy_plan():
+    """solve() crashed: the kit's greedy plan (valid, scores something) beats the empty plan."""
     data = generate("L2", 0)
     code, _, text, err = run_handin(data, {"FLEET_INJECT_FAIL": "1", "PLANNER_BUDGET_S": "3"})
+    assert code == 0, err
+    plan = assert_valid(data, text)
+    assert plan["routes"], "expected the greedy fallback plan, got the empty one"
+    assert evaluate(Scenario.from_dict(data), plan).score > 0
+
+
+def test_injected_failure_with_the_alarm_too_close_writes_the_empty_plan():
+    """Fewer than FALLBACK_MIN_LEFT_S before the alarm: no time for the greedy plan, the empty one stays."""
+    data = generate("L2", 0)
+    code, _, text, err = run_handin(
+        data, {"FLEET_INJECT_FAIL": "1", "PLANNER_BUDGET_S": "3", "PLANNER_ALARM_S": "6"})
     assert code == 0, err
     assert assert_valid(data, text)["routes"] == []
 

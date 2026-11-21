@@ -19,6 +19,7 @@ MIN_BUILDS = 30        # ... but not before this many builds
 ALPHAS = (0.0, 1.0, 0.5, 1.5)  # starting exponent on the effector count in the contact order, per worker
 SIGMA_EVEN = 0.12      # noise on the order around the best one, even workers
 SIGMA_ODD = 0.3        # ... odd workers
+FALLBACK_MIN_LEFT_S = 8.0  # greedy fallback only when at least this many seconds remain before the alarm
 POOL_GRACE_S = 8.0     # how long past the deadline the pool waits for a worker
 BUDGET_FLOOR_S = 10.0         # large fleets: the budget never shrinks below this
 BUDGET_SHRINK_FROM = 100      # ... shrinks above this many aircraft
