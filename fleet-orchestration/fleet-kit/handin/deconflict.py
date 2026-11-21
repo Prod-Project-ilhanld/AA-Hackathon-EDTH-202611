@@ -17,10 +17,18 @@ What `adjust` does (earliest R8-free departure on the WHOLE route, aircraft by a
   observes has been engaged (that engagement needs the observation 10 s earlier, R4) and never past a window;
 - a spatial filter keeps only the accepted routes that come within d_sep of the candidate, so the checks stay
   cheap; a candidate that cannot be made free is left untouched (the caller's cheap checks reject it as before);
-- nothing is ever rejected here. The caller still runs the official validator on every accepted plan, so a bug
+- the scheduler never rejects. The caller still runs the official validator on every accepted plan, so a bug
   here costs points, not validity; any exception here is swallowed for the same reason.
 
-Turn on with ENABLED = True (or PLANNER_DECONFLICT=1) and compare with tools/bench.py on many seeds.
+R10 guard (ON by default, PLANNER_R10_GUARD=0 turns it off), independent of the scheduler: the incremental
+`_try` validates the touched routes alone, and R10 couples routes (a contact needs EXACTLY its effectors,
+within 20 s). A candidate that engages a hostile already engaged by an accepted route is checked here against
+those engagements together (counts by subtype, sync window) and rejected when the union would break R10. Such
+a candidate is invalid for the official validator anyway, so rejecting it never loses a valid plan. Today the
+planner serves each contact once per build, so this only fires for a second pass on a contact (a repair loop):
+without it, that second pass is accepted and the whole build is invalid.
+
+Turn the scheduler on with ENABLED = True (or PLANNER_DECONFLICT=1) and compare with tools/bench.py on many seeds.
 Python 3.9, standard library only; kit code from `fk`, never `fleetkit`.
 """
 import os
@@ -31,6 +39,7 @@ from fk.model import CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, parse_plan
 from fk.validator import separation_item, separation_violation, validate
 
 ENABLED = os.environ.get("PLANNER_DECONFLICT", "0") == "1"
+R10_GUARD = os.environ.get("PLANNER_R10_GUARD", "1") == "1"
 
 MAX_STEPS = 12          # re-checks per search: each jumps over one conflict interval, doubling the step
 REFINE_STEPS = 6        # bisection checks to shorten the delay found
@@ -245,8 +254,14 @@ def adjust(planner, extra: Dict[str, List[dict]]) -> bool:
     `planner.routes` holds the routes already accepted (aircraft id -> waypoint dicts), `extra` the new or
     changed routes. The waypoints in `extra` are edited IN PLACE (the take-off and every later time of a route
     are shifted by that aircraft's delay): the caller keeps using that same dict when it accepts the candidate.
-    Never rejects: the caller's own checks decide.
+    Rejects only what the R10 guard proves invalid; otherwise the caller's own checks decide.
     """
+    if R10_GUARD and planner is not None and extra:
+        try:
+            if not r10_ok(planner, extra):
+                return False
+        except Exception:  # noqa: BLE001  the guard must never cost the plan either
+            pass
     if not ENABLED:
         return True
     try:
@@ -300,4 +315,37 @@ def _confirmations_ok(planner, extra: Dict[str, List[dict]]) -> bool:
             ends = [w["t"] + w.get("dwell_s", 0.0) for w in wps if w.get("action") == "observe" and w.get("target") == cid]
             if any(not any(o <= e - margin + 1e-6 for o in ends) for e in engages):
                 return False
+    return True
+
+
+def r10_ok(planner, extra: Dict[str, List[dict]]) -> bool:
+    """R10 across tries: the candidate's engagements, together with the accepted engagements of the same hostile
+    (routes not replaced by the candidate), must be exactly the effectors it needs, within the sync window."""
+    mine: Dict[str, List[Tuple[str, float]]] = {}
+    for aid, route in extra.items():
+        if route and route[-1].get("action") == "engage":
+            mine.setdefault(route[-1].get("target"), []).append((aid, route[-1]["t"]))
+    if not mine:
+        return True
+    sc = planner.sc
+    aircraft = getattr(planner, "aircraft", None) or sc.aircraft_by_id()
+    contacts = getattr(planner, "contacts", None) or sc.contact_by_id()
+    for cid, engs in mine.items():
+        c = contacts.get(cid)
+        if c is None or c.cls != HOSTILE:
+            continue
+        accepted = [(oid, r[-1]["t"]) for oid, r in planner.routes.items()
+                    if oid not in extra and r and r[-1].get("action") == "engage" and r[-1].get("target") == cid]
+        if not accepted:
+            continue  # the candidate alone is checked by the caller (touched routes validated together)
+        group = [(a, t) for a, t in engs + accepted if a in aircraft and aircraft[a].type == EFFECTOR]
+        counts: Dict[str, int] = {}
+        for aid, _t in group:
+            sub = aircraft[aid].subtype or "?"
+            counts[sub] = counts.get(sub, 0) + 1
+        if counts != {k: v for k, v in c.needs.items() if v > 0}:
+            return False
+        times = [t for _a, t in group]
+        if max(times) - min(times) > sc.rules.sync_window_s + 1e-9:
+            return False
     return True

@@ -151,9 +151,8 @@ class R10(unittest.TestCase):
         extra = {"S01": sroute, "L01": r}
         self.assertIsNone(check_sound(self, self.sc, self.pl, extra))
 
-    @unittest.expectedFailure  # known latent hole, to report to Louis; becomes 'unexpected success' once fixed
     def test_second_engagement_added_in_a_later_try_for_an_already_engaged_contact(self):
-        """The planner commits a contact once, but _try's docstring says R8 is the only rule coupling routes."""
+        """R10 couples routes too: closed by the R10 guard of handin/deconflict.py (PLANNER_R10_GUARD=0 reopens it)."""
         _, sroute, obs_end = self.scout_route("C01")
         base = max(obs_end + 12.0, 250.0)
         first = {"S01": sroute, "L01": self.eff("L01", "C01", base)}
@@ -166,7 +165,7 @@ class R10(unittest.TestCase):
         self.assertEqual(full, {"R10"}, "the scenario must trigger R10 alone, otherwise the test proves nothing")
         print(f"    R10 cross-try (L02 added to C01 already engaged by L01): _try={'reject' if got is None else 'ACCEPT'}, "
               f"full validator={sorted(full) or 'valid'}")
-        self.assertIsNone(got, "LATENT HOLE: _try accepted a 2nd engagement of an already engaged contact "
+        self.assertIsNone(got, "R10 HOLE: _try accepted a 2nd engagement of an already engaged contact "
                                f"(full validator says {sorted(full)})")
 
 
