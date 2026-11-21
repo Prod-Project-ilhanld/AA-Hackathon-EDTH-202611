@@ -7,7 +7,7 @@ Une flotte mixte (scouts qui observent et rentrent, effecteurs à sens unique) d
 
 ## Solution (planificateur de Louis, `fleet-kit/handin/planner.py`)
 Glouton du kit élargi et rendu rapide :
-- les 6 scouts les plus proches de chaque hostile avec toutes les options (le baseline en essaie 3), puis tous les autres scouts avec les options simples : sur L4 les scouts proches sont saturés pendant que d'autres restent au sol (v4) ;
+- les 15 scouts les plus proches de chaque hostile avec toutes les options (donc tous les scouts de L4 ; le baseline en essaie 3), au-delà de 15 les autres avec les options simples : sur L4 les scouts proches sont saturés pendant que d'autres restent au sol ;
 - contrôle incrémental à chaque essai (routes touchées seules, séparation R8 contre les autres, score par différences) à la place de la validation complète du plan entier, qui prenait 70 % du temps d'une construction : 3 fois plus d'essais par seconde ; le scorer du kit valide quand même chaque plan gardé et le plan final (v5) ;
 - relances de l'ordre des contacts (points par effecteur requis, puis petites variations autour du meilleur ordre) pendant 38 s, sur plusieurs processus, avec deux routages : celui du kit et le module de routage 3D de l'équipe (`handin/routing.py`, 7thwardlord1) ; on garde le meilleur plan valide ;
 - chaque pas accepté a passé `evaluate`, le plan final est revalidé, repli sur le meilleur plan valide.
@@ -38,8 +38,8 @@ Un scénario à la main : `python3 -m fleetkit generate L4 3 -o scenario.json &&
 
 ## Script de démo, 2 minutes (à jouer avec les chiffres du banc)
 1. Accroche (15 s) : un plan invalide vaut 0, donc la sécurité passe avant le score.
-2. Moment fort (60 s) : même scénario L4 graine 3, baseline 532,9 contre notre plan v5 907,5, soit +70 % (MESURÉ, un seul scénario), dans le viewer ; montrer pourquoi tel hostile est servi et tel autre refusé (R7, horizon, énergie), avec le rapport de Swann.
-3. Preuve (30 s) : sortie de `bench.py` sur 50 graines par niveau : 0 invalide, temps maximal 39,2 s (v5, MESURÉ).
+2. Moment fort (60 s) : même scénario L4 graine 3, baseline 532,9 contre notre plan v6 1040,1, soit +95 % (MESURÉ, un seul scénario), dans le viewer ; montrer pourquoi tel hostile est servi et tel autre refusé (R7, horizon, énergie), avec le rapport de Swann.
+3. Preuve (30 s) : sortie de `bench.py` sur 50 graines par niveau : 0 invalide, temps maximal 39,5 s (v6, MESURÉ).
 4. Fermeture (15 s) : limites et suite.
 
 ## Limites connues
@@ -76,3 +76,9 @@ Vérifications : check_handin 8/8 (total 3968,6 contre baseline 2748,6) ; tests 
 MESURÉ : 200/200 valides, temps max 39,2 s. L1 5083,0 ; L2 12497,2 ; L3 24089,6 ; L4 46301,3 ; total 87971,1. Contre le baseline du kit : L1 x1,069 ; L2 x1,098 ; L3 x1,242 ; L4 x1,770. Contre la v4 : total +2,3 %, L4 +4,25 % (29 graines mieux, 0 moins bien), L3 +0,5 % (10 mieux, 0 moins bien). Contre la v1 : total +11,0 % (79255,2 -> 87971,1).
 Origine : le profil d'une construction L4 montrait 70 % du temps dans `evaluate` complet ; le score incrémental est égal à `evaluate` au millième sur 4 constructions testées, et la construction Routed de L4 passe de 35,7 s à 10,8 s (en v4 elle occupait presque tout le budget, donc la montée par relances n'avait pas lieu).
 Vérifications v5 : check_handin 8/8 (total 3968,7) ; tests robustesse et link-loss 21/21 ; 1 seul cœur, L3 et L4 graines 0 à 7 : 4043,8 et 7116,8 (valides, 38,7 s max) ; passage à l'échelle valide à 300 et 400 avions (34,9 s et 30,1 s).
+
+## Résultats finaux du banc (planner v6 = v5 + 15 scouts en options complètes + 3 délais d'arrivée d'effecteurs, 50 graines par niveau, PLANNER_WORKERS=2)
+MESURÉ (L1 et L2 : banc de la variante finale ; L3 : 50 graines ; L4 : 50 graines) : 0 invalide, temps max 39,3 s. L1 5083,0 ; L2 12498,2 ; L3 24179,9 ; L4 50591,2 ; total 92352,3. Contre le baseline du kit (mêmes graines) : L1 x1,069 ; L2 x1,098 ; L3 x1,247 ; L4 x1,934 ; total x1,497. Contre la v5 : total +5,0 % ; contre la v1 de vendredi : +16,5 %.
+Généralisation (graines 50 à 79, jamais utilisées pour régler) : 0 invalide sur les 60 cas L3 et L4, L3 14527,1 et L4 30351,6 (la v5 donnait 14446,0 et 27870,2, le baseline 11477,6 et 16266,5, soit L4 x1,87).
+Ce qui a fait gagner, dans l'ordre : (1) tous les scouts en options complètes (L4 +6,6 %), (2) moins d'options d'arrivée d'effecteurs (0, 20, 90 s au lieu de 5 valeurs : L4 +2,5 %, les constructions plus rapides valent plus que les options en plus), (3) contrôle incrémental (L4 +4,25 %), (4) scouts lointains en second niveau (L4 +6,3 %). Variantes mesurées et rejetées : options élargies pour les scouts (angles, départs, rotations : -6 à -12 % sur L4), polissage final, reprise de préfixe.
+Vérifications v6 : check_handin 8/8 (total 4173,7 contre baseline 2748,6), tests robustesse et link-loss 21/21, 1 seul cœur L3 4018,7 et L4 7829,1 sur les graines 0 à 7 (valides), copie propre avec `env -i` et 1 cœur valide (L4 graine 3 : 978,6 en 38,3 s), passage à l'échelle valide à 200, 300 et 400 avions (42,0 s au pire).

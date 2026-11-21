@@ -4,9 +4,9 @@ Greedy planner of the kit, made faster and wider:
 - an incremental check (validate only the touched routes, check R8 only against the others, keep
   the score by differences) replaces the full validation of the whole plan at every try, which made
   a construction about 3 times faster; the full kit scorer still validates every plan we keep. So
-  many more scouts and options can be tried: the 6
+  many more scouts and options can be tried: the 15
   nearest scouts with all options, then every other scout with plain options (on L4 the near scouts
-  saturate while others stay on the ground);
+  saturate while others stay on the ground, so every scout of a 15-scout fleet is tried);
 - restarts under an internal time budget keep the best valid plan: a few deterministic orders of
   the contacts (points per effector needed), then hill-climbing around the best order, spread over
   the available cores (serial fallback);
@@ -46,7 +46,7 @@ except Exception:  # noqa: BLE001
     EFFECTOR_LAYERS = ()
 
 BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))
-N_SCOUTS = 6
+N_SCOUTS = 15
 MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
 SMALL_FLEET = 8         # up to this many aircraft (L1) the search converges in seconds
 STAGNATION_S = 12.0     # ... and stops when nothing better was found for this long
@@ -223,7 +223,7 @@ class RoutedPlanner(FastPlanner):
     def _place_effectors(self, contact, effectors, obs_end, scout, tasks, scout_route) -> bool:
         lo, hi = contact.window
         base = max(obs_end + self.sc.rules.confirm_margin_s + 2.0, lo)
-        for delay in (0.0, 8.0, 20.0, 45.0, 90.0):
+        for delay in (0.0, 20.0, 90.0):   # fewer arrival delays: faster builds won more than the extra options
             arrive = base + delay
             if arrive + 5.0 * len(effectors) > hi:
                 break
