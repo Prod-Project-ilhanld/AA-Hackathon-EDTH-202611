@@ -86,3 +86,17 @@ def test_a_window_that_closes_before_arrival_removes_the_contact():
 def test_the_bound_is_deterministic():
     sc = Scenario.from_dict(generate("L3", 7))
     assert B.bound(sc) == B.bound(sc)
+
+
+def test_cli_plan_option_prints_the_share(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["bound.py", "--levels", "L4", "--seeds", "3", "--plan",
+                                      str(KIT / "examples" / "plans" / "L4-seed3.plan.json")])
+    B.main()
+    out = capsys.readouterr().out
+    assert "plan valide" in out and "% de la borne" in out
+
+
+def test_cli_plan_option_rejects_several_seeds(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["bound.py", "--levels", "L4", "--seeds", "3-4", "--plan", "x.json"])
+    with pytest.raises(SystemExit):
+        B.main()

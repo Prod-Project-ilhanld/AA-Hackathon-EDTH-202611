@@ -15,6 +15,7 @@ veut pas dire 40 % de perdu à coup sûr, seulement que 40 % ne sont pas prouvé
 Usage (depuis fleet-kit/) :
     python3 tools/bound.py --levels L1 L2 L3 L4 --seeds 0-49
     python3 tools/bound.py --bench bench.json          # % de borne d'un banc : python3 tools/bench.py --json bench.json
+    python3 tools/bound.py --levels L4 --seeds 3 --plan examples/plans/L4-seed3.plan.json   # un plan, une graine
 """
 import argparse
 import json
@@ -28,6 +29,7 @@ sys.path.insert(0, KIT)
 
 from fleetkit.generator import generate  # noqa: E402
 from fleetkit.geometry import hdist  # noqa: E402
+from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.model import (CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, SCOUT, UNKNOWN, Aircraft,  # noqa: E402
                             Scenario)
 
@@ -162,7 +164,20 @@ def main() -> None:
     ap.add_argument("--levels", nargs="+", default=["L1", "L2", "L3", "L4"])
     ap.add_argument("--seeds", default="0-49")
     ap.add_argument("--bench", metavar="JSON", help="sortie de `tools/bench.py --json` : affiche le % de la borne")
+    ap.add_argument("--plan", metavar="JSON", help="plan d'UN scénario (un seul niveau et une seule graine) : affiche son % de la borne")
     args = ap.parse_args()
+
+    if args.plan:
+        seeds = parse_seeds(args.seeds)
+        if len(args.levels) != 1 or len(seeds) != 1:
+            ap.error("--plan demande exactement un niveau et une graine, ex. --levels L4 --seeds 3")
+        sc = Scenario.from_dict(generate(args.levels[0], seeds[0]))
+        with open(args.plan) as f:
+            res = evaluate(sc, json.load(f))
+        b = bound(sc)["bound"]
+        print(f"{args.levels[0]}-{seeds[0]} : plan {'valide' if res.valid else 'INVALIDE'}, score {res.score:.1f}, "
+              f"borne {b:.1f}, soit {100 * res.score / b:.1f} % de la borne")
+        return
 
     rows = None
     if args.bench:
