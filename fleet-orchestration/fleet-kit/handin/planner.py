@@ -34,6 +34,7 @@ from fk.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_
 from fk.energy import route_energy_wh  # noqa: E402
 from fk.scorer import evaluate  # noqa: E402
 from fk.validator import separation_item, separation_violation, validate  # noqa: E402
+import params  # noqa: E402       every tunable number and flag
 import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
 import targets  # noqa: E402     starter: which hostiles to try, priorities (off by default)
 
@@ -48,14 +49,7 @@ except Exception:  # noqa: BLE001
     _routing = None
     EFFECTOR_LAYERS = ()
 
-BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))  # search deadline, seconds from process start
-ALARM_S = float(os.environ.get("PLANNER_ALARM_S", "52"))    # backstop: write the last validated plan and exit
-N_SCOUTS = 15
-MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
-BOTH_ROUTERS = 20      # up to this many aircraft (L1, L2) both routers are used
-SMALL_FLEET = 8         # up to this many aircraft (L1) the search converges in seconds
-STAGNATION_S = 12.0     # ... and stops when nothing better was found for this long
-MIN_BUILDS = 30
+from params import BOTH_ROUTERS, BUDGET_S, ALARM_S, MAX_WORKERS, MIN_BUILDS, N_SCOUTS, SMALL_FLEET, STAGNATION_S  # noqa: E402
 
 
 class OutOfTime(Exception):
@@ -299,7 +293,7 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     the kit's router is the fallback when the team's gives nothing valid. With more scouts than N_SCOUTS,
     even workers also try the far scouts and odd workers do not.
     """
-    alphas = [0.0, 1.0, 0.5, 1.5]
+    alphas = params.ALPHAS
     if _routing is None:
         classes = [FastPlanner]
     elif len(scenario.aircraft) <= BOTH_ROUTERS:
@@ -315,10 +309,12 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     best_alpha, best_noise, best_cls, best_far = base_alpha, {}, classes[first], far0
     best_val = -1.0
     attempt = 0
+    builds = 0  # attempt restarts when the router falls back; FLEET_ITERS counts every build
     last_gain = time.monotonic()
     small = len(scenario.aircraft) <= SMALL_FLEET
-    while time.monotonic() < deadline:
-        if small and attempt >= MIN_BUILDS and time.monotonic() - last_gain > STAGNATION_S:
+    while time.monotonic() < deadline and (params.FLEET_ITERS <= 0 or builds < params.FLEET_ITERS):
+        if (params.FLEET_ITERS <= 0 and small and attempt >= MIN_BUILDS
+                and time.monotonic() - last_gain > STAGNATION_S):
             break
         if attempt < len(classes):
             cls, far, alpha, noise = classes[(first + attempt) % len(classes)], far0, base_alpha, {}
@@ -326,7 +322,7 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
                 far = False
         else:
             cls, far = best_cls, best_far
-            sigma = 0.12 if worker % 2 == 0 else 0.3
+            sigma = params.SIGMA_EVEN if worker % 2 == 0 else params.SIGMA_ODD
             alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-0.2, 0.2)))
             noise = {c.id: max(0.2, best_noise.get(c.id, 1.0) * rng.gauss(1.0, sigma)) for c in scenario.contacts}
         try:
@@ -341,6 +337,7 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
             best, best_alpha, best_noise, best_cls, best_far = (res.score, plan), alpha, noise, cls, far
             last_gain = time.monotonic()
         attempt += 1
+        builds += 1
     return best
 
 
@@ -355,7 +352,10 @@ def _worker(args):
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
     # beyond the official L4 (100 aircraft) route building and validation overshoot the deadline more and more
     # (measured: +1 s at 100, +9 s at 300, +11 s at 400 aircraft): shrink the budget so the 60 s limit holds
-    budget_s = max(min(budget_s, 10.0), budget_s - 0.04 * max(0, len(scenario.aircraft) - 100))
+    if params.INJECT_FAIL:
+        raise RuntimeError("FLEET_INJECT_FAIL")
+    budget_s = max(min(budget_s, params.BUDGET_FLOOR_S),
+                   budget_s - params.BUDGET_SHRINK_PER_AC * max(0, len(scenario.aircraft) - params.BUDGET_SHRINK_FROM))
     deadline = time.monotonic() + budget_s
     empty = {"seed": scenario.seed, "routes": []}
     best = (0.0, empty)
@@ -369,7 +369,9 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
             jobs = [pool.apply_async(_worker, ((scenario_dict, deadline, w, n_workers),)) for w in range(n_workers)]
             for job in jobs:
                 try:
-                    results.append(job.get(timeout=max(0.5, deadline + 8.0 - time.monotonic())))
+                    # FLEET_ITERS: wait for every worker (the alarm is the only stop), else drop the late ones
+                    wait = None if params.FLEET_ITERS > 0 else max(0.5, deadline + params.POOL_GRACE_S - time.monotonic())
+                    results.append(job.get(timeout=wait))
                 except Exception:
                     pass
         except Exception:
@@ -379,15 +381,17 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
                 pool.terminate()
     if not results:
         results = [_search(scenario, deadline, 0, 1)] if time.monotonic() < deadline else []
-    for score, plan in results:
+    for score, plan in results:  # worker-index order, strict >: ties go to the lowest worker
         if plan is not None and score > best[0]:
             best = (score, plan)
     # last guard: the plan we write was validated by the kit's own scorer
     try:
-        if not evaluate(scenario, best[1]).valid:
+        res = evaluate(scenario, best[1])
+        if not res.valid or res.score < 0:
             return empty
     except Exception:
         return empty
+    _keep(best[1])  # on disk now: the alarm backstop writes this plan, not the empty one
     return best[1]
 
 
@@ -429,13 +433,20 @@ def _official_guard(data: dict, plan: dict) -> dict:
 
 
 def main() -> None:
-    data = load_json(sys.argv[1])
-    _keep({"seed": data.get("seed"), "routes": []})  # valid, scores 0: written before any search
+    try:
+        data = load_json(sys.argv[1])
+    except Exception:  # missing or malformed scenario: a plan file with no seed beats no file
+        data = None
+    _keep({"seed": data.get("seed") if isinstance(data, dict) else None, "routes": []})  # valid, scores 0
+    if data is None:
+        return
     if hasattr(signal, "setitimer"):
         signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
     plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
+    while params.INJECT_HANG:  # test hook: the alarm must write the kept plan
+        time.sleep(1)
     _keep(_official_guard(data, plan))
 
 

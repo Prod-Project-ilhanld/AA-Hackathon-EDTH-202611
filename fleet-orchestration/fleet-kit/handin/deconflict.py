@@ -12,10 +12,11 @@ candidates fail on separation near the pads. Idea to build here (docs/ROADMAP.md
 Turn on with ENABLED = True (or PLANNER_DECONFLICT=1) and compare with tools/bench.py on many seeds.
 Python 3.9, standard library only; kit code from `fk`, never `fleetkit`.
 """
-import os
 from typing import Dict, List
 
-ENABLED = os.environ.get("PLANNER_DECONFLICT", "0") == "1"
+import params
+
+ENABLED = params.DECONFLICT
 
 
 def adjust(planner, extra: Dict[str, List[dict]]) -> bool:
