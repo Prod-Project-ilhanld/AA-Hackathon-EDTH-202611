@@ -12,7 +12,7 @@ from fleetkit.linkloss.sim import RouteClock
 from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
-SEP_PAD_M = 4.5
+SEP_PAD_M = 6.0
 
 
 def _seg_min_dist3(
@@ -360,10 +360,9 @@ class Policy:
         st = 0
         u_tenths = 0
         if action_kind == "hold":
-            if self._hold_streak <= 3 or t - self._last_hd_sent >= 3.0:
-                st = 1
-                u_tenths = int(round(tau * 10.0))
-                self._last_hd_sent = t
+            st = 1
+            u_tenths = int(round(tau * 10.0))
+            self._last_hd_sent = t
         elif mode == "return" or action_kind == "return":
             if self._rt_ttl > 0 or (t - self._last_rt_sent >= 5.0):
                 st = 2
