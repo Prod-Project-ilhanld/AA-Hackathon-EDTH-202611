@@ -101,6 +101,19 @@ class PlannerRobustness(unittest.TestCase):
             self.assertEqual(code, 0, err)
             self.assertTrue(evaluate(Scenario.from_dict(self.data), plan).valid)
 
+    def test_broken_routing_module_falls_back_to_kit_router(self):
+        """The team's routing module is the default router: if it fails, the kit's router must still score."""
+        with tempfile.TemporaryDirectory() as tmp:
+            dst = os.path.join(tmp, "handin")
+            shutil.copytree(os.path.dirname(PLANNER), dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            with open(os.path.join(dst, "routing.py"), "w") as f:
+                f.write("def get_engine(scenario):\n    raise RuntimeError('routing is broken')\n")
+            code, plan, err = run_planner(self.data, planner=os.path.join(dst, "planner.py"), budget="4")
+            self.assertEqual(code, 0, err)
+            res = evaluate(Scenario.from_dict(self.data), plan)
+            self.assertTrue(res.valid, [str(v) for v in res.violations[:3]])
+            self.assertGreater(res.score, 0.0, "no fallback to the kit router")
+
     def _planner_with_shim(self, tmp, shim_source):
         """Copies handin/ to tmp with a multiprocessing.py shim that shadows the stdlib module."""
         dst = os.path.join(tmp, "handin")
