@@ -4,11 +4,15 @@ Exemples (depuis fleet-kit/). --jobs > 1 fausse les temps (le planner utilise d�
     python3 tools/bench.py --levels L1 L2 --seeds 0-9
     python3 tools/bench.py --levels L4 --seeds 0-4 --planner handin/planner.py --base tools/baseline_planner.py
     python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 0-1 --jobs 1 --python /usr/bin/python3   # comme le jury
-Chaque ligne : niveau-graine, validité, score, temps ; puis un résumé par niveau. Le code de sortie est 1
+    FLEET_ITERS=3 PLANNER_WORKERS=2 python3 tools/bench.py --levels L3 --seeds 0-4 --json out.json  # déterministe
+Chaque ligne : niveau-graine, validité, score, temps ; puis un résumé par niveau, avec les stats appariées
+(delta moyen par graine mine - base ± erreur standard, graines pires k/n). --json PATH écrit les lignes et le
+résumé en JSON. L'environnement (PLANNER_*, FLEET_ITERS...) passe tel quel aux planners. Le code de sortie est 1
 si un plan est invalide, en retard ou absent (un zéro coûte plus cher que tout gain).
 """
 import argparse
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -62,6 +66,21 @@ def run_one(planner, scen_path, work, tag):
     return {"valid": res.valid, "score": res.score, "time": dt, "err": err, "points": res.points}
 
 
+def summarize(rows):
+    """Totals and paired stats (mine - base, per seed) for a list of rows."""
+    d = [r["mine"] - r["base"] for r in rows if r["base"] is not None]
+    n = len(rows)
+    mine = sum(r["mine"] for r in rows)
+    base = sum(r["base"] or 0.0 for r in rows)
+    mean = sum(d) / len(d) if d else float("nan")
+    se = math.sqrt(sum((x - mean) ** 2 for x in d) / (len(d) - 1) / len(d)) if len(d) > 1 else float("nan")
+    worse = sum(1 for x in d if x < 0)
+    return {"n": n, "mine": mine, "base": base, "ratio": mine / base if base else float("nan"),
+            "failures": sum(1 for r in rows if not r["valid"]), "tmax": max((r["time"] for r in rows), default=0.0),
+            "delta_mean": mean, "delta_se": se, "worse": worse, "worse_share": worse / len(d) if d else float("nan"),
+            "paired_n": len(d)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--levels", nargs="+", default=["L1", "L2", "L3", "L4"])
@@ -72,6 +91,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     ap.add_argument("--python", default=sys.executable,
                     help="interpréteur du planner, ex. /usr/bin/python3 (le jury promet seulement Python 3.9+)")
+    ap.add_argument("--json", metavar="PATH", help="écrit les lignes par run et le résumé en JSON")
     args = ap.parse_args()
     global PYTHON
     PYTHON = args.python
@@ -93,6 +113,7 @@ def main():
 
     bad = 0
     stats = {}
+    rows = []
     with ThreadPoolExecutor(args.jobs) as pool:
         for lv, sd, mine, base in pool.map(job, cases):
             flag = "OK " if mine["valid"] else "BAD"
@@ -108,14 +129,25 @@ def main():
             s["mine"] += mine["score"]
             s["base"] += base["score"] if base else 0.0
             s["tmax"] = max(s["tmax"], mine["time"])
+            rows.append({"level": lv, "seed": sd, "mine": mine["score"], "base": base["score"] if base else None,
+                         "valid": mine["valid"], "time": round(mine["time"], 2), "err": mine["err"]})
     print("--- résumé (somme des scores)")
     tm = tb = 0.0
     for lv, s in stats.items():
         print(f"{lv}: n={s['n']} mine={s['mine']:.1f} base={s['base']:.1f} "
               f"ratio={(s['mine'] / s['base']) if s['base'] else float('nan'):.3f} tmax={s['tmax']:.1f}s")
+        p = summarize([r for r in rows if r["level"] == lv])
+        if p["paired_n"]:
+            print(f"    delta/graine {p['delta_mean']:+.1f} ± {p['delta_se']:.1f} (s.e.)  "
+                  f"graines pires {p['worse']}/{p['paired_n']}")
         tm += s["mine"]
         tb += s["base"]
     print(f"TOTAL mine={tm:.1f} base={tb:.1f} invalides/échecs={bad}")
+    if args.json:
+        summary = {lv: summarize([r for r in rows if r["level"] == lv]) for lv in stats}
+        summary["TOTAL"] = summarize(rows)
+        with open(args.json, "w") as f:  # NaN (no baseline, or n=1) is written as NaN, which json.load accepts
+            json.dump({"rows": rows, "summary": summary}, f, indent=1)
     sys.exit(1 if bad else 0)
 
 
