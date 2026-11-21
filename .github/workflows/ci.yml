@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   handin:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04   # ubuntu-latest (26.04) has no Python 3.9 build
     timeout-minutes: 20
     defaults:
       run:
