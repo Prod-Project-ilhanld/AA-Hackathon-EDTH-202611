@@ -7,7 +7,7 @@ MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))   # worker processes (
 FLEET_ITERS = int(os.environ.get("FLEET_ITERS", "0"))       # >0: exactly this many builds per worker, reproducible plan
 INJECT_FAIL = os.environ.get("FLEET_INJECT_FAIL", "0") == "1"  # test hook: solve() raises at its start
 INJECT_HANG = os.environ.get("FLEET_INJECT_HANG", "0") == "1"  # test hook: hang after the best plan is kept
-TARGETS = os.environ.get("PLANNER_TARGETS", "0") == "1"        # targets.py: skip/weight hostiles
+TARGETS = os.environ.get("PLANNER_TARGETS", "1") != "0"        # targets.py: R7 skip, ON by default (Louis: L4 +1.27%, 0 seeds worse)
 DECONFLICT = os.environ.get("PLANNER_DECONFLICT", "0") == "1"  # deconflict.py: R8 departure scheduler
 
 N_SCOUTS = 15          # nearest scouts tried with every option
