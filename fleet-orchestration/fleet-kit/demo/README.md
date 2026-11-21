@@ -33,15 +33,16 @@ ne jamais recopier les chiffres à la main.
 
 ## Résultat de référence
 
-Scénario L4 seed 3 (100 drones, 70 contacts servables), plan `planner v2` de Louis contre le glouton
-du kit : **532,9 → 815,1 pts, +53 %, plan valide** sur les 10 règles, 30 contacts servis contre 18.
-Un seul scénario — le chiffre solide est le banc de Louis : planner v1, 200 cas valides, +47,8 % en
-moyenne sur L4 (le banc v2 est en cours). Reproductible depuis `fleet-kit/` :
+Scénario L4 seed 3 (100 drones, 70 contacts servables), plan `planner v7` de Louis (fusionné dans
+`main`, PR #2) contre le glouton du kit : **532,9 → 1076,7 pts, +102 %, plan valide** sur les 10
+règles, 37 contacts servis contre 18. Un seul scénario — le chiffre solide est le banc de Louis :
+50 graines par niveau, scénarios du kit, **94 578,6 pts contre 61 695,9 pour le glouton (x1,53
+global, x2,0 sur L4)**, 0 plan invalide, 39,6 s au maximum. Reproductible depuis `fleet-kit/` :
 
 ```
 python -m fleetkit generate L4 3 -o s_l4.json
-git show origin/feature/planner-v1:fleet-orchestration/fleet-kit/examples/plans/L4-seed3.plan.json > plan_l4_louis.json
-python demo/swann_demo.py s_l4.json plan_l4_louis.json -o demo_l4_louis_v2
+git show origin/main:fleet-orchestration/fleet-kit/examples/plans/L4-seed3.plan.json > plan_l4_louis.json
+python demo/swann_demo.py s_l4.json plan_l4_louis.json -o demo_l4_louis_v7
 ```
 
 ## Diagnostic des contacts non servis
@@ -63,8 +64,7 @@ rapport l'indique explicitement dans chaque ligne concernée.
 
 ## Prochaines étapes
 
-- Récupérer `handin/planner.py` une fois `feature/planner-v1` fusionné, pour que le diagnostic réel
-  tourne par défaut sans bascule manuelle.
+- Scénario de démo final tranché avec Ilhan et Mahmoud : **L4 graine 3** (déjà la référence
+  ci-dessus, vidéo de secours et script alignés dessus).
 - Rejouer sur les scénarios de la grille publique (L1-101 à L4-402) dès qu'ils sont disponibles.
-- Choisir avec Ilhan et Mahmoud le scénario de démo final (probablement un L4 à fort gain).
 - Script de démo minuté : voir `SCRIPT_DEMO.md` (régénéré par `gen_script_demo.py`).

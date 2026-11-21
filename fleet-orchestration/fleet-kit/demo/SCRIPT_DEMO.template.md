@@ -13,8 +13,9 @@ la table rien qu'en rejouant le vrai routage sur chacun des contacts qu'il manqu
 ## Moment fort (60 s)
 
 1. Ouvrir `view.html` du plan final, calque **Gagnés vs glouton** activé (vert).
-   « Notre planificateur teste jusqu'à 6 éclaireurs par contact hostile, trie les contacts par
-   points par effecteur requis, et relance plusieurs fois sous un budget de temps. »
+   « Notre planificateur teste 15 éclaireurs par contact hostile avec toutes leurs options, trie
+   les contacts par points par effecteur requis, et relance plusieurs fois sous un budget de
+   temps, réparti sur plusieurs processeurs. »
 2. Ouvrir `explication.md`, section **Contacts non servis**.
    Montrer un contact bloqué par R7 (collatéral), un contact « hors de portée même avec tous les
    drones disponibles » (routage réel testé, pas une estimation), et si possible un contact
@@ -36,9 +37,9 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 ## Limites à assumer si on nous les demande
 
 - Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- {gain_pct} % mesuré sur un seul scénario ({level} seed {seed}). Le chiffre solide est le banc :
-  planner v1, 200 cas valides, +47,8 % en moyenne sur L4 contre le glouton. Le banc de la v2 est en
-  cours chez Louis.
+- {gain_pct} % mesuré sur un seul scénario ({level} seed {seed}). Le chiffre solide est le banc
+  final de Louis (planner v7, fusionné dans `main`) : 50 graines par niveau, 94 578,6 pts contre
+  61 695,9 pour le glouton (x1,53 global, x2,0 sur L4), 0 plan invalide, 39,6 s au maximum.
 - Sur notre propre plan, le diagnostic de routage réel trouve encore ~{open_pts_ours} pts
   librement gagnables (sans toucher au plan actuel) et {contested_pts_ours} pts en concurrence
   avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a
@@ -48,5 +49,6 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 
 ## Vidéo de secours
 
-À enregistrer avant dimanche 9h (gel du code) : rejouer exactement ce script sur le scénario de
-démo final, écran `view.html` + `explication.md` ouverts côte à côte, sans narration improvisée.
+Enregistrée sur le scénario de démo final ({level} seed {seed}), écran `view.html` +
+`explication.md` ouverts côte à côte, sans narration improvisée. À réenregistrer si le plan
+change avant le gel du code (dimanche 9h).
