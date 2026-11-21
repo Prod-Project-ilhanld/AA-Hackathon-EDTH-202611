@@ -422,9 +422,9 @@ def _official_guard(data: dict, plan: dict) -> dict:
     try:
         from fleetkit.model import Scenario as OfficialScenario
         from fleetkit.scorer import evaluate as official_evaluate
-    except Exception:  # official kit missing or renamed: the vendored validator is identical today
-        OfficialScenario, official_evaluate = Scenario, evaluate
-    result = official_evaluate(OfficialScenario.from_dict(data), plan)
+        result = official_evaluate(OfficialScenario.from_dict(data), plan)
+    except Exception:  # official kit missing, renamed or changed: the vendored validator is identical today
+        result = evaluate(Scenario.from_dict(data), plan)
     return plan if result.valid and result.score >= 0 else empty
 
 
