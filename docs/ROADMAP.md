@@ -1,17 +1,39 @@
 # Roadmap: SUB-15 Fleet Orchestration
 
 Written Sat 21 Nov 00:30. Revised after review rounds; history in research/reviews/LOG.md (reviewers: don't read it).
-**Hand-in deadline Sun 22 Nov 12:00, we hand in at 11:00.** About 33 hours left.
+**Hand-in deadline Sun 22 Nov 12:00, we hand in at 11:00.**
 Rules and background: [PLAN.md](PLAN.md), [KIT_NOTES.md](KIT_NOTES.md), [research/](research/) .
 
-## 0. Status and paths in this repo (Sat 21 Nov, 03:00) — read first
-- **Track 1 is Louis's planner** (`fleet-orchestration/fleet-kit/handin/planner.py`, with 7thwardlord1's `routing.py`): restarts + hill-climb over the contact order on all cores, pre-filtered validation, 3D minimum-energy routing. Measured the jury's way (fresh copy, Python 3.9.6, 60 s, official validator) on L1–L4 seeds 0–1: **3,795.6 vs baseline 2,748.6 (+38%), L4 +72% / +91%, 0 failures**. Not yet measured on holdout seeds.
-- **Hardened (rule 10):** empty plan first, atomic writes, `setitimer` alarm that writes the last validated plan, catch-all, exit 0, budget counted from process start, kit helpers vendored in `handin/fk/`, final check with the jury's own validator.
-- **Track 2 as written in §6 is parked.** The team's architecture (Louis's planner + `routing.py`) is working; §6 stays as a reference for improving it. Improvements now go into `planner.py` / `routing.py` as measured levers (WS0 list).
-- **Paths:** everything in this roadmap that says `handin/` means `fleet-orchestration/fleet-kit/handin/`. `tools/check.py` + `tools/bench.py` are now one tool: `fleet-orchestration/fleet-kit/tools/bench.py` (fresh copy like the jury, `--python /usr/bin/python3`). The kit itself is part of this repo, so no separate `kit/` clone is needed.
-- **Starter files for parallel work** (off by default, one-line hooks in `planner.py`): `handin/targets.py` (R7 skip written, light/heavy pricing to do), `handin/deconflict.py` (R8 departure scheduler to do), `tools/tune.py` (plan only). Agent-loop prompt: `tools/loop/program.md`.
-- **Roles are suggestions**, not a fixed assignment: §3's owners describe the original plan; people pick tasks from the team message.
-- **CI** (`.github/workflows/ci.yml`) runs on every PR and push to `main`: Python 3.9 compile, hand-in rules, unit tests, a jury-style run on L1–L3.
+## 0. Status (Sat 21 Nov, 14:00) — read first
+Live checkpoint board (every item checked against the repo): https://claude.ai/artifact/7VzgyqXg2owcpXosdeK2sc
+
+**Where we stand**
+- **CP0, CP1: done.** Safety net on `main`: empty plan written before reading the scenario, atomic writes, the `SIGALRM` backstop writes the best validated plan, catch-all, exit 0, budget from process start, kit helpers vendored in `handin/fk/`, final check with the jury's validator. 9 CP1 tests in CI (`tests/test_cp1_safety.py`).
+- **CP2, CP3 score targets: passed on holdout.** Seeds 5000–5049, 200 runs, Python 3.9, `main` 55327de: total **96,504 vs baseline 63,989 (×1.51)**, L1 ×1.09, L2 ×1.09, L3 ×1.24, **L4 ×1.95**, 0 failures, no seed below baseline, slowest 41.1 s. Matches train (×1.53), so no sign of overfitting.
+- **Current `main` (adbe641):** v7 planner + R7 skip on by default (Louis, L4 +1.27%) + R10 guard across tries (Martin) + routing fix (Youcef) + demo (Swann) + `scouts.py` (Ilhan, off) + the organisers' link-loss release. check_handin 8/8, **4,282.8** vs 2,748.6, 39.0 s max. 225 tests pass.
+- **Still open for CP2:** shift suite and edge pack. **CP3:** conflict repairs (phase 2).
+
+**What changed in the plan**
+- **Track 2 (§6) stays parked.** Louis's greedy + restarts with `routing.py` is the hand-in path; improvements land as measured levers in `planner.py`, `targets.py`, `deconflict.py`.
+- **Search is a hill-climb over the contact order**, not ALNS with annealing (§4 CP4): build speed mattered more than sophistication. Annealing stays a stretch item.
+- **Link-loss is now a real, optional second hand-in** (organisers' release, Sat 12:11): `handin/policy.py`, scored separately (`S_loss = retention − 0.002 × messages per aircraft per minute`, plus a sizing grid). It does not change the plan ranking. Ours is still the stub, which fails every scenario. See `fleet-kit/LINKLOSS.md`.
+
+**Who does what now** (one file per person, one `feature/...` branch each from current `main`)
+| Person | File | Task |
+|---|---|---|
+| Mahmoud | `deconflict.py` | R8 departure scheduler: make it deterministic, paired bench on ≥ 20 L4 seeds, switch on if it passes |
+| Louis | `targets.py`, `planner.py` | Light-effector pricing; review Martin's greedy-fallback patch (`proposals/greedy_fallback.patch`) |
+| Martin | `tools/` | Shift suite + edge pack (last CP2 items) |
+| Youcef | `policy.py` | Link-loss policy v1: speak only when there is news; then find why runs fail |
+| Ilhan | `scouts.py` | Measure `PLANNER_SCOUTS=1`; organiser questions (core count, multiprocessing, format, Python) |
+| Swann | `demo/` | Slides with holdout numbers, backup video, link-loss replay; dry run 22:00 |
+
+**How we work now**
+- **Keep a change only if:** mean paired gain > 0 on ≥ 20 L4 seeds, ≤ 40% of seeds worse, 0 invalid. Compare with `FLEET_ITERS=N` (deterministic, byte-identical plans) and `tools/bench.py --json` (paired per-seed stats), on train seeds 0–199 only. Holdout is for checkpoints.
+- **Every tunable number and flag lives in `handin/params.py`.** The jury passes no environment variables, so a lever counts only if it is on by default there.
+- **Hand-in folder:** all of `handin/`: `planner.py`, `params.py`, `fk/`, `routing.py`, `targets.py`, `deconflict.py`, `scouts.py`, and `policy.py` for link-loss.
+- **Paths:** `handin/` means `fleet-orchestration/fleet-kit/handin/`; the bench is `fleet-orchestration/fleet-kit/tools/bench.py`. CI runs on every PR and push to `main`.
+- **Open questions for the organisers:** jury machine core count and whether multiprocessing is allowed (the planner uses up to 8 workers), hand-in format, Python version. Louis has the live board token.
 
 ## 1. Vision
 > A planner that **never scores zero**, **serves far more targets on L3/L4**, and **can explain every decision**, proven by numbers on scenarios we never tuned on.
