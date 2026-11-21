@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "demo"))
 
 from fleetkit.model import Scenario  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
-from swann_demo import HAS_REAL_PLANNER, build_report, build_view, diagnose  # noqa: E402
+import swann_demo  # noqa: E402
+from swann_demo import build_report, build_view, diagnose  # noqa: E402
 
 
 # ----- diagnose() : R7 (collatéral), vérifié avant tout repli ou routage réel -----------------
@@ -40,8 +41,8 @@ def test_r7_does_not_block_a_hostile_far_from_protected_contacts(scenario_dict):
 
 # ----- diagnose() : borne optimiste de repli (handin.planner absent de cette branche) ----------
 
-def test_heuristic_fallback_marks_a_reachable_idle_contact_as_winnable(scenario_dict):
-    assert not HAS_REAL_PLANNER, "ce test suppose le repli heuristique (handin.planner non fusionné ici)"
+def test_heuristic_fallback_marks_a_reachable_idle_contact_as_winnable(scenario_dict, monkeypatch):
+    monkeypatch.setattr(swann_demo, "HAS_REAL_PLANNER", False)  # force the fallback, planner now merged
     s = Scenario.from_dict(scenario_dict)
     c01 = s.contact_by_id()["C01"]  # L01 (light, idle) est à portée en ligne directe dans la fenêtre
     text, winnable, category = diagnose(s, {}, c01)
@@ -50,8 +51,8 @@ def test_heuristic_fallback_marks_a_reachable_idle_contact_as_winnable(scenario_
     assert "non disponible" in text  # le rapport doit dire que c'est une estimation, pas un fait vérifié
 
 
-def test_heuristic_fallback_marks_an_out_of_reach_contact_as_blocked(scenario_dict):
-    assert not HAS_REAL_PLANNER
+def test_heuristic_fallback_marks_an_out_of_reach_contact_as_blocked(scenario_dict, monkeypatch):
+    monkeypatch.setattr(swann_demo, "HAS_REAL_PLANNER", False)
     d = copy.deepcopy(scenario_dict)
     d["contacts"].append({"id": "C98", "class": "hostile", "pos": [500_000, 0, 0], "points": 40,
                            "engage_needs": {"light": 1}, "window_s": [100, 150]})

@@ -9,26 +9,27 @@ Greedy planner of the kit, made faster and wider:
 - every accepted step passed the kit scorer, the final plan is re-validated, and the fallback is
   the best valid plan found so far (an empty plan if nothing else).
 """
+import json
 import multiprocessing
 import os
 import random
+import signal
 import sys
 import time
+
+T0 = time.monotonic()  # every budget counts from process start (ROADMAP rule 10)
 from typing import Dict, List, Optional
 
-try:
-    import fleetkit  # noqa: F401
-except ImportError:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # vendored kit helpers live in handin/fk
 
-from fleetkit.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
-from fleetkit.geometry import hdist  # noqa: E402
-from fleetkit.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
-from fleetkit.scorer import evaluate  # noqa: E402
-from fleetkit.validator import separation_item, separation_violation, validate  # noqa: E402
+from fk.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
+from fk.geometry import hdist  # noqa: E402
+from fk.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
+from fk.scorer import evaluate  # noqa: E402
+from fk.validator import separation_item, separation_violation, validate  # noqa: E402
 
 try:  # routing module of the team (3D minimum-energy routes); the planner works without it
-    from fleetkit.baseline import EFFECTOR_LAYERS
+    from fk.baseline import EFFECTOR_LAYERS
     try:
         from . import routing as _routing  # type: ignore
     except ImportError:
@@ -38,7 +39,8 @@ except Exception:  # noqa: BLE001
     _routing = None
     EFFECTOR_LAYERS = ()
 
-BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))
+BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))  # search deadline, seconds from process start
+ALARM_S = float(os.environ.get("PLANNER_ALARM_S", "52"))    # backstop: write the last validated plan and exit
 N_SCOUTS = 6
 MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
 
@@ -280,15 +282,57 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
     return best[1]
 
 
+_OUT = sys.argv[2] if len(sys.argv) > 2 else "plan.json"
+_best_text = None  # pre-serialised last validated plan, written by the alarm handler
+
+
+def _write(text: str, suffix: str = ".tmp") -> None:
+    tmp = _OUT + suffix
+    with open(tmp, "w", encoding="utf-8") as handle:
+        handle.write(text)
+    os.replace(tmp, _OUT)  # atomic: the jury never reads a half-written plan
+
+
+def _keep(plan: dict) -> None:
+    global _best_text
+    _best_text = json.dumps(plan, indent=1) + "\n"
+    _write(_best_text)
+
+
+def _alarm(signum, frame) -> None:
+    for child in multiprocessing.active_children():
+        child.kill()
+    if _best_text is not None:
+        _write(_best_text, ".alarm.tmp")
+    os._exit(0)
+
+
+def _official_guard(data: dict, plan: dict) -> dict:
+    """Final check with the jury's own validator when importable (else the vendored copy); never negative."""
+    empty = {"seed": data.get("seed"), "routes": []}
+    try:
+        from fleetkit.model import Scenario as OfficialScenario
+        from fleetkit.scorer import evaluate as official_evaluate
+    except Exception:  # official kit missing or renamed: the vendored validator is identical today
+        OfficialScenario, official_evaluate = Scenario, evaluate
+    result = official_evaluate(OfficialScenario.from_dict(data), plan)
+    return plan if result.valid and result.score >= 0 else empty
+
+
 def main() -> None:
     data = load_json(sys.argv[1])
+    _keep({"seed": data.get("seed"), "routes": []})  # valid, scores 0: written before any search
+    if hasattr(signal, "setitimer"):
+        signal.signal(signal.SIGALRM, _alarm)
+        signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
-    try:
-        plan = solve(scenario, data)
-    except Exception:
-        plan = {"seed": scenario.seed, "routes": []}
-    save_json(plan, sys.argv[2])
+    plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
+    _keep(_official_guard(data, plan))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException as exc:  # the last validated plan is already on disk; never exit non-zero
+        print("planner: %s: %s" % (type(exc).__name__, exc), file=sys.stderr)
+    sys.exit(0)

@@ -1,0 +1,45 @@
+name: CI
+
+# Runs on every pull request and every push to main. main must stay green: it is what we hand in.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  handin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: fleet-orchestration/fleet-kit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"   # the jury only promises Python 3.9+
+
+      - name: Hand-in compiles on Python 3.9
+        run: python -m compileall -q handin
+
+      - name: Hand-in rules
+        run: |
+          test ! -d handin/fleetkit || { echo "handin/fleetkit would hide the official kit"; exit 1; }
+          if grep -rnE '\.level\b' --include='*.py' handin | grep -v '^handin/fk/'; then echo "never branch on scenario.level"; exit 1; fi
+          if grep -rnE '^(from|import) fleetkit' --include='*.py' handin | grep -v '^handin/check_handin.py'; then echo "import kit code from handin/fk, not fleetkit (only the final guard may)"; exit 1; fi
+
+      - name: Unit tests
+        env:
+          PLANNER_BUDGET_S: "5"
+        run: |
+          pip install -q pytest
+          python -m pytest -q tests
+
+      - name: Jury-style run (fresh copy, 60 s limit, official validator)
+        env:
+          PLANNER_BUDGET_S: "10"
+        run: python tools/bench.py --levels L1 L2 L3 --seeds 0 --jobs 1

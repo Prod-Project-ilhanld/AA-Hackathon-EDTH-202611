@@ -9,9 +9,9 @@ import heapq
 import math
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from fleetkit.energy import J_PER_WH, best_range_speed, leg_energy_wh, route_energy_wh
-from fleetkit.geometry import EPS, INF, dist3, hdist, segment_enters_cylinder
-from fleetkit.model import (
+from fk.energy import J_PER_WH, best_range_speed, leg_energy_wh, route_energy_wh
+from fk.geometry import EPS, INF, dist3, hdist, segment_enters_cylinder
+from fk.model import (
     CIVILIAN,
     FRIENDLY,
     Aircraft,

@@ -1,14 +1,16 @@
 """Bench multi-graines : lance un planner comme l'évaluation (sous-processus, 60 s) et compare.
 
-Exemples (depuis fleet-kit/) :
+Exemples (depuis fleet-kit/). --jobs > 1 fausse les temps (le planner utilise déjà tous les cœurs) :
     python3 tools/bench.py --levels L1 L2 --seeds 0-9
     python3 tools/bench.py --levels L4 --seeds 0-4 --planner handin/planner.py --base tools/baseline_planner.py
+    python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 0-1 --jobs 1 --python /usr/bin/python3   # comme le jury
 Chaque ligne : niveau-graine, validité, score, temps ; puis un résumé par niveau. Le code de sortie est 1
 si un plan est invalide, en retard ou absent (un zéro coûte plus cher que tout gain).
 """
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -33,12 +35,21 @@ def parse_seeds(text):
     return out
 
 
+PYTHON = sys.executable
+
+
 def run_one(planner, scen_path, work, tag):
+    """Like the jury: a fresh copy of the planner's folder, `python planner.py scenario plan`, 60 s."""
     plan_path = os.path.join(work, f"{tag}.plan.json")
+    team = os.path.join(work, f"{tag}.team")
+    shutil.copytree(os.path.dirname(os.path.abspath(planner)), team,
+                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    if os.path.isdir(os.path.join(team, "fleetkit")):
+        return {"valid": False, "score": 0.0, "time": 0.0, "err": "hand-in contains a fleetkit folder"}
     env = dict(os.environ, PYTHONPATH=KIT, PYTHONDONTWRITEBYTECODE="1")
     t0 = time.time()
     try:
-        proc = subprocess.run([sys.executable, planner, scen_path, plan_path], env=env,
+        proc = subprocess.run([PYTHON, os.path.basename(planner), scen_path, plan_path], env=env, cwd=team,
                               capture_output=True, text=True, timeout=LIMIT_S)
         err = "" if proc.returncode == 0 else f"exit {proc.returncode}: {proc.stderr.strip()[-200:]}"
     except subprocess.TimeoutExpired:
@@ -59,7 +70,11 @@ def main():
     ap.add_argument("--base", default=os.path.join(KIT, "tools", "baseline_planner.py"),
                     help="planner de référence ('' pour désactiver)")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) // 2))
+    ap.add_argument("--python", default=sys.executable,
+                    help="interpréteur du planner, ex. /usr/bin/python3 (le jury promet seulement Python 3.9+)")
     args = ap.parse_args()
+    global PYTHON
+    PYTHON = args.python
 
     work = tempfile.mkdtemp(prefix="fleetbench_")
     cases = []
