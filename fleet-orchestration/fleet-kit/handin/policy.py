@@ -15,7 +15,7 @@ from fleetkit.linkloss.sim import RouteClock
 from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
-SEP_PAD_M = 4.5
+SEP_PAD_M = 6.0
 
 
 def _seg_min_dist3(
@@ -44,23 +44,29 @@ def _seg_min_dist3(
     return (dx * dx + dy * dy + dz * dz) ** 0.5
 
 
-def _pack_msg(d: dict) -> Optional[dict]:
-    """Ensures compact JSON fits within 64 bytes."""
-    if not d:
+def _pack_msg(msg: Any) -> Optional[Any]:
+    """Ensures compact JSON (list or dict) fits within 64 bytes."""
+    if not msg:
         return None
-    if len(json.dumps(d, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
-        return d
-    # Trim optional fields if over budget.
-    trimmed = dict(d)
-    for k in ("zn", "rc", "ob", "u"):
-        if k in trimmed:
-            val = trimmed[k]
-            if isinstance(val, list) and len(val) > 1:
-                trimmed[k] = val[:1]
-            else:
-                del trimmed[k]
+    if len(json.dumps(msg, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
+        return msg
+    if isinstance(msg, list):
+        trimmed = list(msg)
+        while len(trimmed) > 2:
+            trimmed.pop()
             if len(json.dumps(trimmed, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
                 return trimmed
+        return None
+    trimmed_d = dict(msg)
+    for k in ("zn", "rc", "ob", "u"):
+        if k in trimmed_d:
+            val = trimmed_d[k]
+            if isinstance(val, list) and len(val) > 1:
+                trimmed_d[k] = val[:1]
+            else:
+                del trimmed_d[k]
+            if len(json.dumps(trimmed_d, separators=(",", ":")).encode()) <= MAX_MSG_BYTES:
+                return trimmed_d
     return None
 
 
@@ -71,6 +77,8 @@ class Policy:
         self.scenario = scenario
         self.aircraft_id = aircraft_id
         self.rules = scenario.rules
+        self._i2c: List[str] = [c.id for c in scenario.contacts]
+        self._c2i: Dict[str, int] = {cid: i for i, cid in enumerate(self._i2c)}
         routes, _ = parse_plan(plan)
         self.routes = routes
         self.clocks: Dict[str, RouteClock] = {aid: RouteClock(rt) for aid, rt in routes.items()}
@@ -127,6 +135,9 @@ class Policy:
         self._sent_obs: Set[str] = set()
         self._hold_streak: int = 0
         self._rs_ttl: int = 0
+        self._last_ob_near: Dict[str, float] = {}
+        self._last_ae_t: float = -100.0
+        self._ae_idx: int = 0
 
     def _init_pre_cut(self, t_loss: float) -> None:
         self.pre_cut_init = True
@@ -152,6 +163,39 @@ class Policy:
             src = msg["from"]
             sent_t = float(msg["sent_t"])
             p = msg["payload"]
+            if isinstance(p, list) and len(p) >= 2:
+                st = int(p[0])
+                u = float(p[1]) * 0.1
+                rc_raw = p[2] if len(p) > 2 and isinstance(p[2], list) else ()
+                zn_raw = p[3] if len(p) > 3 and isinstance(p[3], list) else ()
+                ob_raw = p[4] if len(p) > 4 and isinstance(p[4], list) else ()
+                for idx in rc_raw:
+                    if isinstance(idx, int) and 0 <= idx < len(self._i2c):
+                        c = self._i2c[idx]
+                        if c not in self.reclassified:
+                            self.reclassified.add(c)
+                            self._rc_ttl[c] = 2
+                for z_item in zn_raw:
+                    z = (int(z_item[0]), int(z_item[1]), int(z_item[2]), int(z_item[3]))
+                    if z not in self.zones:
+                        self.zones.append(z)
+                        self._zn_ttl[z] = 2
+                for idx in ob_raw:
+                    if isinstance(idx, int) and 0 <= idx < len(self._i2c):
+                        c = self._i2c[idx]
+                        if c not in self.observed:
+                            self.observed.add(c)
+                            self._ob_ttl[c] = 2
+                if st == 2:
+                    self.aborted_peers.add(src)
+                    self.peer_state[src] = (sent_t, u, "return")
+                elif st in (1, 4):
+                    self.peer_state[src] = (sent_t, u, "hold")
+                    if st == 4:
+                        self.aborted_peers.add(src)
+                elif st == 3:
+                    self.peer_state[src] = (sent_t, u, "route")
+                continue
             if not isinstance(p, dict):
                 continue
             for c in p.get("rc", ()):
@@ -225,9 +269,10 @@ class Policy:
         i_am_returning = rate < 0.0
         i_am_off_plan = i_am_returning or abs(tau - t) >= 0.25
 
-        # Precompute our 1s segments over [t, t+4].
+        # Precompute our 1s segments: 6s lookahead when returning, 4s otherwise.
+        horizon_k = 6 if i_am_returning else 4
         my_segs: List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = []
-        for k in range(4):
+        for k in range(horizon_k):
             t0_k = max(self.clock.start, min(self.clock.end, tau + k * rate))
             t1_k = max(self.clock.start, min(self.clock.end, tau + (k + 1) * rate))
             if t1_k <= self.clock.start + 1e-6 and t0_k <= self.clock.start + 1e-6:
@@ -265,7 +310,13 @@ class Policy:
                 if _seg_min_dist3(p0, p1, q0, q1) < d_lim:
                     cur_pm = self.peer_state.get(aid, (0.0, 0.0, "route"))[2]
                     if cur_pm == "hold":
-                        return True
+                        if self.aircraft_id > aid:
+                            return True
+                        d_now = dist3(p0, q0)
+                        d_next = dist3(p1, q0)
+                        if d_next < d_now - 1e-3 and d_next < d_lim:
+                            return True
+                        break
                     # A returning aircraft yields to any on-plan peer (which may not have heard the abort).
                     if i_am_returning and cur_pm == "route":
                         return True
@@ -275,6 +326,8 @@ class Policy:
                             return True
                         break
                     if self.aircraft_id > aid:
+                        return True
+                    if i_am_returning and cur_pm == "return" and k == 0 and dist3(p1, q0) < self.rules.d_sep_m + 1.5:
                         return True
                     break
         return False
@@ -302,56 +355,65 @@ class Policy:
                     return True
         return False
 
-    def _build_message(self, t: float, tau: float, mode: str, action_kind: str) -> Optional[dict]:
-        msg: Dict[str, Any] = {}
-
+    def _build_message(self, t: float, tau: float, mode: str, action_kind: str) -> Optional[Any]:
+        """Builds a compact positional list `[st, u_tenths, rc_idx, zn, ob_idx]` (<= 64 B)."""
+        rc_idx: List[int] = []
         if self._rc_ttl:
             rc_list = sorted(self._rc_ttl)[:2]
-            msg["rc"] = rc_list
+            rc_idx = [self._c2i[c] for c in rc_list if c in self._c2i]
             for c in rc_list:
                 self._rc_ttl[c] -= 1
                 if self._rc_ttl[c] <= 0:
                     del self._rc_ttl[c]
 
+        zn_list: List[List[int]] = []
         if self._zn_ttl:
             z = next(iter(self._zn_ttl))
-            msg["zn"] = [list(z)]
+            zn_list = [list(z)]
             self._zn_ttl[z] -= 1
             if self._zn_ttl[z] <= 0:
                 del self._zn_ttl[z]
 
+        ob_idx: List[int] = []
         if self._ob_ttl:
             ob_list = sorted(self._ob_ttl)[:2]
-            msg["ob"] = ob_list
+            ob_idx = [self._c2i[c] for c in ob_list if c in self._c2i]
             for c in ob_list:
                 self._ob_ttl[c] -= 1
                 if self._ob_ttl[c] <= 0:
                     del self._ob_ttl[c]
 
+        st = 0
+        u_tenths = 0
         if action_kind == "hold":
-            gap = 3.0 if self._last_mode != "return" or self._peer_near(t, tau) else 15.0
+            gap = 1.0 if (self._last_mode != "return" or self._peer_near(t, tau, 350.0)) else 15.0
             if self._hold_streak <= 3 or t - self._last_hd_sent >= gap:
-                msg["hd"] = 1
-                msg["u"] = round(tau, 1)
-                if self._last_mode == "return":
-                    msg["ab"] = 1
+                st = 4 if self._last_mode == "return" else 1
+                u_tenths = int(round(tau * 10.0))
                 self._last_hd_sent = t
         elif mode == "return" or action_kind == "return":
             if self._rt_ttl > 0 or (t - self._last_rt_sent >= 5.0):
-                msg["rt"] = 1
-                msg["u"] = round(tau, 1)
+                st = 2
+                u_tenths = int(round(tau * 10.0))
                 self._last_rt_sent = t
                 if self._rt_ttl > 0:
                     self._rt_ttl -= 1
-
         elif self._rs_ttl > 0:
-            msg["rs"] = 1
-            msg["u"] = round(tau, 1)
+            st = 3
+            u_tenths = int(round(tau * 10.0))
             self._rs_ttl -= 1
 
-        if not msg:
+        if st == 0 and not rc_idx and not zn_list and not ob_idx:
             return None
-        return _pack_msg(msg)
+
+        payload: List[Any] = [st, u_tenths]
+        if ob_idx:
+            payload.extend([rc_idx or 0, zn_list or 0, ob_idx])
+        elif zn_list:
+            payload.extend([rc_idx or 0, zn_list])
+        elif rc_idx:
+            payload.append(rc_idx)
+        return _pack_msg(payload)
 
     def step(self, obs: dict) -> Tuple[dict, Optional[dict]]:
         t = float(obs["t"])
@@ -368,6 +430,31 @@ class Policy:
             if c not in self._sent_obs:
                 self._sent_obs.add(c)
                 self._ob_ttl[c] = 4
+
+        # Range-aware ob re-send: when an effector of `c` is within ~260 m on the plan, re-send `ob`.
+        if self.is_scout and self._sent_obs:
+            my_pos = obs["pos"]
+            for c in self._sent_obs:
+                if t - self._last_ob_near.get(c, -100.0) < 2.0:
+                    continue
+                for eff_id in self.peers_by_target.get(c, ()):
+                    eff_clk = self.clocks[eff_id]
+                    if t <= eff_clk.end and dist3(my_pos, eff_clk.position(t)) <= 260.0:
+                        self._ob_ttl[c] = max(self._ob_ttl.get(c, 0), 2)
+                        self._last_ob_near[c] = t
+                        break
+
+        # Anti-entropy backup: periodically relay one active `ob` every 8s for hop-by-hop delivery.
+        if not self._ob_ttl and t - self._last_ae_t >= 8.0 and self.observed:
+            active_obs = sorted(
+                c for c in self.observed
+                if any(t <= self.clocks[eid].end for eid in self.peers_by_target.get(c, ()))
+            )
+            if active_obs:
+                pick = active_obs[self._ae_idx % len(active_obs)]
+                self._ae_idx += 1
+                self._ob_ttl[pick] = 1
+                self._last_ae_t = t
 
         for ev in obs.get("sensed", ()):
             self._learn_sensed(ev)
