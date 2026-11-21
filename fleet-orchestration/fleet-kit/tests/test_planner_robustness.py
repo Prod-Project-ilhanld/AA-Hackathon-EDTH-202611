@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -99,6 +100,53 @@ class PlannerRobustness(unittest.TestCase):
             code, plan, err = run_planner(self.data, planner=os.path.join(dst, "planner.py"))
             self.assertEqual(code, 0, err)
             self.assertTrue(evaluate(Scenario.from_dict(self.data), plan).valid)
+
+    def _planner_with_shim(self, tmp, shim_source):
+        """Copies handin/ to tmp with a multiprocessing.py shim that shadows the stdlib module."""
+        dst = os.path.join(tmp, "handin")
+        shutil.copytree(os.path.dirname(PLANNER), dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        with open(os.path.join(dst, "multiprocessing.py"), "w") as f:
+            f.write(shim_source)
+        return os.path.join(dst, "planner.py")
+
+    def test_pool_creation_failure_falls_back_to_serial(self):
+        """If the process pool cannot be created, the planner searches serially and still scores."""
+        shim = "def get_context(method):\n    raise RuntimeError('no pool here')\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            planner = self._planner_with_shim(tmp, shim)
+            code, plan, err = run_planner(self.data, planner=planner, workers="2", budget="3")
+            self.assertEqual(code, 0, err)
+            res = evaluate(Scenario.from_dict(self.data), plan)
+            self.assertTrue(res.valid, [str(v) for v in res.violations[:3]])
+            self.assertGreater(res.score, 0.0, "serial fallback produced nothing")
+
+    def test_hung_workers_still_write_a_valid_plan_in_time(self):
+        """Workers that never answer: the planner stops waiting after deadline+8 s and writes a valid plan."""
+        shim = (
+            "import time\n"
+            "class _Job:\n"
+            "    def get(self, timeout=None):\n"
+            "        time.sleep(timeout or 0)\n"
+            "        raise TimeoutError()\n"
+            "class _Pool:\n"
+            "    def apply_async(self, *a, **k):\n"
+            "        return _Job()\n"
+            "    def terminate(self):\n"
+            "        pass\n"
+            "class _Ctx:\n"
+            "    def Pool(self, n):\n"
+            "        return _Pool()\n"
+            "def get_context(method):\n"
+            "    return _Ctx()\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            planner = self._planner_with_shim(tmp, shim)
+            start = time.monotonic()
+            code, plan, err = run_planner(self.data, planner=planner, workers="2", budget="2")
+            elapsed = time.monotonic() - start
+            self.assertEqual(code, 0, err)
+            self.assertTrue(evaluate(Scenario.from_dict(self.data), plan).valid)
+            self.assertLess(elapsed, 20.0, "waited too long on hung workers")
 
     def test_detector_flags_an_invalid_plan(self):
         """Negative control: a plan with the wrong seed must be reported invalid by the checker we use."""
