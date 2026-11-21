@@ -1,8 +1,10 @@
 """Hand-in: python3 planner.py scenario.json plan.json
 
 Greedy planner of the kit, made faster and wider:
-- a cheap pre-filter (validate only the touched routes, check R8 only against the others) runs
-  before the authoritative full validation, so many more scouts and options can be tried: the 6
+- an incremental check (validate only the touched routes, check R8 only against the others, keep
+  the score by differences) replaces the full validation of the whole plan at every try, which made
+  a construction about 3 times faster; the full kit scorer still validates every plan we keep. So
+  many more scouts and options can be tried: the 6
   nearest scouts with all options, then every other scout with plain options (on L4 the near scouts
   saturate while others stay on the ground);
 - restarts under an internal time budget keep the best valid plan: a few deterministic orders of
@@ -26,6 +28,7 @@ except ImportError:
 from fleetkit.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
 from fleetkit.geometry import hdist  # noqa: E402
 from fleetkit.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
+from fleetkit.energy import route_energy_wh  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.validator import separation_item, separation_violation, validate  # noqa: E402
 
@@ -58,6 +61,8 @@ class FastPlanner(_Planner):
         self.contacts = scenario.contact_by_id()
         self.items: Dict[str, tuple] = {}
         self.far = True     # also try the scouts beyond the nearest n_scouts (plain options only)
+        self._cur: Optional[Contact] = None     # the contact being served: its points are the gain of a step
+        self.energy_cache: Dict[str, tuple] = {}
 
     def _check_time(self) -> None:
         if time.monotonic() > self.deadline:
@@ -69,11 +74,18 @@ class FastPlanner(_Planner):
         return scouts[:limit or self.n_scouts]
 
     def _prefilter(self, extra: Dict[str, List[dict]]) -> bool:
-        """Necessary conditions, cheap: the touched routes alone, then R8 against the rest."""
+        return self._prefilter_routes(extra) is not None
+
+    def _prefilter_routes(self, extra: Dict[str, List[dict]]):
+        """The touched routes alone (every per-route and per-contact rule), then R8 against the rest.
+
+        Returns the parsed touched routes when the plan with these routes added or replaced is valid for
+        every rule except the confirmation of the earlier contacts of a rebuilt scout route (see _try).
+        """
         self._check_time()
         sub = {"seed": self.sc.seed, "routes": [{"aircraft": a, "waypoints": w} for a, w in extra.items()]}
         if validate(self.sc, sub):
-            return False
+            return None
         routes, _ = parse_plan(sub)
         new_items = {}
         for aid, route in routes.items():
@@ -93,15 +105,67 @@ class FastPlanner(_Planner):
                 continue
             for it in new_items.values():
                 if separation_violation(self.sc.rules, self.contacts, it, other) is not None:
+                    return None
+        return routes
+
+    def _energy_of(self, aid: str) -> float:
+        route = self.routes[aid]
+        cached = self.energy_cache.get(aid)
+        if cached is None or cached[0] is not route:
+            r, _ = parse_plan({"seed": self.sc.seed, "routes": [{"aircraft": aid, "waypoints": route}]})
+            cached = (route, route_energy_wh(r[aid].waypoints, self.aircraft[aid]))
+            self.energy_cache[aid] = cached
+        return cached[1]
+
+    def _confirmations_ok(self, extra: Dict[str, List[dict]]) -> bool:
+        """R4 for the earlier hostile contacts of a rebuilt scout route: their engagements stay confirmed."""
+        margin = self.sc.rules.confirm_margin_s
+        for sid, wps in extra.items():
+            for t in self.tasks.get(sid, ()):
+                cid = t.id if hasattr(t, "id") else t["cid"]
+                if self.contacts[cid].cls != HOSTILE:
+                    continue
+                engages = [r[-1]["t"] for r in self.routes.values()
+                           if r and r[-1].get("action") == "engage" and r[-1].get("target") == cid]
+                if not engages:
+                    continue
+                ends = [w["t"] + w.get("dwell_s", 0.0) for w in wps
+                        if w.get("action") == "observe" and w.get("target") == cid]
+                if any(not any(o <= e - margin + 1e-6 for o in ends) for e in engages):
                     return False
         return True
 
     def _try(self, extra: Dict[str, List[dict]]) -> Optional[float]:
-        if not self._prefilter(extra):
+        """Score of the plan with the routes of `extra` added or replaced, or None when it would be invalid.
+
+        Incremental: the touched routes are validated alone and R8 is checked against the others (the only
+        rule that couples routes), so the full validation of the whole plan is not repeated for every try.
+        """
+        routes = self._prefilter_routes(extra)
+        if routes is None or not self._confirmations_ok(extra):
             return None
-        return super()._try(extra)
+        rules = self.sc.rules
+        energy_new = sum(route_energy_wh(routes[a].waypoints, self.aircraft[a]) for a in routes)
+        energy_old = sum(self._energy_of(a) for a in extra if a in self.routes)
+        new_eff = sum(1 for a in extra if a not in self.routes and self.aircraft[a].type != SCOUT)
+        gain = self._cur.points if self._cur is not None else 0.0
+        return self.score + gain - rules.lambda_e * (energy_new - energy_old) - rules.c_eff * new_eff
+
+    def serve_unknown(self, contact: Contact) -> bool:
+        self._cur = contact
+        try:
+            return super().serve_unknown(contact)
+        finally:
+            self._cur = None
 
     def serve_hostile(self, contact: Contact) -> bool:
+        self._cur = contact
+        try:
+            return self._serve_hostile(contact)
+        finally:
+            self._cur = None
+
+    def _serve_hostile(self, contact: Contact) -> bool:
         sc = self.sc
         pool = {}
         for sub, n in contact.needs.items():
