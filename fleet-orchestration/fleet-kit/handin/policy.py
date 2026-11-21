@@ -124,6 +124,9 @@ class Policy:
         self._sent_obs: Set[str] = set()
         self._hold_streak: int = 0
         self._rs_ttl: int = 0
+        self._last_ob_near: Dict[str, float] = {}
+        self._last_ae_t: float = -100.0
+        self._ae_idx: int = 0
 
     def _init_pre_cut(self, t_loss: float) -> None:
         self.pre_cut_init = True
@@ -190,8 +193,8 @@ class Policy:
         clk = self.clocks[aid]
         if aid in self.peer_state:
             t_ref, tau_ref, mode = self.peer_state[aid]
-            # Expire stale hold states only after 5 missed 3s heartbeats.
-            if mode == "hold" and now_t - t_ref > 15.0:
+            # Expire stale hold states only after 6 missed 3s heartbeats.
+            if mode == "hold" and now_t - t_ref > 18.0:
                 del self.peer_state[aid]
             else:
                 dt = max(0.0, t - t_ref)
@@ -220,9 +223,10 @@ class Policy:
         i_am_returning = rate < 0.0
         i_am_off_plan = i_am_returning or abs(tau - t) >= 0.25
 
-        # Precompute our 1s segments over [t, t+4].
+        # Precompute our 1s segments: 6s lookahead when returning (higher closing speed), 4s otherwise.
+        horizon_k = 6 if i_am_returning else 4
         my_segs: List[Tuple[Tuple[float, float, float], Tuple[float, float, float]]] = []
-        for k in range(4):
+        for k in range(horizon_k):
             t0_k = max(self.clock.start, min(self.clock.end, tau + k * rate))
             t1_k = max(self.clock.start, min(self.clock.end, tau + (k + 1) * rate))
             if t1_k <= self.clock.start + 1e-6 and t0_k <= self.clock.start + 1e-6:
@@ -260,7 +264,15 @@ class Policy:
                 if _seg_min_dist3(p0, p1, q0, q1) < d_lim:
                     cur_pm = self.peer_state.get(aid, (0.0, 0.0, "route"))[2]
                     if cur_pm == "hold":
-                        return True
+                        # Strict total order breaks mutual-hold deadlocks: lower ID only yields
+                        # if it is closing on the stationary holder inside the separation bubble.
+                        if self.aircraft_id > aid:
+                            return True
+                        d_now = dist3(p0, q0)
+                        d_next = dist3(p1, q0)
+                        if d_next < d_now - 1e-3 and d_next < d_lim:
+                            return True
+                        break
                     # A returning aircraft yields to any on-plan peer (which may not have heard the abort).
                     if i_am_returning and cur_pm == "route":
                         return True
@@ -270,6 +282,9 @@ class Policy:
                             return True
                         break
                     if self.aircraft_id > aid:
+                        return True
+                    # Lower ID in returning pair: don't fly into higher ID's current position if it may hold.
+                    if i_am_returning and cur_pm == "return" and k == 0 and dist3(p1, q0) < self.rules.d_sep_m + 1.5:
                         return True
                     break
         return False
@@ -338,6 +353,31 @@ class Policy:
                 self._sent_obs.add(c)
                 self._ob_ttl[c] = 4
 
+        # Range-aware ob re-send: when an effector of `c` is within ~260 m on the plan, re-send `ob`.
+        if self.is_scout and self._sent_obs:
+            my_pos = obs["pos"]
+            for c in self._sent_obs:
+                if t - self._last_ob_near.get(c, -100.0) < 2.0:
+                    continue
+                for eff_id in self.peers_by_target.get(c, ()):
+                    eff_clk = self.clocks[eff_id]
+                    if t <= eff_clk.end and dist3(my_pos, eff_clk.position(t)) <= 260.0:
+                        self._ob_ttl[c] = max(self._ob_ttl.get(c, 0), 2)
+                        self._last_ob_near[c] = t
+                        break
+
+        # Anti-entropy backup: periodically relay one active `ob` every 8s for hop-by-hop delivery.
+        if not self._ob_ttl and t - self._last_ae_t >= 8.0 and self.observed:
+            active_obs = sorted(
+                c for c in self.observed
+                if any(t <= self.clocks[eid].end for eid in self.peers_by_target.get(c, ()))
+            )
+            if active_obs:
+                pick = active_obs[self._ae_idx % len(active_obs)]
+                self._ae_idx += 1
+                self._ob_ttl[pick] = 1
+                self._last_ae_t = t
+
         for ev in obs.get("sensed", ()):
             self._learn_sensed(ev)
 
@@ -362,7 +402,7 @@ class Policy:
                     if time_to_eng <= 4.0:
                         abort = True
 
-        if abort and self._last_mode != "return":
+        if abort and (self._last_mode != "return" or self._hold_streak > 0):
             self._rt_ttl = 4
             self._last_mode = "return"
 
