@@ -137,9 +137,9 @@ class EffectorGroup(unittest.TestCase):
 
     def test_group_is_shifted_together_and_the_scout_stays(self):
         extra = self.bundle()
-        # an accepted route airborne around the take-off of the light effector, 36 m from its pad
+        # an accepted (valid) scout route airborne around the take-off of the light effector, its pad 36 m away
         t0 = extra["L01"][0]["t"]
-        self.pl.routes["L02"] = hop((30, 20), depart=t0)
+        self.pl.routes["S02"] = hop((0, 20), depart=t0)
         before = copy.deepcopy(extra)
         pre = r8(self.sc, self.pl._plan(extra))
         deconflict.adjust(self.pl, extra)
@@ -157,7 +157,7 @@ class EffectorGroup(unittest.TestCase):
         extra = self.bundle()
         t_strike = extra["L01"][-1]["t"]
         self.sc.contact_by_id()["C04"].window = (100.0, t_strike + 3.0)
-        self.pl.routes["L02"] = hop((30, 20), depart=extra["L01"][0]["t"])
+        self.pl.routes["S02"] = hop((0, 20), depart=extra["L01"][0]["t"])
         before = copy.deepcopy(extra)
         deconflict.adjust(self.pl, extra)
         self.assertEqual(extra, before, "a delay beyond the strike window (R9) must not be applied")
@@ -165,7 +165,7 @@ class EffectorGroup(unittest.TestCase):
     def test_the_planner_stays_sound_with_the_scheduler_on(self):
         """_try after adjust: either rejected or the whole plan is valid for the official validator."""
         extra = self.bundle()
-        self.pl.routes["L02"] = hop((30, 20), depart=extra["L01"][0]["t"])
+        self.pl.routes["S02"] = hop((0, 20), depart=extra["L01"][0]["t"])
         got = self.pl._try(extra)
         if got is not None:
             self.assertTrue(evaluate(self.sc, self.pl._plan(extra)).valid)
