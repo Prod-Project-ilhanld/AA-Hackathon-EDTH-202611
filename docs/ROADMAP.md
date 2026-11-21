@@ -9,6 +9,8 @@ Rules and background: [PLAN.md](PLAN.md), [KIT_NOTES.md](KIT_NOTES.md), [researc
 - **Hardened (rule 10):** empty plan first, atomic writes, `setitimer` alarm that writes the last validated plan, catch-all, exit 0, budget counted from process start, kit helpers vendored in `handin/fk/`, final check with the jury's own validator.
 - **Track 2 as written in §6 is parked.** The team's architecture (Louis's planner + `routing.py`) is working; §6 stays as a reference for improving it. Improvements now go into `planner.py` / `routing.py` as measured levers (WS0 list).
 - **Paths:** everything in this roadmap that says `handin/` means `fleet-orchestration/fleet-kit/handin/`. `tools/check.py` + `tools/bench.py` are now one tool: `fleet-orchestration/fleet-kit/tools/bench.py` (fresh copy like the jury, `--python /usr/bin/python3`). The kit itself is part of this repo, so no separate `kit/` clone is needed.
+- **Starter files for parallel work** (off by default, one-line hooks in `planner.py`): `handin/targets.py` (R7 skip written, light/heavy pricing to do), `handin/deconflict.py` (R8 departure scheduler to do), `tools/tune.py` (plan only). Agent-loop prompt: `tools/loop/program.md`.
+- **Roles are suggestions**, not a fixed assignment: §3's owners describe the original plan; people pick tasks from the team message.
 - **CI** (`.github/workflows/ci.yml`) runs on every PR and push to `main`: Python 3.9 compile, hand-in rules, unit tests, a jury-style run on L1–L3.
 
 ## 1. Vision

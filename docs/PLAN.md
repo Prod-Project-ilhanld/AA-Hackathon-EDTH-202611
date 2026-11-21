@@ -1,6 +1,6 @@
 # EDTH Paris — SUB-15 Fleet Orchestration
 
-Kit: https://github.com/AA-OpenProjects/AA-Hackathon-EDTH-202611 (`fleet-orchestration/fleet-kit`), local copy in `kit/` (gitignored, never edited).
+Kit: https://github.com/AA-OpenProjects/AA-Hackathon-EDTH-202611. In this repo the kit is the tree itself; our hand-in is `fleet-orchestration/fleet-kit/handin/` (never edit `fleetkit/`).
 Event: 20–22 Nov 2026. **Hand-in: 22 Nov, midday. We hand in by 11:00.**
 Background: [KIT_NOTES.md](KIT_NOTES.md) (rules and code), [research/PRIOR_ART.md](research/PRIOR_ART.md) (ideas to borrow).
 
@@ -11,7 +11,7 @@ Background: [KIT_NOTES.md](KIT_NOTES.md) (rules and code), [research/PRIOR_ART.m
 - **60 s per scenario.** A crash, timeout, missing plan or invalid plan scores 0. We stop searching at ~45 s.
 - **No folder named `fleetkit`** inside the hand-in: it would hide the official one.
 - Ranking: sum of raw scores on scenarios we haven't seen. Ties go to the faster total run time.
-- Test the hand-in with `python3 tools/check.py` (our copy of the kit's `check_handin.py`, pointed at our `handin/`). The kit's own `check_handin.py` only tests the kit's template folder.
+- Test the hand-in like the jury from `fleet-orchestration/fleet-kit`: `python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 0-1 --jobs 1 --python /usr/bin/python3` (fresh copy per run, 60 s, official validator).
 
 ## Rule zero
 An invalid plan scores 0. The planner writes an empty valid plan first, then builds Track 1 (the improved baseline, anytime) and keeps the best officially valid plan (see ROADMAP rule 10). Every candidate passes the official `fleetkit` `validate()` before it can replace the best one, and the planner always writes the best valid plan it has. Fast incremental checks are for searching only, never the final judge.
@@ -40,20 +40,20 @@ L4 (100 aircraft) is where a fast heuristic matters and an exact solver won't fi
 
 The ranking sums raw scores, so the big levels count most. L4 serves under a quarter of the points: that's where we gain the most.
 
-Run from `kit/fleet-orchestration/fleet-kit`: `python3 -m fleetkit stats L4 --seeds 0-9`
+Run from `fleet-orchestration/fleet-kit`: `python3 -m fleetkit stats L4 --seeds 0-9`
 
 ## Timeline
 The detailed roadmap (vision, workstreams, agent lanes, checkpoints CP0–CP6 with verification commands, hour-by-hour schedule, the `state.py` contract) is in [ROADMAP.md](ROADMAP.md). Short version: CP1 safe skeleton Sat 03:00 · CP2 v1 beats baseline Sat 13:00 · CP3 L4 at scale Sat 19:00 · CP4 search + tuning Sun 01:00 · CP5 freeze Sun 10:00 · hand-in Sun 11:00.
 
 ## Who owns what (one owner per file)
-The authoritative table (with missions, handoffs and the `state.py` contract) is in [ROADMAP.md §3 and §6](ROADMAP.md). Summary:
+Suggested split, not fixed (see [ROADMAP.md §0](ROADMAP.md) for the current state). The original role table:
 | Person | Files |
 |---|---|
 | A | `handin/planner.py`, `guard.py`, `state.py` (contract owner), `params.py`, `handin/fk/`, delta validation; Track 1 from CP2; final hand-in |
 | B | `handin/prep.py`, `bundle.py`, `strikes.py`; all ALNS operators from Sat 19:00 |
 | C | `handin/routing.py`, `scouts.py` |
 | D | `handin/deconflict.py`; runs `tools/tune.py` from CP0 |
-| E | `tools/bench.py`, `tools/check.py`, `tools/tune.py`, `tools/loop/`, `tools/edge/`, `tools/shift/`, `handin/search.py` frame |
+| E | `tools/bench.py`, `tools/tune.py` (starter), `tools/loop/program.md`, edge/shift seed sets (to do), `handin/search.py` frame |
 | F | `handin/v1_greedy.py` (Track 1) until CP2, then `tools/bound.py`, `tools/demo/`, pitch, board |
 
 `handin/params.py` holds every number we choose and every feature flag; anyone can propose a key, nobody hard-codes a constant.
@@ -116,10 +116,11 @@ Easy win now: the baseline's own constants (`SCOUT_LAYERS`, `EFFECTOR_LAYERS`, `
 - Optional: scaling chart (L1 → L4, or more aircraft) and the link-loss story if that part ships.
 
 ## TODO: live board (blocked on organisers)
-Get the server address, team name and token from Alta Ares, then from `kit/fleet-orchestration/fleet-kit`:
+Get the server address, team name and token from Alta Ares, then from `fleet-orchestration/fleet-kit`:
 ```bash
 python3 -m fleetkit board-login --server http://<address>:8080 --team "<team>" --token <token>
-python3 -m fleetkit submit-all "/Users/mahmoudelkassaby/EDTH Paris/runs/baseline-plans/"
+python3 -m fleetkit validation-set -o validation   # then make a plan per scenario into my-plans/
+python3 -m fleetkit submit-all my-plans/
 ```
 Regenerate the baseline plans first if `runs/` is missing (it's gitignored). The board has **no 60 s limit**: plans can be computed offline with any amount of time, so submit our best offline plans (ALNS experiment: 3,166.5) once we have the token. The board isn't the final ranking.
 
