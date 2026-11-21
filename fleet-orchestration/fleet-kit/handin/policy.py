@@ -12,7 +12,7 @@ from fleetkit.linkloss.sim import RouteClock
 from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
-SEP_PAD_M = 2.5
+SEP_PAD_M = 4.5
 
 
 def _seg_min_dist3(
@@ -123,6 +123,7 @@ class Policy:
         self._last_hb_t: float = -100.0
         self._sent_obs: Set[str] = set()
         self._hold_streak: int = 0
+        self._rs_ttl: int = 0
 
     def _init_pre_cut(self, t_loss: float) -> None:
         self.pre_cut_init = True
@@ -170,6 +171,9 @@ class Policy:
             elif "hd" in p:
                 u = float(p.get("u", sent_t))
                 self.peer_state[src] = (sent_t, u, "hold")
+            elif "rs" in p:
+                u = float(p.get("u", sent_t))
+                self.peer_state[src] = (sent_t, u, "route")
 
     def _route_hits_known_zone(self, tau: float) -> bool:
         if not self.zones:
@@ -186,8 +190,8 @@ class Policy:
         clk = self.clocks[aid]
         if aid in self.peer_state:
             t_ref, tau_ref, mode = self.peer_state[aid]
-            # Expire stale hold states (e.g. if peer resumed or failed).
-            if mode == "hold" and now_t - t_ref > 7.0:
+            # Expire stale hold states only after 5 missed 3s heartbeats.
+            if mode == "hold" and now_t - t_ref > 15.0:
                 del self.peer_state[aid]
             else:
                 dt = max(0.0, t - t_ref)
@@ -198,6 +202,11 @@ class Policy:
                     return clk.position(tau_est)
                 if mode == "hold":
                     return clk.position(tau_ref)
+                if mode == "route":
+                    tau_est = tau_ref + dt
+                    if tau_est >= clk.end - 1e-6:
+                        return None
+                    return clk.position(tau_est)
         # Default: dead-reckon along planned route.
         if t < clk.start - 1e-6 or t > clk.end + 1e-6:
             return None
@@ -304,6 +313,11 @@ class Policy:
                 if self._rt_ttl > 0:
                     self._rt_ttl -= 1
 
+        elif self._rs_ttl > 0:
+            msg["rs"] = 1
+            msg["u"] = round(tau, 1)
+            self._rs_ttl -= 1
+
         if not msg:
             return None
         return _pack_msg(msg)
@@ -364,6 +378,8 @@ class Policy:
             action = {"kind": "hold"}
             self._hold_streak += 1
         else:
+            if self._hold_streak > 0 and not abort:
+                self._rs_ttl = 2
             self._hold_streak = 0
 
         msg = self._build_message(t, tau, mode, action["kind"])
