@@ -1,0 +1,35 @@
+--- a/fleet-orchestration/fleet-kit/handin/planner.py
++++ b/fleet-orchestration/fleet-kit/handin/planner.py
+@@ -382,15 +382,30 @@
+     for score, plan in results:
+         if plan is not None and score > best[0]:
+             best = (score, plan)
++    if best[0] <= 0.0:  # nothing valid and positive found (every build failed): the kit's greedy beats 0
++        return _greedy_fallback(scenario) or empty
+     # last guard: the plan we write was validated by the kit's own scorer
+     try:
+         if not evaluate(scenario, best[1]).valid:
+-            return empty
++            return _greedy_fallback(scenario) or empty
+     except Exception:
+-        return empty
++        return _greedy_fallback(scenario) or empty
+     return best[1]
+ 
+ 
++def _greedy_fallback(scenario: Scenario) -> Optional[dict]:
++    """The kit's greedy plan (2.7 s at most on L4, measured), only when there is time left before the alarm."""
++    if ALARM_S - (time.monotonic() - T0) < 8.0:
++        return None
++    try:
++        from fk.baseline import greedy_plan
++        plan = greedy_plan(scenario)
++        result = evaluate(scenario, plan)
++        return plan if result.valid and result.score > 0 else None
++    except Exception:
++        return None
++
++
+ _OUT = sys.argv[2] if len(sys.argv) > 2 else "plan.json"
+ _best_text = None  # pre-serialised last validated plan, written by the alarm handler
+ 
