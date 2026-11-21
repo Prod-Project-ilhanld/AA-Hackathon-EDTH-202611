@@ -3,7 +3,13 @@
 Each case edits a normal scenario (L2 seed 0) into an odd one: no scout, one aircraft, closed time windows,
 unreachable contacts, impossible needs, dead batteries... The planner is run the way the jury runs it
 (subprocess, minimal environment); the plan must be written, VALID for the kit scorer, and on time.
-A valid empty plan (score 0) is a pass: the pack checks safety, not score.
+Three checks per case:
+  1. safety: plan written, VALID for the kit scorer, on time (an empty plan is valid);
+  2. no swallowed crash: the planner catches its own errors and falls back to a valid empty plan, so a hidden
+     crash looks like a pass; any `planner: ...` line or traceback on stderr is a failure;
+  3. expectation (EXPECT): "positive" = the planner must score > 0 (something is servable, giving up is a bug);
+     "zero" = it must score 0 (provably nothing servable: a score > 0 would mean a hole in the validator).
+Cases without an EXPECT entry are only checked for safety.
 
 From fleet-kit/:
     python3 tools/edge_pack.py                    # every case, 2 s internal budget each
@@ -14,6 +20,7 @@ Python 3.9, standard library only.
 """
 import argparse
 import copy
+import functools
 import json
 import os
 import subprocess
@@ -276,6 +283,86 @@ def no_zones(d):
     return d
 
 
+# ---- exact boundaries (where `<` versus `<=` bugs live; tolerance of the kit: EPS = 1e-6) -----------------------
+DWELL_S = 20.0  # rules.obs_dwell_s of every scenario
+
+
+def window_exactly_dwell(d):
+    """Every window is exactly one observation long: servable only by being on station at its first second."""
+    return _windows(d, lambda w: [w[0], w[0] + DWELL_S])
+
+
+def window_just_below_dwell(d):
+    """1 ms shorter than the dwell: no observation can fit (R9), so nothing is servable."""
+    return _windows(d, lambda w: [w[0], w[0] + DWELL_S - 0.001])
+
+
+def window_ends_at_horizon(d):
+    return _windows(d, lambda w: [w[0], d["horizon_s"]])
+
+
+def _civilian(d):
+    civ = [c for c in d["contacts"] if c["class"] == "civilian"]
+    if not civ:
+        civ = [{"id": "CX", "class": "civilian", "pos": [500.0, 500.0, 0.0], "points": 0, "window_s": None}]
+        d["contacts"].append(civ[0])
+    return civ[0]
+
+
+def r7_exactly_200(d):
+    """Every hostile exactly on the collateral radius of a civilian (R7 is strict: 200.0 m is allowed)."""
+    civ = _civilian(d)
+    for c in _hostiles(d):
+        c["pos"] = [civ["pos"][0] + 200.0, civ["pos"][1], 0.0]
+    return d
+
+
+def r7_just_inside(d):
+    """Every hostile 1 mm inside the collateral radius: engaging any of them breaks R7."""
+    civ = _civilian(d)
+    for c in _hostiles(d):
+        c["pos"] = [civ["pos"][0] + 199.999, civ["pos"][1], 0.0]
+    return d
+
+
+def homes_identical(d):
+    """Every aircraft starts on the same point: the planner must stagger the departures (R8)."""
+    home = list(d["aircraft"][0]["home"])
+    for a in d["aircraft"]:
+        a["home"] = list(home)
+    return d
+
+
+def needs_exactly_the_fleet(d):
+    """One hostile needs every light and every heavy of the fleet (R10 all-or-nothing, no spare)."""
+    lights = sum(1 for a in d["aircraft"] if a.get("subtype") == "light")
+    heavies = sum(1 for a in d["aircraft"] if a.get("subtype") == "heavy")
+    _hostiles(d)[0]["engage_needs"] = {"light": lights, "heavy": heavies}
+    return d
+
+
+@functools.lru_cache(maxsize=1)
+def _baseline_energy_wh():
+    """Energy of every aircraft in the kit baseline plan for the base scenario."""
+    from fleetkit.baseline import greedy_plan
+    from fleetkit.energy import route_energy_wh
+    from fleetkit.model import parse_plan
+    sc = Scenario.from_dict(base())
+    routes, _ = parse_plan(greedy_plan(sc))
+    by_id = sc.aircraft_by_id()
+    return {aid: route_energy_wh(r.waypoints, by_id[aid]) for aid, r in routes.items()}
+
+
+def battery_exact_baseline(d):
+    """Every aircraft the baseline uses has exactly the energy the baseline spends: no margin at all (R3)."""
+    for a in d["aircraft"]:
+        need = _baseline_energy_wh().get(a["id"])
+        if need:
+            a["capacity_wh"] = need * (1.0 + 1e-12)
+            a["battery_pct"] = 100.0
+    return d
+
+
 CASES = {f.__name__: f for f in (
     no_scouts, no_effectors, no_lights, no_heavies, no_aircraft, one_scout, one_light, one_heavy,
     one_scout_one_light, batteries_empty, batteries_tiny,
@@ -286,7 +373,43 @@ CASES = {f.__name__: f for f in (
     hostiles_next_to_civilians, zero_points, negative_points,
     only_unknowns, only_hostiles, no_contacts, only_friendlies,
     horizon_tiny, horizon_long, zone_over_every_base, no_zones,
+    window_exactly_dwell, window_just_below_dwell, window_ends_at_horizon, r7_exactly_200, r7_just_inside,
+    homes_identical, needs_exactly_the_fleet, battery_exact_baseline,
 )}  # type: Dict[str, Callable[[dict], dict]]
+
+# What each case must score (see the module docstring). Only cases where the answer is evident are listed.
+# "zero": provably nothing servable (no scout, no aircraft, no energy, no window that fits a dwell, nothing
+# reachable, no point to win), so any score above 0 would reveal a hole in the validator.
+ZERO = ("no_scouts", "no_aircraft", "batteries_empty", "no_contacts", "only_friendlies", "zero_points",
+        "negative_points", "window_zero_width", "window_inverted", "window_shorter_than_dwell",
+        "window_unreachable_early", "window_just_below_dwell", "window_after_horizon", "horizon_tiny",
+        "contacts_very_far")
+# "positive": the normal scenario still contains something a reduced fleet can serve (measured on L2 seed 0,
+# stable over repeated runs), so an empty answer means the planner gave up.
+POSITIVE = ("no_effectors", "no_lights", "no_heavies", "one_scout", "one_scout_one_light", "window_negative",
+            "window_unknown_none", "window_hostile_none", "needs_more_than_fleet", "needs_unknown_subtype",
+            "contacts_on_a_base", "contacts_stacked", "hostiles_next_to_civilians", "only_unknowns",
+            "only_hostiles", "horizon_long", "no_zones")
+EXPECT = dict([(n, "zero") for n in ZERO] + [(n, "positive") for n in POSITIVE])  # type: Dict[str, str]
+assert set(EXPECT) <= set(CASES), sorted(set(EXPECT) - set(CASES))
+
+
+def judge_expectation(name: str, score: float) -> str:
+    """Returns "" when the score meets the case's expectation, else the reason it does not."""
+    want = EXPECT.get(name)
+    if want == "positive" and not score > 1e-6:
+        return "expected a positive score, the planner gave up (score %.1f)" % score
+    if want == "zero" and score > 1e-6:
+        return "expected 0 (nothing is servable) but the plan scores %.1f: hole in the validator?" % score
+    return ""
+
+
+def swallowed_error(stderr: str) -> str:
+    """Returns the internal error the planner printed before falling back to a safe plan, or ""."""
+    for line in stderr.splitlines():
+        if line.startswith("planner:") or line.startswith("Traceback"):
+            return line.strip()[:160]
+    return ""
 
 
 def build(name: str) -> dict:
@@ -323,6 +446,13 @@ def run_case(name: str, planner: str = PLANNER, budget: str = "2", workers: str 
         if not res.valid:
             return {"ok": False, "why": "invalid: " + "; ".join(str(v) for v in res.violations[:2]),
                     "score": 0.0, "time": dt}
+        hidden = swallowed_error(proc.stderr)
+        if hidden:
+            return {"ok": False, "why": "internal error swallowed by the safety net: " + hidden,
+                    "score": res.score, "time": dt}
+        miss = judge_expectation(name, res.score)
+        if miss:
+            return {"ok": False, "why": miss, "score": res.score, "time": dt}
         return {"ok": True, "why": "", "score": res.score, "time": dt}
 
 
