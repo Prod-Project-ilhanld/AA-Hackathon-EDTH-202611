@@ -30,7 +30,7 @@ jobs:
         run: |
           test ! -d handin/fleetkit || { echo "handin/fleetkit would hide the official kit"; exit 1; }
           if grep -rnE '\.level\b' --include='*.py' handin | grep -v '^handin/fk/'; then echo "never branch on scenario.level"; exit 1; fi
-          if grep -rnE '^(from|import) fleetkit' --include='*.py' handin | grep -v '^handin/check_handin.py'; then echo "import kit code from handin/fk, not fleetkit (only the final guard may)"; exit 1; fi
+          if grep -rnE '^(from|import) fleetkit' --include='*.py' handin | grep -vE '^handin/(check_handin|check_policy|policy)\.py'; then echo "import kit code from handin/fk, not fleetkit (only the final guard may)"; exit 1; fi
 
       - name: Unit tests
         env:

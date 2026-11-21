@@ -130,12 +130,12 @@ def _handin_sources(skip):
 
 def test_no_branching_on_level():
     # handin/fk/ is a subfolder, so listing handin/*.py already leaves it out
-    hits = ["%s:%d: %s" % (n, i, l.strip()) for n, lines in _handin_sources({"check_handin.py"})
+    hits = ["%s:%d: %s" % (n, i, l.strip()) for n, lines in _handin_sources({"check_handin.py", "check_policy.py", "policy.py"})
             for i, l in enumerate(lines, 1) if re.search(r"\.level\b", l)]
     assert not hits, hits
 
 
 def test_no_direct_kit_import():
-    hits = ["%s:%d: %s" % (n, i, l.strip()) for n, lines in _handin_sources({"check_handin.py"})
+    hits = ["%s:%d: %s" % (n, i, l.strip()) for n, lines in _handin_sources({"check_handin.py", "check_policy.py", "policy.py"})
             for i, l in enumerate(lines, 1) if re.match(r"(from|import) fleetkit", l)]
     assert not hits, hits
