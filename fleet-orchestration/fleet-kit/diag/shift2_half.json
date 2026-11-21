@@ -1,0 +1,469 @@
+{
+ "rows": [
+  {
+   "level": "S-half-scouts",
+   "seed": 0,
+   "mine": 685.6647499598391,
+   "base": 307.0181444439304,
+   "valid": true,
+   "time": 38.8,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 1,
+   "mine": 972.0336988161666,
+   "base": 330.6387118246926,
+   "valid": true,
+   "time": 38.38,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 2,
+   "mine": 945.4437003092376,
+   "base": 386.1695107085777,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 3,
+   "mine": 679.0450485877395,
+   "base": 291.9691945048636,
+   "valid": true,
+   "time": 38.3,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 4,
+   "mine": 867.6375143970699,
+   "base": 372.20077705809297,
+   "valid": true,
+   "time": 38.24,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 5,
+   "mine": 1126.6828023949272,
+   "base": 764.445065862288,
+   "valid": true,
+   "time": 38.34,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 6,
+   "mine": 930.127164864095,
+   "base": 483.30943953953965,
+   "valid": true,
+   "time": 38.35,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 7,
+   "mine": 1115.6909598524494,
+   "base": 911.760195702368,
+   "valid": true,
+   "time": 38.6,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 8,
+   "mine": 1000.2104464301028,
+   "base": 565.9535802514932,
+   "valid": true,
+   "time": 38.23,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 9,
+   "mine": 988.490351060364,
+   "base": 472.5258392692924,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 10,
+   "mine": 522.2327235656669,
+   "base": 274.3007462956616,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 11,
+   "mine": 1360.956003367959,
+   "base": 632.3415981745119,
+   "valid": true,
+   "time": 38.57,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 12,
+   "mine": 1022.8281102192095,
+   "base": 356.02458852173856,
+   "valid": true,
+   "time": 38.51,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 13,
+   "mine": 1146.0079974512944,
+   "base": 495.75879793767353,
+   "valid": true,
+   "time": 38.54,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 14,
+   "mine": 1125.5994507600587,
+   "base": 610.7771801677115,
+   "valid": true,
+   "time": 38.43,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 15,
+   "mine": 916.7804588915278,
+   "base": 545.8148164468901,
+   "valid": true,
+   "time": 38.23,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 16,
+   "mine": 1155.1395335476655,
+   "base": 596.1076292130344,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 17,
+   "mine": 1135.826922085313,
+   "base": 610.1540057524389,
+   "valid": true,
+   "time": 38.3,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 18,
+   "mine": 1007.3156480886632,
+   "base": 785.0194631019965,
+   "valid": true,
+   "time": 38.23,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 19,
+   "mine": 834.627086726905,
+   "base": 479.9262437060411,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 20,
+   "mine": 1277.0163100300408,
+   "base": 583.5430192638871,
+   "valid": true,
+   "time": 38.43,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 21,
+   "mine": 951.6950594050375,
+   "base": 513.7083774453776,
+   "valid": true,
+   "time": 38.49,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 22,
+   "mine": 761.991130274005,
+   "base": 426.88665078202814,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 23,
+   "mine": 922.4506758851737,
+   "base": 380.8687121754655,
+   "valid": true,
+   "time": 39.42,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 24,
+   "mine": 1251.5838870018438,
+   "base": 662.2715692676577,
+   "valid": true,
+   "time": 38.24,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 25,
+   "mine": 1069.70188559399,
+   "base": 539.4883681427431,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 26,
+   "mine": 980.890177207837,
+   "base": 458.76704470273626,
+   "valid": true,
+   "time": 38.18,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 27,
+   "mine": 1031.4582498137615,
+   "base": 502.7659620356227,
+   "valid": true,
+   "time": 38.66,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 28,
+   "mine": 817.819661395122,
+   "base": 579.4503861278354,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 29,
+   "mine": 1013.0591473418692,
+   "base": 584.660434399593,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 30,
+   "mine": 1150.4156613644864,
+   "base": 656.9289939157434,
+   "valid": true,
+   "time": 38.3,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 31,
+   "mine": 870.0312991980745,
+   "base": 480.860332992747,
+   "valid": true,
+   "time": 38.56,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 32,
+   "mine": 1207.1493911057632,
+   "base": 546.478069467467,
+   "valid": true,
+   "time": 38.34,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 33,
+   "mine": 605.5147388390366,
+   "base": 173.46108723888563,
+   "valid": true,
+   "time": 38.24,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 34,
+   "mine": 814.8466363712887,
+   "base": 402.607608798651,
+   "valid": true,
+   "time": 38.29,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 35,
+   "mine": 1337.158184700035,
+   "base": 510.19795286481644,
+   "valid": true,
+   "time": 38.5,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 36,
+   "mine": 866.4224714663267,
+   "base": 563.6167777517841,
+   "valid": true,
+   "time": 38.37,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 37,
+   "mine": 773.8811996988838,
+   "base": 377.3896601378185,
+   "valid": true,
+   "time": 38.2,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 38,
+   "mine": 787.2151952998647,
+   "base": 455.6210304747689,
+   "valid": true,
+   "time": 38.34,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 39,
+   "mine": 978.7568510909946,
+   "base": 693.8312895254642,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 40,
+   "mine": 875.2147593937311,
+   "base": 463.82714483228494,
+   "valid": true,
+   "time": 38.53,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 41,
+   "mine": 833.3326582596612,
+   "base": 448.9527148850317,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 42,
+   "mine": 1004.8436554564194,
+   "base": 607.6411788747561,
+   "valid": true,
+   "time": 38.39,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 43,
+   "mine": 1030.9166246479003,
+   "base": 477.8501363773787,
+   "valid": true,
+   "time": 38.67,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 44,
+   "mine": 1208.9141075007697,
+   "base": 763.3661158881673,
+   "valid": true,
+   "time": 38.38,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 45,
+   "mine": 779.0783108446817,
+   "base": 505.5370875217134,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 46,
+   "mine": 966.8147058804259,
+   "base": 368.35771775329556,
+   "valid": true,
+   "time": 38.25,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 47,
+   "mine": 993.8677879468851,
+   "base": 663.9745980017233,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 48,
+   "mine": 788.3140156462789,
+   "base": 471.13042434123906,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 49,
+   "mine": 1047.9253768539545,
+   "base": 544.4899871749741,
+   "valid": true,
+   "time": 38.29,
+   "err": ""
+  }
+ ],
+ "summary": {
+  "S-half-scouts": {
+   "n": 50,
+   "mine": 48536.620186890395,
+   "base": 25680.745961644494,
+   "ratio": 1.8900004018334327,
+   "failures": 0,
+   "tmax": 39.42,
+   "delta_mean": 457.1174845049181,
+   "delta_se": 19.743442275665686,
+   "worse": 0,
+   "worse_share": 0.0,
+   "paired_n": 50
+  }
+ }
+}
