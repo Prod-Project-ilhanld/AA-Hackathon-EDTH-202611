@@ -1,0 +1,291 @@
+{
+ "cells": {
+  "250x100": {
+   "retention": 0.7535436314278746,
+   "failures": 10,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 7.064272118649306,
+   "s_loss": 0.739415087190576,
+   "ms_per_call": 0.024629212577278757,
+   "failure_examples": [
+    "L3-0: R8 (separation): L03 and L13 come within 33.9 m of each other (limit 40 m) around t = 488.8 s",
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L4-2: R8 (separation): L08 and L19 come within 37.5 m of each other (limit 40 m) around t = 694.8 s"
+   ],
+   "meets": false
+  },
+  "250x50": {
+   "retention": 0.7420844232260733,
+   "failures": 13,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 7.052417703671989,
+   "s_loss": 0.7279795878187293,
+   "ms_per_call": 0.024855819573455,
+   "failure_examples": [
+    "L3-0: R8 (separation): L03 and L13 come within 33.9 m of each other (limit 40 m) around t = 488.8 s",
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L3-2: R8 (separation): S03 and S05 come within 24.6 m of each other (limit 40 m) around t = 790.8 s"
+   ],
+   "meets": false
+  },
+  "250x200": {
+   "retention": 0.7535436314278746,
+   "failures": 10,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 7.064272118649306,
+   "s_loss": 0.739415087190576,
+   "ms_per_call": 0.025050611968170704,
+   "failure_examples": [
+    "L3-0: R8 (separation): L03 and L13 come within 33.9 m of each other (limit 40 m) around t = 488.8 s",
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L4-2: R8 (separation): L08 and L19 come within 37.5 m of each other (limit 40 m) around t = 694.8 s"
+   ],
+   "meets": false
+  },
+  "250x400": {
+   "retention": 0.7535436314278746,
+   "failures": 10,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 7.064272118649306,
+   "s_loss": 0.739415087190576,
+   "ms_per_call": 0.024935375270591108,
+   "failure_examples": [
+    "L3-0: R8 (separation): L03 and L13 come within 33.9 m of each other (limit 40 m) around t = 488.8 s",
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L4-2: R8 (separation): L08 and L19 come within 37.5 m of each other (limit 40 m) around t = 694.8 s"
+   ],
+   "meets": false
+  },
+  "500x50": {
+   "retention": 0.9258624334767077,
+   "failures": 6,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.1219380602748235,
+   "s_loss": 0.913618557356158,
+   "ms_per_call": 0.01901641320610138,
+   "failure_examples": [
+    "L2-2: R8 (separation): L03 and L04 come within 37.5 m of each other (limit 40 m) around t = 416.7 s",
+    "L3-2: R8 (separation): L02 and L15 come within 29.6 m of each other (limit 40 m) around t = 252.3 s",
+    "L3-2: R8 (separation): H02 and S05 come within 22.3 m of each other (limit 40 m) around t = 495.4 s"
+   ],
+   "meets": false
+  },
+  "500x200": {
+   "retention": 0.929338460873968,
+   "failures": 5,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.144069913710434,
+   "s_loss": 0.9170503210465472,
+   "ms_per_call": 0.019441124801339513,
+   "failure_examples": [
+    "L2-2: R8 (separation): L03 and L04 come within 37.5 m of each other (limit 40 m) around t = 416.7 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s"
+   ],
+   "meets": false
+  },
+  "500x100": {
+   "retention": 0.929338460873968,
+   "failures": 5,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.143234888784097,
+   "s_loss": 0.9170519910963998,
+   "ms_per_call": 0.019476014126838814,
+   "failure_examples": [
+    "L2-2: R8 (separation): L03 and L04 come within 37.5 m of each other (limit 40 m) around t = 416.7 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s",
+    "L3-2: R8 (separation): H02 and S04 come within 39.9 m of each other (limit 40 m) around t = 870.9 s"
+   ],
+   "meets": false
+  },
+  "250x800": {
+   "retention": 0.7535436314278746,
+   "failures": 10,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 7.064272118649306,
+   "s_loss": 0.739415087190576,
+   "ms_per_call": 0.023074541693565865,
+   "failure_examples": [
+    "L3-0: R8 (separation): L03 and L13 come within 33.9 m of each other (limit 40 m) around t = 488.8 s",
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L4-2: R8 (separation): L08 and L19 come within 37.5 m of each other (limit 40 m) around t = 694.8 s"
+   ],
+   "meets": false
+  },
+  "1000x50": {
+   "retention": 0.9734143763213531,
+   "failures": 2,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 5.612908625840809,
+   "s_loss": 0.9621885590696715,
+   "ms_per_call": 0.016990718687975803,
+   "failure_examples": [
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s",
+    "L3-2: R8 (separation): H02 and S05 come within 19.2 m of each other (limit 40 m) around t = 423.2 s"
+   ],
+   "meets": false
+  },
+  "500x400": {
+   "retention": 0.929338460873968,
+   "failures": 5,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.144069913710434,
+   "s_loss": 0.9170503210465472,
+   "ms_per_call": 0.01887706513501894,
+   "failure_examples": [
+    "L2-2: R8 (separation): L03 and L04 come within 37.5 m of each other (limit 40 m) around t = 416.7 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s"
+   ],
+   "meets": false
+  },
+  "500x800": {
+   "retention": 0.929338460873968,
+   "failures": 5,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.144069913710434,
+   "s_loss": 0.9170503210465472,
+   "ms_per_call": 0.01888740401547881,
+   "failure_examples": [
+    "L2-2: R8 (separation): L03 and L04 come within 37.5 m of each other (limit 40 m) around t = 416.7 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s",
+    "L3-2: R8 (separation): L02 and L15 come within 32.7 m of each other (limit 40 m) around t = 252.4 s"
+   ],
+   "meets": false
+  },
+  "1000x100": {
+   "retention": 0.9834143763213531,
+   "failures": 1,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 5.484757815943027,
+   "s_loss": 0.972444860689467,
+   "ms_per_call": 0.01652391175465309,
+   "failure_examples": [
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s"
+   ],
+   "meets": false
+  },
+  "1000x200": {
+   "retention": 0.9834143763213531,
+   "failures": 1,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 5.490515169536678,
+   "s_loss": 0.9724333459822797,
+   "ms_per_call": 0.016876360709247085,
+   "failure_examples": [
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s"
+   ],
+   "meets": false
+  },
+  "1000x400": {
+   "retention": 0.9834143763213531,
+   "failures": 1,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 5.490420860392623,
+   "s_loss": 0.9724335346005678,
+   "ms_per_call": 0.016652105825677416,
+   "failure_examples": [
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s"
+   ],
+   "meets": false
+  },
+  "1000x800": {
+   "retention": 0.9834143763213531,
+   "failures": 1,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 5.490420860392623,
+   "s_loss": 0.9724335346005678,
+   "ms_per_call": 0.016673032559443357,
+   "failure_examples": [
+    "L3-0: R8 (separation): L01 and S04 come within 36.1 m of each other (limit 40 m) around t = 476.7 s"
+   ],
+   "meets": false
+  },
+  "2000x50": {
+   "retention": 0.9941875825627478,
+   "failures": 0,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.732331225485592,
+   "s_loss": 0.9807229201117765,
+   "ms_per_call": 0.017579741762246016,
+   "failure_examples": [],
+   "meets": true
+  },
+  "2000x100": {
+   "retention": 0.9941875825627478,
+   "failures": 0,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.726777084118075,
+   "s_loss": 0.9807340283945116,
+   "ms_per_call": 0.017723539002079455,
+   "failure_examples": [],
+   "meets": true
+  },
+  "2000x400": {
+   "retention": 0.9941875825627478,
+   "failures": 0,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.724103841850966,
+   "s_loss": 0.9807393748790458,
+   "ms_per_call": 0.0171582377467698,
+   "failure_examples": [],
+   "meets": true
+  },
+  "2000x200": {
+   "retention": 0.9841875825627477,
+   "failures": 1,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.845025679058404,
+   "s_loss": 0.9704975312046309,
+   "ms_per_call": 0.018021363008946665,
+   "failure_examples": [
+    "L3-2: R8 (separation): L02 and L15 come within 37.9 m of each other (limit 40 m) around t = 253.7 s"
+   ],
+   "meets": false
+  },
+  "2000x800": {
+   "retention": 0.9941875825627478,
+   "failures": 0,
+   "runs": 100,
+   "messages_per_aircraft_per_min": 6.719915547596447,
+   "s_loss": 0.9807477514675549,
+   "ms_per_call": 0.017319179717300404,
+   "failure_examples": [],
+   "meets": true
+  }
+ },
+ "sizing_score": 0.2,
+ "frontier": {
+  "250": null,
+  "500": null,
+  "1000": null,
+  "2000": 50.0
+ },
+ "meta": {
+  "policy": "/mnt/c/Users/mr101/Documents/Etudes/HEI 4/EDTH/wt-policy-r8/fleet-orchestration/fleet-kit/handin/policy.py",
+  "cases": [
+   "L1-0-e1",
+   "L1-1-e1",
+   "L1-2-e1",
+   "L1-3-e1",
+   "L1-4-e1",
+   "L2-0-e1",
+   "L2-1-e1",
+   "L2-2-e1",
+   "L2-3-e1",
+   "L2-4-e1",
+   "L3-0-e1",
+   "L3-1-e1",
+   "L3-2-e1",
+   "L3-3-e1",
+   "L3-4-e1",
+   "L4-0-e1",
+   "L4-1-e1",
+   "L4-2-e1",
+   "L4-3-e1",
+   "L4-4-e1"
+  ],
+  "comm_seeds": 5,
+  "wall_s": 74.1
+ }
+}

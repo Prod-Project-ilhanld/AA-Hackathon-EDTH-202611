@@ -1,5 +1,8 @@
 """Link-loss decentralized policy: event-driven gossip, R4 confirmation guard, and R8 separation hold.
 
+An aircraft that aborts hovers where it is (hold, flagged "ab") instead of retracing its route against later
+traffic, and backs off along its route only when it stands in an on-plan peer's way.
+
 Standard library + fleetkit only. Messages <= 64 bytes, < 50 ms per step.
 """
 from __future__ import annotations
@@ -171,6 +174,8 @@ class Policy:
             elif "hd" in p:
                 u = float(p.get("u", sent_t))
                 self.peer_state[src] = (sent_t, u, "hold")
+                if p.get("ab"):  # aborted: it hovers for good, and co-effectors must abort too
+                    self.aborted_peers.add(src)
             elif "rs" in p:
                 u = float(p.get("u", sent_t))
                 self.peer_state[src] = (sent_t, u, "route")
@@ -191,7 +196,7 @@ class Policy:
         if aid in self.peer_state:
             t_ref, tau_ref, mode = self.peer_state[aid]
             # Expire stale hold states only after 5 missed 3s heartbeats.
-            if mode == "hold" and now_t - t_ref > 15.0:
+            if mode == "hold" and now_t - t_ref > 15.0 and aid not in self.aborted_peers:
                 del self.peer_state[aid]
             else:
                 dt = max(0.0, t - t_ref)
@@ -274,6 +279,29 @@ class Policy:
                     break
         return False
 
+    def _blocking(self, t: float, tau: float, horizon: int = 6) -> bool:
+        """True if an on-plan peer is predicted to pass within separation of our position in the next seconds."""
+        me = self.clock.position(tau)
+        d_lim = self.rules.d_sep_m + SEP_PAD_M
+        for aid in self.clocks:
+            if aid == self.aircraft_id or self.peer_state.get(aid, (0.0, 0.0, "route"))[2] != "route":
+                continue
+            for k in range(horizon + 1):
+                q = self._peer_pos_at(aid, t + k, t)
+                if q is not None and dist3(me, q) < d_lim:
+                    return True
+        return False
+
+    def _peer_near(self, t: float, tau: float, radius: float = 500.0) -> bool:
+        """True if any live peer is predicted within `radius` of our held position (it must hear we hover)."""
+        me = self.clock.position(tau)
+        for aid in self.clocks:
+            if aid != self.aircraft_id:
+                q = self._peer_pos_at(aid, t, t)
+                if q is not None and dist3(me, q) < radius:
+                    return True
+        return False
+
     def _build_message(self, t: float, tau: float, mode: str, action_kind: str) -> Optional[dict]:
         msg: Dict[str, Any] = {}
 
@@ -301,9 +329,12 @@ class Policy:
                     del self._ob_ttl[c]
 
         if action_kind == "hold":
-            if self._hold_streak <= 3 or t - self._last_hd_sent >= 3.0:
+            gap = 3.0 if self._last_mode != "return" or self._peer_near(t, tau) else 15.0
+            if self._hold_streak <= 3 or t - self._last_hd_sent >= gap:
                 msg["hd"] = 1
                 msg["u"] = round(tau, 1)
+                if self._last_mode == "return":
+                    msg["ab"] = 1
                 self._last_hd_sent = t
         elif mode == "return" or action_kind == "return":
             if self._rt_ttl > 0 or (t - self._last_rt_sent >= 5.0):
@@ -367,18 +398,23 @@ class Policy:
             self._last_mode = "return"
 
         if abort:
-            rate = -1.0
-            action: dict = {"kind": "return"}
-        else:
-            rate = 1.0
-            action = {"kind": "continue"}
+            # Hover instead of retracing the route against later traffic; back off only when in an on-plan peer's way.
+            if self._blocking(t, tau) and not self._r8_conflict(t, tau, -1.0):
+                if self._hold_streak > 0:
+                    self._rt_ttl = 3
+                self._hold_streak = 0
+                return {"kind": "return"}, self._build_message(t, tau, mode, "return")
+            self._hold_streak += 1
+            return {"kind": "hold"}, self._build_message(t, tau, mode, "hold")
+        rate = 1.0
+        action: dict = {"kind": "continue"}
 
         # R8 separation check.
         if self._r8_conflict(t, tau, rate):
             action = {"kind": "hold"}
             self._hold_streak += 1
         else:
-            if self._hold_streak > 0 and not abort:
+            if self._hold_streak > 0:
                 self._rs_ttl = 2
             self._hold_streak = 0
 
