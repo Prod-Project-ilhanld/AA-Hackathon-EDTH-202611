@@ -60,16 +60,17 @@ non servis sur ce scénario.
 
 ## Slide 4 : Où on en est, mesuré (pitch)
 
-**Planificateur : 78 % de la borne. Glouton : 51 %.**
+**Planificateur : 79 % de la borne. Glouton : 51 %.**
 
 | Niveau | Borne moyenne | Notre plan | % de la borne | Glouton | % de la borne |
 |---|---:|---:|---:|---:|---:|
 | L1 | 108,7 | 101,7 | 93,5 % | 95,1 | 87,5 % |
-| L2 | 265,9 | 250,7 | 94,3 % | 227,7 | 85,6 % |
-| L3 | 530,3 | 489,0 | 92,2 % | 387,9 | 73,2 % |
-| L4 | 1534,5 | 1069,4 | 69,7 % | 523,2 | 34,1 % |
+| L2 | 265,9 | 250,9 | 94,4 % | 227,7 | 85,6 % |
+| L3 | 530,3 | 490,4 | 92,5 % | 387,9 | 73,2 % |
+| L4 | 1534,5 | 1081,3 | 70,5 % | 523,2 | 34,1 % |
 
-Données : graines d'entraînement 0 à 49 par niveau, `main` au commit 55327de. Sur graines cachées
+Données : graines d'entraînement 0 à 49 par niveau, `main` au commit ec5c41e (200 runs, 0 invalide,
+38,6 s au maximum, total 96 214,6 contre 61 695,6 pour le glouton, x1,56). Sur graines cachées
 simulées (holdout 5000 à 5049, 200 runs) : **x1,51 global, x1,95 sur L4, 0 échec, 41,1 s au maximum**.
 
 Notes : la borne est une borne supérieure, pas un score atteignable. Elle ignore la séparation R8, la
@@ -137,8 +138,8 @@ passage sous 30 m : gain d'au plus 0,5 point par effecteur, risque de faille. É
 
 ## À revérifier avant le pitch
 
-1. **Commit de référence.** Les chiffres de la slide 4 portent sur `main` 55327de. Depuis, `main` a reçu le
-   saut R7 (+1,27 % L4), la garde R10 et une version du planificateur différente de celle des tables. Relancer :
+1. **Commit de référence.** Les chiffres de la slide 4 portent sur `main` ec5c41e (banc final du 21/11, graines
+   d'entraînement). Les chiffres holdout (x1,51, x1,95) datent de `main` 55327de. Si `main` change, relancer :
    ```
    python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 0-49 --json bench.json
    python3 tools/bound.py --bench bench.json
