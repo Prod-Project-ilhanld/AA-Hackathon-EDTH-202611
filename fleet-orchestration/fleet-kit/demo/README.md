@@ -35,9 +35,11 @@ ne jamais recopier les chiffres à la main.
 
 Scénario L4 seed 3 (100 drones, 70 contacts servables), plan `planner v7` de Louis (fusionné dans
 `main`, PR #2) contre le glouton du kit : **532,9 → 1076,7 pts, +102 %, plan valide** sur les 10
-règles, 37 contacts servis contre 18. Un seul scénario — le chiffre solide est le banc de Louis :
-50 graines par niveau, scénarios du kit, **94 578,6 pts contre 61 695,9 pour le glouton (x1,53
-global, x2,0 sur L4)**, 0 plan invalide, 39,6 s au maximum. Reproductible depuis `fleet-kit/` :
+règles, 37 contacts servis contre 18. Un seul scénario — le chiffre solide est le **holdout**
+officiel (50 graines par niveau jamais utilisées pour régler, 5000–5049, mesuré sur `main`
+55327de) : **96 504 pts contre 63 989 pour le glouton (x1,51 global)**, L1 x1,09, L2 x1,09,
+L3 x1,24, **L4 x1,95**, 0 échec, 41,1 s au pire. Cohérent avec le banc d'entraînement (x1,53
+global) : pas de signe de surapprentissage. Reproductible depuis `fleet-kit/` :
 
 ```
 python -m fleetkit generate L4 3 -o s_l4.json

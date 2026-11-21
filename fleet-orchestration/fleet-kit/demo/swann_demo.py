@@ -50,12 +50,12 @@ DEFAULT_STRATEGY = (
     "Construction gloutonne élargie (planner v7, Louis, fusionné dans main) : 15 éclaireurs testés "
     "par hostile avec toutes leurs options (les proches saturent, les autres aussi testés sur une "
     "flotte de 15 éclaireurs) ; contrôle incrémental à chaque essai (ne revalide que les routes "
-    "touchées, environ 3 fois plus d'essais par seconde) ; relances par petites variations autour "
-    "du meilleur ordre de contacts trouvé (points par effecteur requis), réparties sur plusieurs "
-    "processus, sous un budget de 38 s ; deux routages selon la taille de la flotte, filet de "
-    "sécurité (Mahmoud) et routage (Youcef) intégrés. Chaque plan construit est revalidé par le "
-    "scorer du kit ; au final, on écrit le meilleur plan valide trouvé (plan vide si aucun ne "
-    "l'est)."
+    "touchées, environ 3 fois plus d'essais par seconde) ; hostiles bloqués par R7 (collatéral) "
+    "ignorés d'emblée ; relances par petites variations autour du meilleur ordre de contacts "
+    "trouvé (points par effecteur requis), réparties sur plusieurs processus, sous un budget de "
+    "38 s ; deux routages selon la taille de la flotte ; garde de séparation (R10) systématique à "
+    "chaque tentative. Chaque plan construit est revalidé par le scorer du kit ; au final, on "
+    "écrit le meilleur plan valide trouvé (plan vide si aucun ne l'est)."
 )
 
 

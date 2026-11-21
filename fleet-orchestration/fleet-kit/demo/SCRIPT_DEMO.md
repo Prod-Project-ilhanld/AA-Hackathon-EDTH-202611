@@ -36,10 +36,13 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 
 ## Limites à assumer si on nous les demande
 
-- Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- 102 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le banc
-  final de Louis (planner v7, fusionné dans `main`) : 50 graines par niveau, 94 578,6 pts contre
-  61 695,9 pour le glouton (x1,53 global, x2,0 sur L4), 0 plan invalide, 39,6 s au maximum.
+- Perte de liaison : publiée par les organisateurs comme second rendu optionnel, scoré
+  séparément (ne change pas le classement du plan). Notre implémentation (`handin/policy.py`)
+  est encore un stub qui rate tous les scénarios — en cours chez Youcef.
+- 102 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le
+  **holdout** officiel : 50 graines par niveau jamais utilisées pour régler (5000–5049) :
+  96 504 pts contre 63 989 pour le glouton (x1,51 global, x1,95 sur L4), 0 échec, 41,1 s au pire.
+  Cohérent avec le banc d'entraînement (x1,53) : pas de signe de surapprentissage.
 - Sur notre propre plan, le diagnostic de routage réel trouve encore ~167 pts
   librement gagnables (sans toucher au plan actuel) et 84 pts en concurrence
   avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a
@@ -50,5 +53,6 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 ## Vidéo de secours
 
 Enregistrée sur le scénario de démo final (L4 seed 3), écran `view.html` +
-`explication.md` ouverts côte à côte, sans narration improvisée. À réenregistrer si le plan
-change avant le gel du code (dimanche 9h).
+`explication.md` ouverts côte à côte, sans narration improvisée. Répétition générale samedi
+22h00 ; à réenregistrer si le plan change avant le gel (CP5, dimanche 10h) et le rendu
+(dimanche 11h).
