@@ -10,12 +10,11 @@ The R7 skip is ON by default (PLANNER_TARGETS=0 turns it off). Measured on L4, 5
 It cannot cost a point: a skipped hostile is one that every plan fails on R7, and the saved tries buy more restarts.
 Python 3.9, standard library only; kit code from `fk`, never `fleetkit`.
 """
-import os
-
+import params
 from fk.geometry import EPS, hdist
 from fk.model import CIVILIAN, FRIENDLY
 
-ENABLED = os.environ.get("PLANNER_TARGETS", "1") != "0"
+ENABLED = params.TARGETS
 
 
 def skip(scenario, contact) -> bool:
