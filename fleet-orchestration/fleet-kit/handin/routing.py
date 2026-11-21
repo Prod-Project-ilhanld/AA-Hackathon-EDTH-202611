@@ -521,7 +521,7 @@ def optimal_leg_3d(
                 if path_over is not None:
                     pts_over = _build_3d_from_2d(p_start, p_end, path_over, z_over)
                     _consider(pts_over)
-                    if best is None or best[2] > 0:
+                    if best is None:
                         pts_sh2: List[Point] = [p_start]
                         if p_start[2] < z_over - 0.1:
                             pts_sh2.append((p_start[0], p_start[1], z_over))
