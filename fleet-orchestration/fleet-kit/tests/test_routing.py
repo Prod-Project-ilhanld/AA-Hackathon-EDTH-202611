@@ -13,7 +13,8 @@ sys.path.insert(0, str(HANDIN))
 from fleetkit.baseline import _detour as baseline_detour, greedy_plan  # noqa: E402
 from fleetkit.energy import route_energy_wh  # noqa: E402
 from fleetkit.generator import generate  # noqa: E402
-from fleetkit.geometry import hdist  # noqa: E402
+from fleetkit.geometry import INF, hdist  # noqa: E402
+from fleetkit.validator import validate  # noqa: E402
 from fleetkit.model import (  # noqa: E402
     SCOUT,
     Aircraft,
@@ -50,14 +51,17 @@ def test_phase1_lower_energy_than_baseline() -> None:
     our_e_tot = 0.0
     n_routes = 0
 
-    for level in ("L1", "L2", "L3"):
-        for seed in (0, 1, 2):
+    for level in ("L1", "L2", "L3", "L4"):
+        seeds = (0,) if level == "L4" else (0, 1, 2)
+        for seed in seeds:
             sc = Scenario.from_dict(generate(level, seed))
-            routes, _ = parse_plan(greedy_plan(sc))
+            plan = greedy_plan(sc)
+            routes, _ = parse_plan(plan)
             assert routes is not None
             ac_by_id = sc.aircraft_by_id()
             c_by_id = sc.contact_by_id()
             eng = RoutingEngine(sc)
+            new_routes = []
 
             for aid, rt in routes.items():
                 ac = ac_by_id[aid]
@@ -73,9 +77,14 @@ def test_phase1_lower_energy_than_baseline() -> None:
                     assert last.target is not None
                     wps, _ = build_effector_route(ac, c_by_id[last.target], last.t, sc, z_layer=None, engine=eng)
                     assert wps is not None
+                new_routes.append({"aircraft": aid, "waypoints": wps})
                 base_e_tot += base_e
                 our_e_tot += _wps_energy(wps, ac)
                 n_routes += 1
+
+            viol = validate(sc, {**plan, "routes": new_routes})
+            non_sync_sep = [v for v in viol if v.rule not in ("R4", "R8", "R10")]
+            assert not non_sync_sep, f"{level}-{seed} violations: {non_sync_sep[:2]}"
 
     saving = 100.0 * (base_e_tot - our_e_tot) / base_e_tot
     print(f"[Phase 1] {n_routes} routes : baseline={base_e_tot:.1f} Wh | ours={our_e_tot:.1f} Wh (-{saving:.1f}%)")
@@ -128,6 +137,12 @@ def test_phase3_fast_cost_api_for_louis() -> None:
     ms = (time.monotonic() - t0) * 1000.0
     print(f"[Phase 3-4] 1000 appels leg_cost_fast (cache) en {ms:.2f} ms")
     assert ms < 100.0
+
+    # Tight max_duration accelerates (higher energy) and infeasible returns (INF, INF).
+    d_tight, e_tight = leg_cost_fast(p0, p1, ac.id, sc, max_duration=d1 * 0.95, engine=eng)
+    assert d_tight == INF or (d_tight <= d1 * 0.95 + 1e-6 and e_tight >= e1 - 1e-6)
+    d_inf, e_inf = leg_cost_fast(p0, p1, ac.id, sc, max_duration=0.1, engine=eng)
+    assert d_inf == INF and e_inf == INF
 
 
 if __name__ == "__main__":
