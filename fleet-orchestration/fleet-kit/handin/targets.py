@@ -9,11 +9,11 @@ Turn on with ENABLED = True (or PLANNER_TARGETS=1) and compare with tools/bench.
 Python 3.9, standard library only; kit code from `fk`, never `fleetkit`.
 """
 import math
-import os
 
+import params
 from fk.model import CIVILIAN, FRIENDLY
 
-ENABLED = os.environ.get("PLANNER_TARGETS", "0") == "1"
+ENABLED = params.TARGETS
 
 
 def skip(scenario, contact) -> bool:
