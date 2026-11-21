@@ -22,6 +22,7 @@ from fleetkit.model import Scenario  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.validator import validate  # noqa: E402
 import planner as P  # noqa: E402
+import deconflict  # noqa: E402
 
 R = P._routing
 
@@ -44,6 +45,15 @@ def check_sound(tc, sc, pl, extra, label=""):
 
 
 class R8(unittest.TestCase):
+    """The incremental check alone: the R8 scheduler (ON by default) would delay these candidates instead."""
+
+    def setUp(self):
+        self.old = deconflict.ENABLED
+        deconflict.ENABLED = False
+
+    def tearDown(self):
+        deconflict.ENABLED = self.old
+
     def two_scouts(self, gap):
         d = make_scenario_dict()
         d["aircraft"][1]["home"] = [0, gap, 0]
