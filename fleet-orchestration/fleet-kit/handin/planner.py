@@ -355,7 +355,7 @@ def _worker(args):
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
     # beyond the official L4 (100 aircraft) route building and validation overshoot the deadline more and more
     # (measured: +1 s at 100, +9 s at 300, +11 s at 400 aircraft): shrink the budget so the 60 s limit holds
-    budget_s = max(10.0, budget_s - 0.04 * max(0, len(scenario.aircraft) - 100))
+    budget_s = max(min(budget_s, 10.0), budget_s - 0.04 * max(0, len(scenario.aircraft) - 100))
     deadline = time.monotonic() + budget_s
     empty = {"seed": scenario.seed, "routes": []}
     best = (0.0, empty)
