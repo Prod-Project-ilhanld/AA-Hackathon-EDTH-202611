@@ -185,14 +185,27 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
         return {}
     fixed = {a: it for a, it in items.items() if a not in moving}
     # accepted routes that can come near the candidate (space only: a shift changes times, not places)
-    boxes = [_box(it, rules.d_sep_m + 1.0) for it in items.values()]
-    near = []
+    boxes = {a: _box(it, rules.d_sep_m + 1.0) for a, it in items.items()}
+    near, near_of = [], {a: [] for a in moving}
     for oid in planner.routes:
         if oid in extra:
             continue
         item, box = _other_item(planner, oid)
-        if item is not None and any(_overlap(box, b) for b in boxes):
+        if item is not None and any(_overlap(box, b) for b in boxes.values()):
             near.append(item)
+            for a in moving:  # per aircraft, so it does not depend on the rest of the candidate
+                if _overlap(box, boxes[a]):
+                    near_of[a].append(item)
+    memo = _memo(planner)
+    replaced = tuple(sorted(a for a in extra if a in planner.routes))  # accepted routes left out of near_of
+    keys = {a: (a, tuple(items[a][1]), replaced) for a in moving}
+
+    def near_hit(aid, d):
+        # the same effector route is re-scheduled for every scout option against the same accepted routes
+        k = (keys[aid], d)
+        if k not in memo:
+            memo[k] = _hit(rules, contacts, _shifted(items[aid], d), near_of[aid])
+        return memo[k]
     fixed_items = list(fixed.values())
     for f in fixed_items:                       # a fixed route in conflict with an accepted one: no delay helps
         if _hit(rules, contacts, f, near) is not None:
@@ -201,7 +214,7 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
     # step A: one shared delay clears the whole moving set from the accepted routes and the fixed ones
     def check_shared(d):
         for aid in moving:
-            span = _hit(rules, contacts, _shifted(items[aid], d), near + fixed_items)
+            span = near_hit(aid, d) or _hit(rules, contacts, _shifted(items[aid], d), fixed_items)
             if span is not None:
                 return span
         return None
@@ -227,7 +240,7 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
                 return {}
 
             def check_one(d, aid=aid):
-                return _hit(rules, contacts, _shifted(items[aid], d), near + fixed_items + placed)
+                return near_hit(aid, d) or _hit(rules, contacts, _shifted(items[aid], d), fixed_items + placed)
 
             d_i = _find_delay(check_one, shared, cap_i)
             if d_i is None:
@@ -239,6 +252,16 @@ def schedule(planner, extra: Dict[str, List[dict]]) -> Dict[str, float]:
         if hi - lo > rules.sync_window_s - SYNC_MARGIN_S + 1e-9:
             return {}
     return {a: d for a, d in delays.items() if d > 0.0}
+
+
+def _memo(planner) -> dict:
+    """Cache of near-route checks, valid while the accepted routes stay the same."""
+    routes = tuple(planner.routes.items())
+    cached = getattr(planner, "_dc_memo", None)
+    if cached is None or len(cached[0]) != len(routes) or any(
+            a[0] != b[0] or a[1] is not b[1] for a, b in zip(cached[0], routes)):
+        cached = planner._dc_memo = (routes, {})  # holds the route objects, so identity checks stay sound
+    return cached[1]
 
 
 def _intra_conflict(rules, contacts, items, moving, delays) -> bool:
