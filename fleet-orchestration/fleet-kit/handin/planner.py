@@ -37,6 +37,7 @@ from fk.validator import separation_item, separation_violation, validate  # noqa
 import params  # noqa: E402       every tunable number and flag
 import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
 import targets  # noqa: E402     starter: which hostiles to try, priorities (off by default)
+import scouts  # noqa: E402      scout tours for the unknowns (off by default)
 
 try:  # routing module of the team (3D minimum-energy routes); the planner works without it
     from fk.baseline import EFFECTOR_LAYERS
@@ -276,6 +277,12 @@ def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner
                 raise
             except Exception:  # a contact that breaks the routing is skipped, never fatal
                 continue
+        try:  # starter: scout tours for the unknowns left unserved (off by default)
+            scouts.sweep_unknowns(planner, unknowns, SCOUT, hdist)
+        except OutOfTime:
+            raise
+        except Exception:  # never fatal: the plan so far is valid
+            pass
     except OutOfTime:
         pass
     return planner._plan({}), planner.score
