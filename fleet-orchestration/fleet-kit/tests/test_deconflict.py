@@ -110,6 +110,51 @@ class Deconflict(unittest.TestCase):
         self.assertTrue(deconflict.adjust(pl, {"S01": [{"t": "x"}]}))
 
 
+class Intervals(unittest.TestCase):
+    """The closed-form forbidden delays replace the step search: they must contain every conflicting delay."""
+
+    def test_pair_delays_contain_every_conflicting_delay(self):
+        import math
+        import random
+        rng = random.Random(7)
+
+        def piece():
+            t0 = rng.uniform(0, 40)
+            t1 = t0 + (0.0 if rng.random() < 0.1 else rng.uniform(1, 30))
+            p = tuple(rng.uniform(-60, 60) for _ in range(3))
+            q = p if rng.random() < 0.1 else tuple(rng.uniform(-60, 60) for _ in range(3))
+            return (t0, t1, p, q)
+
+        def at(pc, t):
+            t0, t1, p, q = pc
+            f = 0.0 if t1 - t0 <= 1e-12 else (t - t0) / (t1 - t0)
+            return [p[k] + f * (q[k] - p[k]) for k in range(3)]
+
+        for _ in range(100):
+            a, b = piece(), piece()
+            iv = deconflict._pair_delays(a, b, 40.0)
+            for k in range(-160, 161):
+                x = k * 0.5
+                lo, hi = max(a[0] + x, b[0]), min(a[1] + x, b[1])
+                if hi < lo:
+                    continue
+                if any(math.dist(at(a, t - x), at(b, t)) < 39.5
+                       for t in (lo + (hi - lo) * s / 20 for s in range(21))):
+                    self.assertIsNotNone(iv, f"delay {x} conflicts but no interval")
+                    self.assertTrue(iv[0] - 1e-6 <= x <= iv[1] + 1e-6, f"delay {x} outside {iv}")
+
+    def test_schedule_returns_an_r8_free_delay_and_the_memo_repeats_it(self):
+        sc, pl = make()
+        pl.routes["S01"] = hop((0, 0))
+        extra = {"S02": hop((0, 20))}
+        got = deconflict.schedule(pl, extra)          # called directly: adjust() would swallow an exception
+        self.assertIn("S02", got)
+        self.assertEqual(deconflict.schedule(pl, extra), got, "the memoised second call must agree")
+        moved = {"S02": [dict(w, t=w["t"] + got["S02"]) for w in extra["S02"]]}
+        self.assertEqual(r8(sc, pl._plan(moved)), [])
+        self.assertLess(got["S02"], 125.0)
+
+
 class EffectorGroup(unittest.TestCase):
     """C04 needs one light and one heavy effector: they must keep their strike times relative to each other."""
 
