@@ -177,7 +177,7 @@ Traced by Mahmoud. **This isn't an aborted aircraft blocking traffic.** Two **on
 2. **L3-6:** trace the run (`python3 -m fleetkit linkloss ... --trace`, or the viewer) and find who stops serving C19 and why. Suspects: the group abort (`ab`), or the same mutual hold as L2-21.
 3. Fix both without adding failed runs.
 
-Repro script: `stuck.py` and `who.py` in Mahmoud's review (they print who holds for whom, every second).
+Repro, from `fleet-kit/`: `python3 diag/stuck.py . handin/policy.py L2 21` lists who ends frozen and who is near them. `python3 diag/who.py . handin/policy.py L2 21 S01,H02 535 545` prints who each aircraft holds for, every second.
 
 ### Done when
 - L3-6 is ≥ 0.780 and L2-21 is ≥ 0.9.
