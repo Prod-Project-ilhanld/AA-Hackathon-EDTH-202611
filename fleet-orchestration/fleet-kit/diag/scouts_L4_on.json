@@ -1,0 +1,212 @@
+{
+ "rows": [
+  {
+   "level": "L4",
+   "seed": 0,
+   "mine": 1165.5311212964646,
+   "base": null,
+   "valid": true,
+   "time": 7.85,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 1,
+   "mine": 1070.5133868820644,
+   "base": null,
+   "valid": true,
+   "time": 14.25,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 2,
+   "mine": 917.9982454283052,
+   "base": null,
+   "valid": true,
+   "time": 17.75,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 3,
+   "mine": 1063.419870624015,
+   "base": null,
+   "valid": true,
+   "time": 27.94,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 4,
+   "mine": 944.4753903184405,
+   "base": null,
+   "valid": true,
+   "time": 6.27,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 5,
+   "mine": 1306.2537033972758,
+   "base": null,
+   "valid": true,
+   "time": 7.62,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 6,
+   "mine": 942.577236882657,
+   "base": null,
+   "valid": true,
+   "time": 24.31,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 7,
+   "mine": 931.4898053970874,
+   "base": null,
+   "valid": true,
+   "time": 16.8,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 8,
+   "mine": 1270.8331011583741,
+   "base": null,
+   "valid": true,
+   "time": 25.72,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 9,
+   "mine": 1060.582351652566,
+   "base": null,
+   "valid": true,
+   "time": 31.34,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 10,
+   "mine": 1073.9716348375252,
+   "base": null,
+   "valid": true,
+   "time": 21.06,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 11,
+   "mine": 947.8637951926437,
+   "base": null,
+   "valid": true,
+   "time": 18.42,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 12,
+   "mine": 878.965644899383,
+   "base": null,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 13,
+   "mine": 1356.5790246128886,
+   "base": null,
+   "valid": true,
+   "time": 22.29,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 14,
+   "mine": 982.8543342493197,
+   "base": null,
+   "valid": true,
+   "time": 27.24,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 15,
+   "mine": 1226.7545443248014,
+   "base": null,
+   "valid": true,
+   "time": 12.98,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 16,
+   "mine": 1251.5659433854444,
+   "base": null,
+   "valid": true,
+   "time": 11.54,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 17,
+   "mine": 1107.6085111617708,
+   "base": null,
+   "valid": true,
+   "time": 9.39,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 18,
+   "mine": 777.7474396242046,
+   "base": null,
+   "valid": true,
+   "time": 22.19,
+   "err": ""
+  },
+  {
+   "level": "L4",
+   "seed": 19,
+   "mine": 1144.0974646468549,
+   "base": null,
+   "valid": true,
+   "time": 13.08,
+   "err": ""
+  }
+ ],
+ "summary": {
+  "L4": {
+   "n": 20,
+   "mine": 21421.682549972087,
+   "base": 0.0,
+   "ratio": NaN,
+   "failures": 0,
+   "tmax": 38.21,
+   "delta_mean": NaN,
+   "delta_se": NaN,
+   "worse": 0,
+   "worse_share": NaN,
+   "paired_n": 0
+  },
+  "TOTAL": {
+   "n": 20,
+   "mine": 21421.682549972087,
+   "base": 0.0,
+   "ratio": NaN,
+   "failures": 0,
+   "tmax": 38.21,
+   "delta_mean": NaN,
+   "delta_se": NaN,
+   "worse": 0,
+   "worse_share": NaN,
+   "paired_n": 0
+  }
+ }
+}

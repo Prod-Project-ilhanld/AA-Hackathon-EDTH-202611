@@ -1,0 +1,212 @@
+{
+ "rows": [
+  {
+   "level": "S-half-scouts",
+   "seed": 0,
+   "mine": 574.3875909328374,
+   "base": null,
+   "valid": true,
+   "time": 7.13,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 1,
+   "mine": 857.0232562871226,
+   "base": null,
+   "valid": true,
+   "time": 3.53,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 2,
+   "mine": 818.1121410979774,
+   "base": null,
+   "valid": true,
+   "time": 4.56,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 3,
+   "mine": 428.26494215405023,
+   "base": null,
+   "valid": true,
+   "time": 6.8,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 4,
+   "mine": 757.7778227134236,
+   "base": null,
+   "valid": true,
+   "time": 5.48,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 5,
+   "mine": 1084.4007382431346,
+   "base": null,
+   "valid": true,
+   "time": 6.49,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 6,
+   "mine": 830.0414356486822,
+   "base": null,
+   "valid": true,
+   "time": 5.55,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 7,
+   "mine": 1088.2779055357867,
+   "base": null,
+   "valid": true,
+   "time": 11.52,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 8,
+   "mine": 939.9170795510331,
+   "base": null,
+   "valid": true,
+   "time": 3.68,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 9,
+   "mine": 926.0288884134677,
+   "base": null,
+   "valid": true,
+   "time": 11.7,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 10,
+   "mine": 435.33344343002886,
+   "base": null,
+   "valid": true,
+   "time": 7.62,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 11,
+   "mine": 1204.3604943211783,
+   "base": null,
+   "valid": true,
+   "time": 4.23,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 12,
+   "mine": 929.564128137414,
+   "base": null,
+   "valid": true,
+   "time": 4.13,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 13,
+   "mine": 955.0461893649631,
+   "base": null,
+   "valid": true,
+   "time": 2.85,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 14,
+   "mine": 1031.6245251645357,
+   "base": null,
+   "valid": true,
+   "time": 3.01,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 15,
+   "mine": 784.5515787824543,
+   "base": null,
+   "valid": true,
+   "time": 5.25,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 16,
+   "mine": 981.4332842718363,
+   "base": null,
+   "valid": true,
+   "time": 3.95,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 17,
+   "mine": 1009.6393997095727,
+   "base": null,
+   "valid": true,
+   "time": 3.8,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 18,
+   "mine": 935.6435945184016,
+   "base": null,
+   "valid": true,
+   "time": 8.57,
+   "err": ""
+  },
+  {
+   "level": "S-half-scouts",
+   "seed": 19,
+   "mine": 748.0405698983602,
+   "base": null,
+   "valid": true,
+   "time": 4.69,
+   "err": ""
+  }
+ ],
+ "summary": {
+  "S-half-scouts": {
+   "n": 20,
+   "mine": 17319.46900817626,
+   "base": 0.0,
+   "ratio": NaN,
+   "failures": 0,
+   "tmax": 11.7,
+   "delta_mean": NaN,
+   "delta_se": NaN,
+   "worse": 0,
+   "worse_share": NaN,
+   "paired_n": 0
+  },
+  "TOTAL": {
+   "n": 20,
+   "mine": 17319.46900817626,
+   "base": 0.0,
+   "ratio": NaN,
+   "failures": 0,
+   "tmax": 11.7,
+   "delta_mean": NaN,
+   "delta_se": NaN,
+   "worse": 0,
+   "worse_share": NaN,
+   "paired_n": 0
+  }
+ }
+}

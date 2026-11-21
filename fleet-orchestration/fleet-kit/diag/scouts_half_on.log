@@ -1,0 +1,23 @@
+OK  S-half-scouts-0    score    574.4    8.1s
+OK  S-half-scouts-1    score    857.0    5.7s
+OK  S-half-scouts-2    score    818.1    7.2s
+OK  S-half-scouts-3    score    428.3   10.7s
+OK  S-half-scouts-4    score    757.8    7.5s
+OK  S-half-scouts-5    score   1084.4    9.0s
+OK  S-half-scouts-6    score    830.0    6.3s
+OK  S-half-scouts-7    score   1088.3   20.6s
+OK  S-half-scouts-8    score    939.9    6.5s
+OK  S-half-scouts-9    score    926.0   14.7s
+OK  S-half-scouts-10   score    435.3   10.4s
+OK  S-half-scouts-11   score   1204.4    9.2s
+OK  S-half-scouts-12   score    929.6   11.3s
+OK  S-half-scouts-13   score    955.0    4.8s
+OK  S-half-scouts-14   score   1031.6    5.5s
+OK  S-half-scouts-15   score    784.6    9.1s
+OK  S-half-scouts-16   score    981.4    7.3s
+OK  S-half-scouts-17   score   1009.6    8.4s
+OK  S-half-scouts-18   score    935.6   10.7s
+OK  S-half-scouts-19   score    748.0    5.5s
+--- résumé (somme des scores)
+S-half-scouts: n=20 mine=17319.5 base=0.0 ratio=nan tmax=20.6s
+TOTAL mine=17319.5 base=0.0 invalides/échecs=0
