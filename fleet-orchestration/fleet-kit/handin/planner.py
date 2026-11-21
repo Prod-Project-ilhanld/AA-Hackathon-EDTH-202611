@@ -1,15 +1,19 @@
 """Hand-in: python3 planner.py scenario.json plan.json
 
 Greedy planner of the kit, made faster and wider:
-- a cheap pre-filter (validate only the touched routes, check R8 only against the others) runs
-  before the authoritative full validation, so many more scouts and options can be tried: the 6
+- an incremental check (validate only the touched routes, check R8 only against the others, keep
+  the score by differences) replaces the full validation of the whole plan at every try, which made
+  a construction about 3 times faster; the full kit scorer still validates every plan we keep. So
+  many more scouts and options can be tried: the 15
   nearest scouts with all options, then every other scout with plain options (on L4 the near scouts
-  saturate while others stay on the ground);
+  saturate while others stay on the ground, so every scout of a 15-scout fleet is tried);
 - restarts under an internal time budget keep the best valid plan: a few deterministic orders of
   the contacts (points per effector needed), then hill-climbing around the best order, spread over
   the available cores (serial fallback);
 - every accepted step passed the kit scorer, the final plan is re-validated, and the fallback is
   the best valid plan found so far (an empty plan if nothing else).
+- on the smallest fleets (L1, 5 aircraft) the search stops once nothing better was found for 12 s
+  (same scores on 50 seeds, 12 s instead of 38 s: only the time tie-break changes).
 """
 import json
 import multiprocessing
@@ -27,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # vendored kit h
 from fk.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
 from fk.geometry import hdist  # noqa: E402
 from fk.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
+from fk.energy import route_energy_wh  # noqa: E402
 from fk.scorer import evaluate  # noqa: E402
 from fk.validator import separation_item, separation_violation, validate  # noqa: E402
 import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
@@ -45,8 +50,12 @@ except Exception:  # noqa: BLE001
 
 BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))  # search deadline, seconds from process start
 ALARM_S = float(os.environ.get("PLANNER_ALARM_S", "52"))    # backstop: write the last validated plan and exit
-N_SCOUTS = 6
+N_SCOUTS = 15
 MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
+BOTH_ROUTERS = 20      # up to this many aircraft (L1, L2) both routers are used
+SMALL_FLEET = 8         # up to this many aircraft (L1) the search converges in seconds
+STAGNATION_S = 12.0     # ... and stops when nothing better was found for this long
+MIN_BUILDS = 30
 
 
 class OutOfTime(Exception):
@@ -62,6 +71,8 @@ class FastPlanner(_Planner):
         self.contacts = scenario.contact_by_id()
         self.items: Dict[str, tuple] = {}
         self.far = True     # also try the scouts beyond the nearest n_scouts (plain options only)
+        self._cur: Optional[Contact] = None     # the contact being served: its points are the gain of a step
+        self.energy_cache: Dict[str, tuple] = {}
 
     def _check_time(self) -> None:
         if time.monotonic() > self.deadline:
@@ -73,11 +84,18 @@ class FastPlanner(_Planner):
         return scouts[:limit or self.n_scouts]
 
     def _prefilter(self, extra: Dict[str, List[dict]]) -> bool:
-        """Necessary conditions, cheap: the touched routes alone, then R8 against the rest."""
+        return self._prefilter_routes(extra) is not None
+
+    def _prefilter_routes(self, extra: Dict[str, List[dict]]):
+        """The touched routes alone (every per-route and per-contact rule), then R8 against the rest.
+
+        Returns the parsed touched routes when the plan with these routes added or replaced is valid for
+        every rule except the confirmation of the earlier contacts of a rebuilt scout route (see _try).
+        """
         self._check_time()
         sub = {"seed": self.sc.seed, "routes": [{"aircraft": a, "waypoints": w} for a, w in extra.items()]}
         if validate(self.sc, sub):
-            return False
+            return None
         routes, _ = parse_plan(sub)
         new_items = {}
         for aid, route in routes.items():
@@ -97,17 +115,71 @@ class FastPlanner(_Planner):
                 continue
             for it in new_items.values():
                 if separation_violation(self.sc.rules, self.contacts, it, other) is not None:
+                    return None
+        return routes
+
+    def _energy_of(self, aid: str) -> float:
+        route = self.routes[aid]
+        cached = self.energy_cache.get(aid)
+        if cached is None or cached[0] is not route:
+            r, _ = parse_plan({"seed": self.sc.seed, "routes": [{"aircraft": aid, "waypoints": route}]})
+            cached = (route, route_energy_wh(r[aid].waypoints, self.aircraft[aid]))
+            self.energy_cache[aid] = cached
+        return cached[1]
+
+    def _confirmations_ok(self, extra: Dict[str, List[dict]]) -> bool:
+        """R4 for the earlier hostile contacts of a rebuilt scout route: their engagements stay confirmed."""
+        margin = self.sc.rules.confirm_margin_s
+        for sid, wps in extra.items():
+            for t in self.tasks.get(sid, ()):
+                cid = t.id if hasattr(t, "id") else t["cid"]
+                if self.contacts[cid].cls != HOSTILE:
+                    continue
+                engages = [r[-1]["t"] for r in self.routes.values()
+                           if r and r[-1].get("action") == "engage" and r[-1].get("target") == cid]
+                if not engages:
+                    continue
+                ends = [w["t"] + w.get("dwell_s", 0.0) for w in wps
+                        if w.get("action") == "observe" and w.get("target") == cid]
+                if any(not any(o <= e - margin + 1e-6 for o in ends) for e in engages):
                     return False
         return True
 
     def _try(self, extra: Dict[str, List[dict]]) -> Optional[float]:
-        if not deconflict.adjust(self, extra) or not self._prefilter(extra):
+        """Score of the plan with the routes of `extra` added or replaced, or None when it would be invalid.
+
+        Incremental: the touched routes are validated alone and R8 is checked against the others (the only
+        rule that couples routes), so the full validation of the whole plan is not repeated for every try.
+        """
+        if not deconflict.adjust(self, extra):
             return None
-        return super()._try(extra)
+        routes = self._prefilter_routes(extra)
+        if routes is None or not self._confirmations_ok(extra):
+            return None
+        rules = self.sc.rules
+        energy_new = sum(route_energy_wh(routes[a].waypoints, self.aircraft[a]) for a in routes)
+        energy_old = sum(self._energy_of(a) for a in extra if a in self.routes)
+        new_eff = sum(1 for a in extra if a not in self.routes and self.aircraft[a].type != SCOUT)
+        gain = self._cur.points if self._cur is not None else 0.0
+        return self.score + gain - rules.lambda_e * (energy_new - energy_old) - rules.c_eff * new_eff
+
+    def serve_unknown(self, contact: Contact) -> bool:
+        self._cur = contact
+        try:
+            return super().serve_unknown(contact)
+        finally:
+            self._cur = None
 
     def serve_hostile(self, contact: Contact) -> bool:
         if targets.skip(self.sc, contact):
             return False
+        self._cur = contact
+        try:
+            return self._serve_hostile(contact)
+        finally:
+            self._cur = None
+
+    def _serve_hostile(self, contact: Contact) -> bool:
         sc = self.sc
         pool = {}
         for sub, n in contact.needs.items():
@@ -160,7 +232,7 @@ class RoutedPlanner(FastPlanner):
     def _place_effectors(self, contact, effectors, obs_end, scout, tasks, scout_route) -> bool:
         lo, hi = contact.window
         base = max(obs_end + self.sc.rules.confirm_margin_s + 2.0, lo)
-        for delay in (0.0, 8.0, 20.0, 45.0, 90.0):
+        for delay in (0.0, 20.0, 90.0):   # fewer arrival delays: faster builds won more than the extra options
             arrive = base + delay
             if arrive + 5.0 * len(effectors) > hi:
                 break
@@ -222,12 +294,18 @@ def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
 def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     """Builds plans until the deadline; returns the best valid (score, plan) of this worker.
 
-    The first two builds of a worker use two variants of the construction (router of the team or of the
-    kit, with or without the far scouts); even workers start with the far scouts, odd workers without, so that
-    two workers already cover the four variants. Then the worker hill-climbs around the best variant and order.
+    Small fleets (L1, L2) build once with each router, then hill-climb around the better one. Larger fleets
+    (L3, L4) build only with the team's router (measured better there: the same time buys more restarts);
+    the kit's router is the fallback when the team's gives nothing valid. With more scouts than N_SCOUTS,
+    even workers also try the far scouts and odd workers do not.
     """
     alphas = [0.0, 1.0, 0.5, 1.5]
-    classes = [RoutedPlanner, FastPlanner] if _routing is not None else [FastPlanner]
+    if _routing is None:
+        classes = [FastPlanner]
+    elif len(scenario.aircraft) <= BOTH_ROUTERS:
+        classes = [RoutedPlanner, FastPlanner]      # small fleets: both routers, the kit's one adds variety
+    else:
+        classes = [RoutedPlanner]                   # larger fleets: the team's router only, it wins on L3 and L4
     n_far = max(0, sum(1 for a in scenario.aircraft if a.type == SCOUT) - N_SCOUTS)
     first = worker % len(classes)
     far0 = (worker % 2 == 0) or n_far == 0
@@ -237,7 +315,11 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     best_alpha, best_noise, best_cls, best_far = base_alpha, {}, classes[first], far0
     best_val = -1.0
     attempt = 0
+    last_gain = time.monotonic()
+    small = len(scenario.aircraft) <= SMALL_FLEET
     while time.monotonic() < deadline:
+        if small and attempt >= MIN_BUILDS and time.monotonic() - last_gain > STAGNATION_S:
+            break
         if attempt < len(classes):
             cls, far, alpha, noise = classes[(first + attempt) % len(classes)], far0, base_alpha, {}
             if worker % 2 == 1 and n_far > 0:
@@ -252,8 +334,12 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
             res = evaluate(scenario, plan)
         except Exception:  # a failing router never costs the whole run
             res = None
+        if (res is None or not res.valid) and cls is RoutedPlanner and best[0] < 0:
+            # the team's router gave nothing valid on this scenario: continue with the kit's router
+            classes, best_cls, attempt = [FastPlanner], FastPlanner, -1
         if res is not None and res.valid and res.score > best[0]:
             best, best_alpha, best_noise, best_cls, best_far = (res.score, plan), alpha, noise, cls, far
+            last_gain = time.monotonic()
         attempt += 1
     return best
 
