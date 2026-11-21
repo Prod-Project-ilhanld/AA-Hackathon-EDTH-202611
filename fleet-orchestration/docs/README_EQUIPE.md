@@ -38,8 +38,8 @@ Un scénario à la main : `python3 -m fleetkit generate L4 3 -o scenario.json &&
 
 ## Script de démo, 2 minutes (à jouer avec les chiffres du banc)
 1. Accroche (15 s) : un plan invalide vaut 0, donc la sécurité passe avant le score.
-2. Moment fort (60 s) : même scénario L4 graine 3, baseline 532,9 contre notre plan v6 1040,1, soit +95 % (MESURÉ, un seul scénario), dans le viewer ; montrer pourquoi tel hostile est servi et tel autre refusé (R7, horizon, énergie), avec le rapport de Swann.
-3. Preuve (30 s) : sortie de `bench.py` sur 50 graines par niveau : 0 invalide, temps maximal 39,5 s (v6, MESURÉ).
+2. Moment fort (60 s) : même scénario L4 graine 3, baseline 532,9 contre notre plan v7 1076,7, soit +102 % (MESURÉ, un seul scénario), dans le viewer ; montrer pourquoi tel hostile est servi et tel autre refusé (R7, horizon, énergie), avec le rapport de Swann.
+3. Preuve (30 s) : sortie de `bench.py` sur 50 graines par niveau : 0 invalide, temps maximal 39,6 s (v7, MESURÉ).
 4. Fermeture (15 s) : limites et suite.
 
 ## Limites connues
@@ -82,3 +82,10 @@ MESURÉ (L1 et L2 : banc de la variante finale ; L3 : 50 graines ; L4 : 50 grain
 Généralisation (graines 50 à 79, jamais utilisées pour régler) : 0 invalide sur les 60 cas L3 et L4, L3 14527,1 et L4 30351,6 (la v5 donnait 14446,0 et 27870,2, le baseline 11477,6 et 16266,5, soit L4 x1,87).
 Ce qui a fait gagner, dans l'ordre : (1) tous les scouts en options complètes (L4 +6,6 %), (2) moins d'options d'arrivée d'effecteurs (0, 20, 90 s au lieu de 5 valeurs : L4 +2,5 %, les constructions plus rapides valent plus que les options en plus), (3) contrôle incrémental (L4 +4,25 %), (4) scouts lointains en second niveau (L4 +6,3 %). Variantes mesurées et rejetées : options élargies pour les scouts (angles, départs, rotations : -6 à -12 % sur L4), polissage final, reprise de préfixe.
 Vérifications v6 : check_handin 8/8 (total 4173,7 contre baseline 2748,6), tests robustesse et link-loss 21/21, 1 seul cœur L3 4018,7 et L4 7829,1 sur les graines 0 à 7 (valides), copie propre avec `env -i` et 1 cœur valide (L4 graine 3 : 978,6 en 38,3 s), passage à l'échelle valide à 200, 300 et 400 avions (42,0 s au pire).
+
+## Résultats finaux du banc (planner v7 = v6 + routage de l'équipe seul au-dessus de 20 avions, 50 graines par niveau, PLANNER_WORKERS=2)
+MESURÉ : 0 invalide, temps max 39,6 s. L1 5083,0 ; L2 12498,2 ; L3 24332,0 ; L4 52665,4 ; total 94578,6. Contre le baseline du kit : L1 x1,069 ; L2 x1,098 ; L3 x1,254 ; L4 x2,013 ; total x1,533. Contre la v6 : L3 +0,63 %, L4 +4,10 %, total +2,4 % ; contre la v1 de vendredi : +19,3 %.
+Généralisation (graines 50 à 79, jamais utilisées pour régler) : 0 invalide sur 60 cas, L3 14701,9 (x1,281 le baseline) et L4 31654,7 (x1,946 le baseline) ; la v6 donnait 14527,1 et 30351,6.
+Pourquoi : sur L3 et L4 le routage de l'équipe bat celui du kit, et ne garder que lui donne plus de relances dans le même temps (L4 graines 0 à 15 : 16720,9 contre 16273,8 avec les deux routages, 14987,5 avec celui du kit seul). Sur L1 et L2 (12 avions ou moins) les deux routages sont gardés : le routage seul y coûtait 0,4 % sur L2. Si le module de routage plante, le planificateur retombe sur le routage du kit (test).
+Vérifications v7 : voir PROGRESSION.md (tests, check_handin, 1 cœur).
+Vérifications v7 : check_handin 8/8 (total 4226,5 contre baseline 2748,6) ; tests de robustesse (dont routage cassé, pool en échec, workers bloqués) et link-loss 22/22 ; 1 seul cœur, graines 0 à 7 : L3 4048,3 et L4 8080,4 (valides) ; plans d'exemple L4 graine 3 : 1076,7 (baseline 532,9), L3 graine 3 : 482,5.

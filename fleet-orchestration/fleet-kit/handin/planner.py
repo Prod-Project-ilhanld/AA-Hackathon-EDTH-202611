@@ -48,6 +48,7 @@ except Exception:  # noqa: BLE001
 BUDGET_S = float(os.environ.get("PLANNER_BUDGET_S", "38"))
 N_SCOUTS = 15
 MAX_WORKERS = int(os.environ.get("PLANNER_WORKERS", "8"))
+BOTH_ROUTERS = 20      # up to this many aircraft (L1, L2) both routers are used
 SMALL_FLEET = 8         # up to this many aircraft (L1) the search converges in seconds
 STAGNATION_S = 12.0     # ... and stops when nothing better was found for this long
 MIN_BUILDS = 30
@@ -285,12 +286,18 @@ def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
 def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     """Builds plans until the deadline; returns the best valid (score, plan) of this worker.
 
-    The first two builds of a worker use two variants of the construction (router of the team or of the
-    kit, with or without the far scouts); even workers start with the far scouts, odd workers without, so that
-    two workers already cover the four variants. Then the worker hill-climbs around the best variant and order.
+    Small fleets (L1, L2) build once with each router, then hill-climb around the better one. Larger fleets
+    (L3, L4) build only with the team's router (measured better there: the same time buys more restarts);
+    the kit's router is the fallback when the team's gives nothing valid. With more scouts than N_SCOUTS,
+    even workers also try the far scouts and odd workers do not.
     """
     alphas = [0.0, 1.0, 0.5, 1.5]
-    classes = [RoutedPlanner, FastPlanner] if _routing is not None else [FastPlanner]
+    if _routing is None:
+        classes = [FastPlanner]
+    elif len(scenario.aircraft) <= BOTH_ROUTERS:
+        classes = [RoutedPlanner, FastPlanner]      # small fleets: both routers, the kit's one adds variety
+    else:
+        classes = [RoutedPlanner]                   # larger fleets: the team's router only, it wins on L3 and L4
     n_far = max(0, sum(1 for a in scenario.aircraft if a.type == SCOUT) - N_SCOUTS)
     first = worker % len(classes)
     far0 = (worker % 2 == 0) or n_far == 0
@@ -319,6 +326,9 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
             res = evaluate(scenario, plan)
         except Exception:  # a failing router never costs the whole run
             res = None
+        if (res is None or not res.valid) and cls is RoutedPlanner and best[0] < 0:
+            # the team's router gave nothing valid on this scenario: continue with the kit's router
+            classes, best_cls, attempt = [FastPlanner], FastPlanner, -1
         if res is not None and res.valid and res.score > best[0]:
             best, best_alpha, best_noise, best_cls, best_far = (res.score, plan), alpha, noise, cls, far
             last_gain = time.monotonic()
