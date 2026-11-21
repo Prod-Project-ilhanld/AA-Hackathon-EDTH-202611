@@ -16,12 +16,14 @@ A run that fails loses its whole retention, bucketed as fail:<rule>.
 
     nice -n 19 python3 tools/linkloss_diag.py --policy handin/policy.py -o runs/b2-diag-before.json
     nice -n 19 python3 tools/linkloss_diag.py --policy handin/policy.py --sizing -o runs/b2-sizing.json
+    nice -n 19 python3 tools/linkloss_diag.py --r8 -o runs/b2-r8-diag.json   # classify every R8 failure + mutual holds
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from collections import defaultdict
@@ -37,7 +39,9 @@ from fleetkit.linkloss import score  # noqa: E402
 from fleetkit.linkloss.events import make_events  # noqa: E402
 from fleetkit.linkloss.policies import load_policy  # noqa: E402
 from fleetkit.linkloss.sim import simulate  # noqa: E402
-from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, Scenario  # noqa: E402
+from fleetkit.geometry import dist3, hdist  # noqa: E402
+from fleetkit.linkloss.sim import RouteClock  # noqa: E402
+from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, Scenario, parse_plan  # noqa: E402
 
 DIAG_SETTINGS = [(250.0, c) for c in score.CAPACITIES] + [score.LEADERBOARD]
 _CASES = {}
@@ -74,16 +78,49 @@ def _init(cases, policy_path):
 def _instrumented(base, log):
     """Subclass of the team Policy that records why and when each aircraft first turns back, and its holds."""
 
+    r8 = log.get("_r8", False)
+
     class Probe(base):
         def step(self, obs):
             pre = self._reason(obs)
+            t = float(obs["t"])
+            if r8:
+                heard = self.__dict__.setdefault("_heard", {})
+                new = {m["from"] for m in obs.get("inbox", ()) if m["from"] not in heard}
+                if new:   # copy on change only: the step list keeps a reference per step
+                    heard = self._heard = dict(heard, **{a: t for a in new})
+                self._culprits = ()
             action, msg = super().step(obs)
             rec = log.setdefault(self.aircraft_id, {"abort": None, "hold_s": 0})
             if action.get("kind") == "hold":
                 rec["hold_s"] += 1
-            if action.get("kind") == "return" and rec["abort"] is None:
-                rec["abort"] = (float(obs["t"]), self._reason(obs) or pre or "unknown")
+            wants_back = action.get("kind") == "return" or (r8 and getattr(self, "_prop", 1.0) < 0)
+            if wants_back and rec["abort"] is None:   # r8: an aircraft that wants back but holds has aborted too
+                rec["abort"] = (t, self._reason(obs) or pre or "unknown")
+            if r8:
+                ps = rec.get("_ps")
+                if ps != self.peer_state:
+                    ps = rec["_ps"] = dict(self.peer_state)
+                rec.setdefault("steps", {})[int(round(t))] = (
+                    float(obs["tau"]), getattr(self, "_prop", 1.0), action.get("kind"), ps, self._heard,
+                    self._culprits)
             return action, msg
+
+        def _r8_conflict(self, t, tau, rate):
+            self._prop = rate
+            hit = super()._r8_conflict(t, tau, rate)
+            if hit and r8:   # which peers alone would trigger the hold (for the mutual-hold count)
+                allc, me, cul = self.clocks, self.aircraft_id, []
+                try:
+                    for aid in allc:
+                        if aid != me:
+                            self.clocks = {me: allc[me], aid: allc[aid]}
+                            if super()._r8_conflict(t, tau, rate):
+                                cul.append(aid)
+                finally:
+                    self.clocks = allc
+                self._culprits = tuple(cul)
+            return hit
 
         def _reason(self, obs):
             tgt = getattr(self, "target", None)
@@ -127,6 +164,180 @@ def run_one(job):
             "ms_per_call": 1000.0 * run.policy_seconds / max(1, run.policy_calls),
             "causes": dict(causes), "r4_aborts": r4_aborts,
             "aborts": {a: r["abort"] for a, r in log.items() if r["abort"]}}
+
+
+R8_RE = re.compile(r"R8 \(separation\): (\S+) and (\S+) come within ([\d.]+) m .*around t = ([\d.]+) s")
+WINDOW_S = 10
+CLASSIFY_S = 3      # a side is stale if its belief was wrong at any decision step in the last CLASSIFY_S s
+STALE_ERR_M = 20.0  # predicted-position error that counts as a wrong belief (half of d_sep)
+MUTUAL_HOLD_S = 20
+
+
+def _mode(rate):
+    if rate is None:
+        return "ended"
+    return "return" if rate < 0 else ("hold" if rate == 0 else "route")
+
+
+def run_one_r8(job):
+    """One run with R8 logging: every R8 failure classified, plus mutual holds (B4 deadlock check)."""
+    key, setting, comm_seed = job
+    sc, plan, ev, v_oracle, _ = _case(key)
+    log = {"_r8": True}
+    trace = {}
+    run = simulate(sc, plan, ev, _instrumented(_POLICY["base"], log), setting=setting, run_seed=comm_seed,
+                   trace=trace)
+    log.pop("_r8")
+    rates = {int(round(t)): r for t, r in trace["rates"]}
+    fails = [_r8_failure(sc, plan, log, rates, trace, m) for m in run.failed if R8_RE.search(m)]
+    return {"case": "%s-%d-e%d" % key, "setting": "%gx%g" % setting, "seed": comm_seed,
+            "retention": score.retention(run.points, bool(run.failed), v_oracle), "failed": run.failed[:3],
+            "r8": fails, "mutual_holds": _mutual_holds(log),
+            "aborts": {a: r["abort"] for a, r in log.items() if r["abort"]}}
+
+
+def _belief(step, peer, t):
+    """What `step`'s aircraft believed about `peer` at t: (mode, predicted tau or None), as Policy._peer_pos_at."""
+    st = step[3].get(peer)
+    if st is None or (st[2] == "hold" and t - st[0] > 15.0):
+        return "route(default)", float(t)
+    t_ref, tau_ref, mode = st
+    dt = max(0.0, t - t_ref)
+    return mode, {"return": tau_ref - dt, "hold": tau_ref, "route": tau_ref + dt}[mode]
+
+
+def _side(sc, plan, log, rates, trace, me, other, ts):
+    """One aircraft's view of the other at decision step ts."""
+    mine, theirs = log.get(me, {}).get("steps", {}).get(ts), log.get(other, {}).get("steps", {}).get(ts)
+    real = _mode(rates.get(ts - 1, {}).get(other))   # the latest the other's mode could be known
+    if mine is None:
+        return {"mode": _mode(rates.get(ts, {}).get(me)), "real_other": real, "missing": True}
+    tau, prop, kind, _, heard, _ = mine
+    bmode, pred = _belief(mine, other, ts)
+    clocks = _clocks(sc, plan)
+    err = None
+    if theirs is not None:
+        err = dist3(clocks[other].position(pred), clocks[other].position(theirs[0]))
+    off_plan = prop < 0 or abs(tau - ts) >= 0.25
+    tgt = log[me].get("target")
+    exempt = False
+    if tgt is not None and tgt == log.get(other, {}).get("target"):
+        nxt = max(clocks[me].start, min(clocks[me].end, tau + prop))
+        exempt = hdist(clocks[me].position(nxt), sc.contact_by_id()[tgt].pos) <= sc.rules.R_eng_m + 50.0
+    believed = bmode.split("(")[0]
+    return {"mode": _mode(rates.get(ts, {}).get(me)), "proposed": _mode(prop), "tau_lag": round(ts - tau, 1),
+            "abort": log[me]["abort"], "heard_since_cut": heard.get(other), "belief": bmode, "real_other": real,
+            "pos_err_m": None if err is None else round(err, 1),
+            "stale": believed != real or (err is not None and err > STALE_ERR_M),
+            "checked": not ((not off_plan and believed == "route") or exempt), "exempt": exempt}
+
+
+def _r8_failure(sc, plan, log, rates, trace, text):
+    a, b, dmin, tf = R8_RE.search(text).groups()
+    s = int(float(tf))
+    for c in (a, b):   # store targets once, for the R8 exemption
+        r = log.setdefault(c, {"abort": None, "hold_s": 0})
+        last = _clocks(sc, plan)[c].route.waypoints[-1]
+        r["target"] = last.target if last.action == "engage" else None
+    window = []
+    for ts in range(s - WINDOW_S, s + 1):
+        pa, pb = (log.get(c, {}).get("steps", {}).get(ts) for c in (a, b))
+        d = None
+        if pa is not None and pb is not None:
+            ck = _clocks(sc, plan)
+            d = round(dist3(ck[a].position(pa[0]), ck[b].position(pb[0])), 1)
+        window.append({"t": ts, "dist_m": d, a: _side(sc, plan, log, rates, trace, a, b, ts),
+                       b: _side(sc, plan, log, rates, trace, b, a, ts)})
+    at = window[-1]
+    sa, sb = at[a], at[b]
+    recent = window[-1 - CLASSIFY_S:]
+    stale = {c: any(w[c].get("stale") for w in recent) for c in (a, b)}
+    if sa.get("missing") or sb.get("missing"):
+        cls = "other"
+    elif stale[a] or stale[b]:
+        cls = "stale_belief"
+    elif not sa["checked"] and not sb["checked"]:
+        cls = "onplan_skip"
+    else:
+        cls = "both_known"
+    why = {}
+    for me, other in ((a, b), (b, a)):   # for a stale side: was the other's state news never sent, out of range or lost?
+        if stale[me]:
+            w = next(w for w in reversed(recent) if w[me].get("stale"))
+            t0 = w["t"] - 1
+            while t0 - 1 in rates and _mode(rates[t0 - 1].get(other)) == w[me]["real_other"]:
+                t0 -= 1
+            sent = {t for t, src, p, _ in trace["sent"]
+                    if src == other and t0 <= t < w["t"] and isinstance(p, dict) and ({"rt", "hd", "rs"} & set(p))}
+            links = [dl for t, src, dst, dl, _ in trace["links"] if src == other and dst == me and t in sent]
+            why[me] = {"at": w["t"], "belief": w[me]["belief"], "other_was": w[me]["real_other"],
+                       "pos_err_m": w[me]["pos_err_m"], "other_mode_since": t0, "state_msgs_sent": len(sent), "in_range": len(links),
+                       "delivered": sum(links)}
+    return {"pair": [a, b], "t": float(tf), "min_dist_m": float(dmin), "class": cls, "at": at, "stale": stale,
+            "stale_why": why, "window": window}
+
+
+def _mutual_holds(log):
+    """Spans of >= MUTUAL_HOLD_S s where two aircraft both hold, each because of the other."""
+    holds = defaultdict(set)   # (a, b) -> steps where a held because of b
+    for a, r in log.items():
+        for ts, st in r.get("steps", {}).items():
+            if st[2] == "hold":
+                for b in st[5]:
+                    holds[(a, b)].add(ts)
+    out = []
+    for (a, b), ta in holds.items():
+        if a < b:
+            both = sorted(ta & holds.get((b, a), set()))
+            start = prev = None
+            for ts in both + [None]:
+                if ts is None or prev is None or ts != prev + 1:
+                    if start is not None and prev - start + 1 >= MUTUAL_HOLD_S:
+                        last = max(max(log[a]["steps"]), max(log[b]["steps"]))
+                        out.append([a, b, start, prev - start + 1, prev >= last])   # True: never released
+                    start = ts
+                prev = ts
+    return out
+
+
+_CLOCKS = {}
+
+
+def _clocks(sc, plan):
+    k = id(plan)
+    if k not in _CLOCKS:
+        routes, _ = parse_plan(plan)
+        _CLOCKS.clear()
+        _CLOCKS[k] = {a: RouteClock(r) for a, r in routes.items()}
+    return _CLOCKS[k]
+
+
+def r8_table(rows):
+    out = {}
+    for s in sorted({r["setting"] for r in rows}, key=lambda x: tuple(float(v) for v in x.split("x"))):
+        rs = [r for r in rows if r["setting"] == s]
+        fails = [f for r in rs for f in r["r8"]]
+        first = [r["r8"][0]["class"] for r in rs if r["r8"]]
+        out[s] = {"runs": len(rs), "failed_runs": sum(bool(r["failed"]) for r in rs),
+                  "r8_runs": len(first), "r8_failures": len(fails),
+                  "by_class": {c: sum(f["class"] == c for f in fails) for c in CLASSES},
+                  "by_class_first_per_run": {c: first.count(c) for c in CLASSES},
+                  "mutual_holds": sum(len(r["mutual_holds"]) for r in rs),
+                  "runs_with_mutual_hold": sum(bool(r["mutual_holds"]) for r in rs),
+                  "mutual_holds_never_released": sum(m[4] for r in rs for m in r["mutual_holds"])}
+    return out
+
+
+CLASSES = ("stale_belief", "both_known", "onplan_skip", "other")
+
+
+def print_r8_table(tab):
+    print("%-9s %4s %4s %5s  " % ("setting", "runs", "fail", "R8") + " ".join("%12s" % c for c in CLASSES)
+          + "  mutual>=%ds (runs, never released)" % MUTUAL_HOLD_S)
+    for s, c in tab.items():
+        print("%-9s %4d %4d %5d  " % (s, c["runs"], c["failed_runs"], c["r8_failures"])
+              + " ".join("%12d" % c["by_class"][k] for k in CLASSES)
+              + "  %d (%d, %d)" % (c["mutual_holds"], c["runs_with_mutual_hold"], c["mutual_holds_never_released"]))
 
 
 def _fail_kind(text):
@@ -216,6 +427,8 @@ def main():
     ap.add_argument("--comm-seeds", type=int, default=score.SEEDS)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--sizing", action="store_true", help="the full official sizing grid instead of the cause table")
+    ap.add_argument("--r8", action="store_true", help="classify every R8 failure and count mutual holds")
+    ap.add_argument("--settings", help="e.g. 250x50,1000x200 (default: the cause-table settings)")
     ap.add_argument("-o", "--out", required=True)
     a = ap.parse_args()
     os.nice(max(0, 19 - os.nice(0)))   # low priority: another session times its runs
@@ -249,7 +462,14 @@ def main():
                     "MEETS" if c["meets"] else ""))
             print("sizing score %.2f frontier %s" % (result["sizing_score"], frontier))
         else:
-            jobs = [(k, s, seed) for k in sorted(cases) for s in DIAG_SETTINGS for seed in range(a.comm_seeds)]
+            settings = DIAG_SETTINGS if not a.settings else [
+                tuple(float(v) for v in x.split("x")) for x in a.settings.split(",")]
+            jobs = [(k, s, seed) for k in sorted(cases) for s in settings for seed in range(a.comm_seeds)]
+        if a.r8:
+            rows = list(pool.imap_unordered(run_one_r8, jobs, chunksize=4))
+            result = {"table": r8_table(rows), "runs": rows}
+            print_r8_table(result["table"])
+        elif not a.sizing:
             rows = list(pool.imap_unordered(run_one, jobs, chunksize=4))
             result = {"table": table(rows), "runs": rows}
             print_table(result["table"])
