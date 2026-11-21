@@ -24,7 +24,7 @@ Martin, 21/11/2026, sur `main` à jour (`5dbc69a` ; `handin/` identique à `7175
 | S-half-scouts 3 | 48,1 % | 679,0 / 1411,2 | 33 / 50 (2383 pts) | 11 / 20 (178 pts) |
 | S-half-scouts 0 | 48,4 % | 685,7 / 1417,9 | 32 / 50 (2237 pts) | 15 / 20 (307 pts) |
 
-Rapports de Swann : `diag/diag_<variante>_<graine>/explication.md` et `view.html`, générés avec le vrai routage du planner (`PYTHONPATH` sur `handin/`), aucun « budget de test dépassé ». Détail par contact : `diag/worst_S-battery.md` et `diag/worst_S-half-scouts.md`.
+Rapports de Swann : `diag/diag_<variante>_<graine>/explication.md`, généré avec le vrai routage du planner (`PYTHONPATH` sur `handin/`), aucun « budget de test dépassé ». Chaque dossier garde aussi `scenario.json` et `plan.json`. Le visualiseur `view.html` (~0,8 Mo) n'est pas versionné ; pour le régénérer, depuis `fleet-kit/` : `for d in diag/diag_S-*/; do PYTHONPATH=.:handin python3 demo/swann_demo.py "$d/scenario.json" "$d/plan.json" -o "$d"; done` (réécrit aussi `explication.md`). Détail par contact : `diag/worst_S-battery.md` et `diag/worst_S-half-scouts.md`.
 
 ### Pourquoi, d'après explication.md
 
