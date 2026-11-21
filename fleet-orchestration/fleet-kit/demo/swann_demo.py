@@ -32,10 +32,10 @@ from fleetkit.model import CIVILIAN, EFFECTOR, FRIENDLY, HOSTILE, SCOUT, UNKNOWN
 from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.viewer import Viewer  # noqa: E402
 
-# Le vrai planificateur (branche feature/planner-v1 de Louis) n'est pas fusionné dans cette
-# branche : on ne duplique pas son code ici. S'il est présent sur le disque (dépôt fusionné,
-# ou handin/ copié pour un test local), le diagnostic rejoue le vrai routage ; sinon il retombe
-# sur l'heuristique en ligne directe ci-dessous.
+# Le vrai planificateur (Louis, v7) est fusionné dans main, mais pas sur cette branche de démo :
+# on ne duplique pas son code ici, chaque équipier reste sur son chantier. S'il est présent sur le
+# disque (dépôt mis à jour depuis main, ou handin/ copié pour un test local), le diagnostic rejoue
+# le vrai routage ; sinon il retombe sur l'heuristique en ligne directe ci-dessous.
 try:
     from handin.planner import FastPlanner, OutOfTime  # noqa: E402
     HAS_REAL_PLANNER = True
@@ -47,10 +47,13 @@ DIAG_BUDGET_S = float(os.environ.get("DIAG_BUDGET_S", "8.0"))
 GREEN, RED, AMBER, TEAL, GREY = "#3fb950", "#f85149", "#d29922", "#39c5cf", "#8b949e"
 
 DEFAULT_STRATEGY = (
-    "Construction gloutonne élargie (planner v2, Louis) : jusqu'à 6 éclaireurs testés par hostile "
-    "(couches d'altitude, angles et décalages de départ multiples) ; contacts triés par points par "
-    "effecteur requis ; relances par petites variations autour du meilleur ordre trouvé, réparties "
-    "sur plusieurs processus, sous un budget de 38 s. Chaque plan construit est revalidé par le "
+    "Construction gloutonne élargie (planner v7, Louis, fusionné dans main) : 15 éclaireurs testés "
+    "par hostile avec toutes leurs options (les proches saturent, les autres aussi testés sur une "
+    "flotte de 15 éclaireurs) ; contrôle incrémental à chaque essai (ne revalide que les routes "
+    "touchées, environ 3 fois plus d'essais par seconde) ; relances par petites variations autour "
+    "du meilleur ordre de contacts trouvé (points par effecteur requis), réparties sur plusieurs "
+    "processus, sous un budget de 38 s ; deux routages selon la taille de la flotte, filet de "
+    "sécurité (Mahmoud) et routage (Youcef) intégrés. Chaque plan construit est revalidé par le "
     "scorer du kit ; au final, on écrit le meilleur plan valide trouvé (plan vide si aucun ne "
     "l'est)."
 )

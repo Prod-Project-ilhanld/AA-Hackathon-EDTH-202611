@@ -7,14 +7,15 @@ relancer le générateur à chaque nouveau plan.
 ## Accroche (20 s)
 
 « Le kit fournit un glouton de référence. Sur ce scénario L4, il sert 18 contacts
-sur 70 pour un score de 532,9 — et laisse 1083 points sur
+sur 70 pour un score de 532,9 — et laisse 1223 points sur
 la table rien qu'en rejouant le vrai routage sur chacun des contacts qu'il manque. »
 
 ## Moment fort (60 s)
 
 1. Ouvrir `view.html` du plan final, calque **Gagnés vs glouton** activé (vert).
-   « Notre planificateur teste jusqu'à 6 éclaireurs par contact hostile, trie les contacts par
-   points par effecteur requis, et relance plusieurs fois sous un budget de temps. »
+   « Notre planificateur teste 15 éclaireurs par contact hostile avec toutes leurs options, trie
+   les contacts par points par effecteur requis, et relance plusieurs fois sous un budget de
+   temps, réparti sur plusieurs processeurs. »
 2. Ouvrir `explication.md`, section **Contacts non servis**.
    Montrer un contact bloqué par R7 (collatéral), un contact « hors de portée même avec tous les
    drones disponibles » (routage réel testé, pas une estimation), et si possible un contact
@@ -24,8 +25,8 @@ la table rien qu'en rejouant le vrai routage sur chacun des contacts qu'il manqu
 
 ## Preuve chiffrée (30 s)
 
-« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 815,1 points,
-**+53 %**, plan valide sur les 10 règles, 30 contacts servis contre
+« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 1076,7 points,
+**+102 %**, plan valide sur les 10 règles, 37 contacts servis contre
 18. » (Afficher le tableau de score en haut de `explication.md`.)
 
 ## Clôture (10 s)
@@ -36,11 +37,11 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 ## Limites à assumer si on nous les demande
 
 - Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- 53 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le banc :
-  planner v1, 200 cas valides, +47,8 % en moyenne sur L4 contre le glouton. Le banc de la v2 est en
-  cours chez Louis.
-- Sur notre propre plan, le diagnostic de routage réel trouve encore ~431 pts
-  librement gagnables (sans toucher au plan actuel) et 62 pts en concurrence
+- 102 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le banc
+  final de Louis (planner v7, fusionné dans `main`) : 50 graines par niveau, 94 578,6 pts contre
+  61 695,9 pour le glouton (x1,53 global, x2,0 sur L4), 0 plan invalide, 39,6 s au maximum.
+- Sur notre propre plan, le diagnostic de routage réel trouve encore ~167 pts
+  librement gagnables (sans toucher au plan actuel) et 84 pts en concurrence
   avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a
   un budget de temps (8 s par défaut, `DIAG_BUDGET_S`) ; sous forte charge machine, quelques
   contacts limites basculent sur l'estimation en ligne directe, ce qui fait varier ce total de
@@ -48,5 +49,6 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 
 ## Vidéo de secours
 
-À enregistrer avant dimanche 9h (gel du code) : rejouer exactement ce script sur le scénario de
-démo final, écran `view.html` + `explication.md` ouverts côte à côte, sans narration improvisée.
+Enregistrée sur le scénario de démo final (L4 seed 3), écran `view.html` +
+`explication.md` ouverts côte à côte, sans narration improvisée. À réenregistrer si le plan
+change avant le gel du code (dimanche 9h).
