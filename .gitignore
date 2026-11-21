@@ -6,3 +6,5 @@ plan.json
 plan.svg
 .fleetkit-board.json
 runs/
+# generated viewer pages (~0.8 MB each), rebuilt from the committed scenario/plan: see diag/RAPPORT_DIAG.md
+fleet-orchestration/fleet-kit/diag/*/view.html

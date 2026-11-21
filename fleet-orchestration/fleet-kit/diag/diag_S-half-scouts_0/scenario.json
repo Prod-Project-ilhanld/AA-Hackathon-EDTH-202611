@@ -1,0 +1,3275 @@
+{
+ "version": "1",
+ "seed": 0,
+ "level": "S-half-scouts",
+ "horizon_s": 900.0,
+ "aircraft": [
+  {
+   "id": "S01",
+   "type": "scout",
+   "home": [
+    172.2,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 18.5,
+   "v_up_mps": 7.0,
+   "v_down_mps": 5.8,
+   "capacity_wh": 45.9,
+   "battery_pct": 81.0,
+   "power": {
+    "p0_w": 74.6,
+    "k_v": 0.262,
+    "e_climb_wh_per_m": 0.022
+   }
+  },
+  {
+   "id": "S02",
+   "type": "scout",
+   "home": [
+    183.3,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 19.3,
+   "v_up_mps": 6.5,
+   "v_down_mps": 6.8,
+   "capacity_wh": 40.4,
+   "battery_pct": 86.0,
+   "power": {
+    "p0_w": 98.2,
+    "k_v": 0.264,
+    "e_climb_wh_per_m": 0.02
+   }
+  },
+  {
+   "id": "S03",
+   "type": "scout",
+   "home": [
+    250.0,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 17.8,
+   "v_up_mps": 5.7,
+   "v_down_mps": 6.6,
+   "capacity_wh": 43.9,
+   "battery_pct": 96.0,
+   "power": {
+    "p0_w": 69.9,
+    "k_v": 0.218,
+    "e_climb_wh_per_m": 0.018
+   }
+  },
+  {
+   "id": "S04",
+   "type": "scout",
+   "home": [
+    216.7,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 18.0,
+   "v_up_mps": 7.9,
+   "v_down_mps": 7.0,
+   "capacity_wh": 42.7,
+   "battery_pct": 94.0,
+   "power": {
+    "p0_w": 65.7,
+    "k_v": 0.201,
+    "e_climb_wh_per_m": 0.03
+   }
+  },
+  {
+   "id": "S05",
+   "type": "scout",
+   "home": [
+    150.0,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 20.2,
+   "v_up_mps": 6.0,
+   "v_down_mps": 6.2,
+   "capacity_wh": 49.7,
+   "battery_pct": 77.0,
+   "power": {
+    "p0_w": 63.0,
+    "k_v": 0.298,
+    "e_climb_wh_per_m": 0.019
+   }
+  },
+  {
+   "id": "S06",
+   "type": "scout",
+   "home": [
+    194.4,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 21.8,
+   "v_up_mps": 7.8,
+   "v_down_mps": 8.0,
+   "capacity_wh": 47.5,
+   "battery_pct": 96.0,
+   "power": {
+    "p0_w": 88.2,
+    "k_v": 0.264,
+    "e_climb_wh_per_m": 0.024
+   }
+  },
+  {
+   "id": "S07",
+   "type": "scout",
+   "home": [
+    161.1,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 19.5,
+   "v_up_mps": 7.3,
+   "v_down_mps": 6.6,
+   "capacity_wh": 44.8,
+   "battery_pct": 75.0,
+   "power": {
+    "p0_w": 85.4,
+    "k_v": 0.226,
+    "e_climb_wh_per_m": 0.025
+   }
+  },
+  {
+   "id": "L01",
+   "type": "effector",
+   "home": [
+    227.8,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 32.2,
+   "v_up_mps": 14.5,
+   "v_down_mps": 19.5,
+   "capacity_wh": 40.8,
+   "battery_pct": 75.0,
+   "power": {
+    "p0_w": 99.1,
+    "k_v": 0.094,
+    "e_climb_wh_per_m": 0.016
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L02",
+   "type": "effector",
+   "home": [
+    250.0,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 29.5,
+   "v_up_mps": 8.1,
+   "v_down_mps": 15.7,
+   "capacity_wh": 50.8,
+   "battery_pct": 75.0,
+   "power": {
+    "p0_w": 83.0,
+    "k_v": 0.069,
+    "e_climb_wh_per_m": 0.02
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L03",
+   "type": "effector",
+   "home": [
+    172.2,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 28.6,
+   "v_up_mps": 9.0,
+   "v_down_mps": 15.0,
+   "capacity_wh": 47.0,
+   "battery_pct": 82.0,
+   "power": {
+    "p0_w": 110.5,
+    "k_v": 0.065,
+    "e_climb_wh_per_m": 0.011
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L04",
+   "type": "effector",
+   "home": [
+    216.7,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 28.8,
+   "v_up_mps": 12.7,
+   "v_down_mps": 17.7,
+   "capacity_wh": 52.3,
+   "battery_pct": 74.0,
+   "power": {
+    "p0_w": 113.3,
+    "k_v": 0.072,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L05",
+   "type": "effector",
+   "home": [
+    150.0,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 28.5,
+   "v_up_mps": 14.9,
+   "v_down_mps": 19.7,
+   "capacity_wh": 48.4,
+   "battery_pct": 84.0,
+   "power": {
+    "p0_w": 101.0,
+    "k_v": 0.099,
+    "e_climb_wh_per_m": 0.02
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L06",
+   "type": "effector",
+   "home": [
+    150.0,
+    250.0,
+    0.0
+   ],
+   "v_h_mps": 33.0,
+   "v_up_mps": 13.2,
+   "v_down_mps": 18.0,
+   "capacity_wh": 48.0,
+   "battery_pct": 82.0,
+   "power": {
+    "p0_w": 115.5,
+    "k_v": 0.071,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L07",
+   "type": "effector",
+   "home": [
+    194.4,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 34.5,
+   "v_up_mps": 8.1,
+   "v_down_mps": 15.6,
+   "capacity_wh": 54.9,
+   "battery_pct": 70.0,
+   "power": {
+    "p0_w": 118.2,
+    "k_v": 0.072,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L08",
+   "type": "effector",
+   "home": [
+    150.0,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 33.8,
+   "v_up_mps": 8.9,
+   "v_down_mps": 16.6,
+   "capacity_wh": 49.8,
+   "battery_pct": 77.0,
+   "power": {
+    "p0_w": 114.7,
+    "k_v": 0.094,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L09",
+   "type": "effector",
+   "home": [
+    205.6,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 30.2,
+   "v_up_mps": 13.8,
+   "v_down_mps": 17.0,
+   "capacity_wh": 54.0,
+   "battery_pct": 76.0,
+   "power": {
+    "p0_w": 103.5,
+    "k_v": 0.083,
+    "e_climb_wh_per_m": 0.018
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L10",
+   "type": "effector",
+   "home": [
+    205.6,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 28.2,
+   "v_up_mps": 14.3,
+   "v_down_mps": 17.9,
+   "capacity_wh": 40.9,
+   "battery_pct": 74.0,
+   "power": {
+    "p0_w": 93.3,
+    "k_v": 0.098,
+    "e_climb_wh_per_m": 0.011
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L11",
+   "type": "effector",
+   "home": [
+    172.2,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 31.8,
+   "v_up_mps": 10.5,
+   "v_down_mps": 19.3,
+   "capacity_wh": 52.4,
+   "battery_pct": 79.0,
+   "power": {
+    "p0_w": 85.0,
+    "k_v": 0.086,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L12",
+   "type": "effector",
+   "home": [
+    183.3,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 30.8,
+   "v_up_mps": 10.2,
+   "v_down_mps": 19.8,
+   "capacity_wh": 41.6,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 81.1,
+    "k_v": 0.098,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L13",
+   "type": "effector",
+   "home": [
+    150.0,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 33.4,
+   "v_up_mps": 15.0,
+   "v_down_mps": 19.7,
+   "capacity_wh": 44.2,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 88.0,
+    "k_v": 0.077,
+    "e_climb_wh_per_m": 0.016
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L14",
+   "type": "effector",
+   "home": [
+    238.9,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 32.3,
+   "v_up_mps": 8.5,
+   "v_down_mps": 15.9,
+   "capacity_wh": 54.2,
+   "battery_pct": 73.0,
+   "power": {
+    "p0_w": 116.7,
+    "k_v": 0.067,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L15",
+   "type": "effector",
+   "home": [
+    205.6,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 32.7,
+   "v_up_mps": 14.2,
+   "v_down_mps": 15.6,
+   "capacity_wh": 52.4,
+   "battery_pct": 87.0,
+   "power": {
+    "p0_w": 109.9,
+    "k_v": 0.074,
+    "e_climb_wh_per_m": 0.019
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L16",
+   "type": "effector",
+   "home": [
+    172.2,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 31.9,
+   "v_up_mps": 11.9,
+   "v_down_mps": 15.5,
+   "capacity_wh": 49.5,
+   "battery_pct": 93.0,
+   "power": {
+    "p0_w": 99.5,
+    "k_v": 0.086,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L17",
+   "type": "effector",
+   "home": [
+    161.1,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 28.0,
+   "v_up_mps": 13.1,
+   "v_down_mps": 16.9,
+   "capacity_wh": 42.2,
+   "battery_pct": 94.0,
+   "power": {
+    "p0_w": 99.8,
+    "k_v": 0.062,
+    "e_climb_wh_per_m": 0.018
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L18",
+   "type": "effector",
+   "home": [
+    205.6,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 28.0,
+   "v_up_mps": 13.4,
+   "v_down_mps": 15.0,
+   "capacity_wh": 41.4,
+   "battery_pct": 80.0,
+   "power": {
+    "p0_w": 105.8,
+    "k_v": 0.069,
+    "e_climb_wh_per_m": 0.019
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L19",
+   "type": "effector",
+   "home": [
+    172.2,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 30.7,
+   "v_up_mps": 13.6,
+   "v_down_mps": 17.9,
+   "capacity_wh": 54.3,
+   "battery_pct": 86.0,
+   "power": {
+    "p0_w": 101.8,
+    "k_v": 0.08,
+    "e_climb_wh_per_m": 0.013
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L20",
+   "type": "effector",
+   "home": [
+    227.8,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 30.5,
+   "v_up_mps": 13.0,
+   "v_down_mps": 15.2,
+   "capacity_wh": 40.4,
+   "battery_pct": 100.0,
+   "power": {
+    "p0_w": 111.6,
+    "k_v": 0.089,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L21",
+   "type": "effector",
+   "home": [
+    194.4,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 28.8,
+   "v_up_mps": 15.0,
+   "v_down_mps": 18.9,
+   "capacity_wh": 54.7,
+   "battery_pct": 85.0,
+   "power": {
+    "p0_w": 103.8,
+    "k_v": 0.077,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L22",
+   "type": "effector",
+   "home": [
+    205.6,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 28.4,
+   "v_up_mps": 11.5,
+   "v_down_mps": 18.6,
+   "capacity_wh": 40.9,
+   "battery_pct": 89.0,
+   "power": {
+    "p0_w": 83.5,
+    "k_v": 0.072,
+    "e_climb_wh_per_m": 0.019
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L23",
+   "type": "effector",
+   "home": [
+    250.0,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 30.0,
+   "v_up_mps": 14.5,
+   "v_down_mps": 18.9,
+   "capacity_wh": 42.7,
+   "battery_pct": 71.0,
+   "power": {
+    "p0_w": 100.2,
+    "k_v": 0.075,
+    "e_climb_wh_per_m": 0.019
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L24",
+   "type": "effector",
+   "home": [
+    238.9,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 30.5,
+   "v_up_mps": 13.8,
+   "v_down_mps": 16.2,
+   "capacity_wh": 51.7,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 107.1,
+    "k_v": 0.078,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L25",
+   "type": "effector",
+   "home": [
+    205.6,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 29.8,
+   "v_up_mps": 11.2,
+   "v_down_mps": 18.0,
+   "capacity_wh": 42.4,
+   "battery_pct": 73.0,
+   "power": {
+    "p0_w": 84.8,
+    "k_v": 0.067,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L26",
+   "type": "effector",
+   "home": [
+    216.7,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 32.8,
+   "v_up_mps": 8.9,
+   "v_down_mps": 18.7,
+   "capacity_wh": 41.2,
+   "battery_pct": 86.0,
+   "power": {
+    "p0_w": 114.5,
+    "k_v": 0.075,
+    "e_climb_wh_per_m": 0.01
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L27",
+   "type": "effector",
+   "home": [
+    183.3,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 34.8,
+   "v_up_mps": 12.7,
+   "v_down_mps": 16.2,
+   "capacity_wh": 46.8,
+   "battery_pct": 92.0,
+   "power": {
+    "p0_w": 87.0,
+    "k_v": 0.095,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L28",
+   "type": "effector",
+   "home": [
+    205.6,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 32.4,
+   "v_up_mps": 10.1,
+   "v_down_mps": 17.7,
+   "capacity_wh": 46.8,
+   "battery_pct": 94.0,
+   "power": {
+    "p0_w": 104.7,
+    "k_v": 0.086,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L29",
+   "type": "effector",
+   "home": [
+    250.0,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 34.0,
+   "v_up_mps": 9.3,
+   "v_down_mps": 18.4,
+   "capacity_wh": 46.4,
+   "battery_pct": 74.0,
+   "power": {
+    "p0_w": 83.9,
+    "k_v": 0.085,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L30",
+   "type": "effector",
+   "home": [
+    172.2,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 29.8,
+   "v_up_mps": 13.4,
+   "v_down_mps": 17.0,
+   "capacity_wh": 44.9,
+   "battery_pct": 71.0,
+   "power": {
+    "p0_w": 80.9,
+    "k_v": 0.092,
+    "e_climb_wh_per_m": 0.019
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L31",
+   "type": "effector",
+   "home": [
+    216.7,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 31.2,
+   "v_up_mps": 8.3,
+   "v_down_mps": 15.6,
+   "capacity_wh": 42.3,
+   "battery_pct": 96.0,
+   "power": {
+    "p0_w": 104.1,
+    "k_v": 0.084,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L32",
+   "type": "effector",
+   "home": [
+    227.8,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 31.6,
+   "v_up_mps": 8.1,
+   "v_down_mps": 19.1,
+   "capacity_wh": 46.5,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 80.7,
+    "k_v": 0.095,
+    "e_climb_wh_per_m": 0.013
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L33",
+   "type": "effector",
+   "home": [
+    238.9,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 31.0,
+   "v_up_mps": 13.5,
+   "v_down_mps": 18.1,
+   "capacity_wh": 46.3,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 108.8,
+    "k_v": 0.071,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L34",
+   "type": "effector",
+   "home": [
+    183.3,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 33.7,
+   "v_up_mps": 11.6,
+   "v_down_mps": 18.1,
+   "capacity_wh": 44.7,
+   "battery_pct": 70.0,
+   "power": {
+    "p0_w": 102.9,
+    "k_v": 0.095,
+    "e_climb_wh_per_m": 0.01
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L35",
+   "type": "effector",
+   "home": [
+    227.8,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 34.9,
+   "v_up_mps": 14.2,
+   "v_down_mps": 16.6,
+   "capacity_wh": 54.9,
+   "battery_pct": 74.0,
+   "power": {
+    "p0_w": 97.0,
+    "k_v": 0.094,
+    "e_climb_wh_per_m": 0.011
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L36",
+   "type": "effector",
+   "home": [
+    172.2,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 29.2,
+   "v_up_mps": 10.9,
+   "v_down_mps": 18.6,
+   "capacity_wh": 47.6,
+   "battery_pct": 75.0,
+   "power": {
+    "p0_w": 107.7,
+    "k_v": 0.066,
+    "e_climb_wh_per_m": 0.012
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L37",
+   "type": "effector",
+   "home": [
+    227.8,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 29.8,
+   "v_up_mps": 10.6,
+   "v_down_mps": 19.3,
+   "capacity_wh": 43.3,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 101.7,
+    "k_v": 0.079,
+    "e_climb_wh_per_m": 0.015
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L38",
+   "type": "effector",
+   "home": [
+    238.9,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 29.8,
+   "v_up_mps": 10.6,
+   "v_down_mps": 19.9,
+   "capacity_wh": 50.8,
+   "battery_pct": 85.0,
+   "power": {
+    "p0_w": 106.3,
+    "k_v": 0.087,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L39",
+   "type": "effector",
+   "home": [
+    194.4,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 31.7,
+   "v_up_mps": 9.4,
+   "v_down_mps": 19.3,
+   "capacity_wh": 50.2,
+   "battery_pct": 91.0,
+   "power": {
+    "p0_w": 92.0,
+    "k_v": 0.087,
+    "e_climb_wh_per_m": 0.016
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L40",
+   "type": "effector",
+   "home": [
+    150.0,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 30.5,
+   "v_up_mps": 8.3,
+   "v_down_mps": 19.7,
+   "capacity_wh": 44.6,
+   "battery_pct": 82.0,
+   "power": {
+    "p0_w": 86.5,
+    "k_v": 0.099,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L41",
+   "type": "effector",
+   "home": [
+    194.4,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 30.1,
+   "v_up_mps": 13.7,
+   "v_down_mps": 16.4,
+   "capacity_wh": 49.0,
+   "battery_pct": 100.0,
+   "power": {
+    "p0_w": 98.2,
+    "k_v": 0.098,
+    "e_climb_wh_per_m": 0.014
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L42",
+   "type": "effector",
+   "home": [
+    183.3,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 31.4,
+   "v_up_mps": 14.5,
+   "v_down_mps": 16.3,
+   "capacity_wh": 51.6,
+   "battery_pct": 72.0,
+   "power": {
+    "p0_w": 103.5,
+    "k_v": 0.096,
+    "e_climb_wh_per_m": 0.011
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L43",
+   "type": "effector",
+   "home": [
+    161.1,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 30.4,
+   "v_up_mps": 10.4,
+   "v_down_mps": 15.9,
+   "capacity_wh": 41.5,
+   "battery_pct": 85.0,
+   "power": {
+    "p0_w": 91.2,
+    "k_v": 0.089,
+    "e_climb_wh_per_m": 0.018
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L44",
+   "type": "effector",
+   "home": [
+    183.3,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 33.9,
+   "v_up_mps": 12.5,
+   "v_down_mps": 18.6,
+   "capacity_wh": 40.5,
+   "battery_pct": 80.0,
+   "power": {
+    "p0_w": 110.1,
+    "k_v": 0.095,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L45",
+   "type": "effector",
+   "home": [
+    250.0,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 32.0,
+   "v_up_mps": 12.0,
+   "v_down_mps": 17.6,
+   "capacity_wh": 50.1,
+   "battery_pct": 95.0,
+   "power": {
+    "p0_w": 107.4,
+    "k_v": 0.069,
+    "e_climb_wh_per_m": 0.013
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L46",
+   "type": "effector",
+   "home": [
+    183.3,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 31.2,
+   "v_up_mps": 12.5,
+   "v_down_mps": 15.7,
+   "capacity_wh": 52.4,
+   "battery_pct": 77.0,
+   "power": {
+    "p0_w": 109.7,
+    "k_v": 0.073,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L47",
+   "type": "effector",
+   "home": [
+    238.9,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 34.6,
+   "v_up_mps": 12.6,
+   "v_down_mps": 17.7,
+   "capacity_wh": 46.7,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 107.2,
+    "k_v": 0.081,
+    "e_climb_wh_per_m": 0.011
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L48",
+   "type": "effector",
+   "home": [
+    161.1,
+    250.0,
+    0.0
+   ],
+   "v_h_mps": 33.3,
+   "v_up_mps": 13.5,
+   "v_down_mps": 17.9,
+   "capacity_wh": 53.2,
+   "battery_pct": 91.0,
+   "power": {
+    "p0_w": 88.3,
+    "k_v": 0.073,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L49",
+   "type": "effector",
+   "home": [
+    194.4,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 28.2,
+   "v_up_mps": 9.8,
+   "v_down_mps": 19.9,
+   "capacity_wh": 40.9,
+   "battery_pct": 81.0,
+   "power": {
+    "p0_w": 84.2,
+    "k_v": 0.089,
+    "e_climb_wh_per_m": 0.018
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "L50",
+   "type": "effector",
+   "home": [
+    183.3,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 31.6,
+   "v_up_mps": 14.7,
+   "v_down_mps": 16.9,
+   "capacity_wh": 50.6,
+   "battery_pct": 92.0,
+   "power": {
+    "p0_w": 103.8,
+    "k_v": 0.077,
+    "e_climb_wh_per_m": 0.017
+   },
+   "subtype": "light"
+  },
+  {
+   "id": "H01",
+   "type": "effector",
+   "home": [
+    238.9,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 22.8,
+   "v_up_mps": 6.2,
+   "v_down_mps": 10.4,
+   "capacity_wh": 68.0,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 162.0,
+    "k_v": 0.183,
+    "e_climb_wh_per_m": 0.04
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H02",
+   "type": "effector",
+   "home": [
+    227.8,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 22.2,
+   "v_up_mps": 6.1,
+   "v_down_mps": 15.0,
+   "capacity_wh": 72.1,
+   "battery_pct": 77.0,
+   "power": {
+    "p0_w": 121.5,
+    "k_v": 0.124,
+    "e_climb_wh_per_m": 0.033
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H03",
+   "type": "effector",
+   "home": [
+    183.3,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 24.8,
+   "v_up_mps": 8.2,
+   "v_down_mps": 11.5,
+   "capacity_wh": 65.5,
+   "battery_pct": 77.0,
+   "power": {
+    "p0_w": 142.1,
+    "k_v": 0.107,
+    "e_climb_wh_per_m": 0.037
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H04",
+   "type": "effector",
+   "home": [
+    150.0,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 19.0,
+   "v_up_mps": 6.5,
+   "v_down_mps": 12.2,
+   "capacity_wh": 70.1,
+   "battery_pct": 92.0,
+   "power": {
+    "p0_w": 132.9,
+    "k_v": 0.192,
+    "e_climb_wh_per_m": 0.032
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H05",
+   "type": "effector",
+   "home": [
+    161.1,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 20.1,
+   "v_up_mps": 6.5,
+   "v_down_mps": 10.6,
+   "capacity_wh": 74.2,
+   "battery_pct": 95.0,
+   "power": {
+    "p0_w": 148.5,
+    "k_v": 0.179,
+    "e_climb_wh_per_m": 0.042
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H06",
+   "type": "effector",
+   "home": [
+    216.7,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 19.6,
+   "v_up_mps": 5.2,
+   "v_down_mps": 14.2,
+   "capacity_wh": 57.3,
+   "battery_pct": 70.0,
+   "power": {
+    "p0_w": 123.6,
+    "k_v": 0.1,
+    "e_climb_wh_per_m": 0.036
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H07",
+   "type": "effector",
+   "home": [
+    205.6,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 24.6,
+   "v_up_mps": 5.2,
+   "v_down_mps": 11.4,
+   "capacity_wh": 56.3,
+   "battery_pct": 75.0,
+   "power": {
+    "p0_w": 164.3,
+    "k_v": 0.106,
+    "e_climb_wh_per_m": 0.042
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H08",
+   "type": "effector",
+   "home": [
+    227.8,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 20.4,
+   "v_up_mps": 6.3,
+   "v_down_mps": 10.3,
+   "capacity_wh": 61.1,
+   "battery_pct": 91.0,
+   "power": {
+    "p0_w": 127.0,
+    "k_v": 0.172,
+    "e_climb_wh_per_m": 0.037
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H09",
+   "type": "effector",
+   "home": [
+    250.0,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 24.1,
+   "v_up_mps": 6.9,
+   "v_down_mps": 10.3,
+   "capacity_wh": 72.4,
+   "battery_pct": 85.0,
+   "power": {
+    "p0_w": 154.3,
+    "k_v": 0.193,
+    "e_climb_wh_per_m": 0.035
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H10",
+   "type": "effector",
+   "home": [
+    216.7,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 22.1,
+   "v_up_mps": 9.9,
+   "v_down_mps": 11.0,
+   "capacity_wh": 58.6,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 132.3,
+    "k_v": 0.125,
+    "e_climb_wh_per_m": 0.043
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H11",
+   "type": "effector",
+   "home": [
+    205.6,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 20.4,
+   "v_up_mps": 7.0,
+   "v_down_mps": 11.9,
+   "capacity_wh": 72.3,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 139.0,
+    "k_v": 0.109,
+    "e_climb_wh_per_m": 0.039
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H12",
+   "type": "effector",
+   "home": [
+    161.1,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 22.6,
+   "v_up_mps": 7.4,
+   "v_down_mps": 14.7,
+   "capacity_wh": 56.1,
+   "battery_pct": 92.0,
+   "power": {
+    "p0_w": 163.0,
+    "k_v": 0.126,
+    "e_climb_wh_per_m": 0.038
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H13",
+   "type": "effector",
+   "home": [
+    194.4,
+    161.1,
+    0.0
+   ],
+   "v_h_mps": 21.3,
+   "v_up_mps": 5.8,
+   "v_down_mps": 14.4,
+   "capacity_wh": 57.3,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 175.3,
+    "k_v": 0.195,
+    "e_climb_wh_per_m": 0.044
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H14",
+   "type": "effector",
+   "home": [
+    150.0,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 20.5,
+   "v_up_mps": 9.8,
+   "v_down_mps": 11.7,
+   "capacity_wh": 67.1,
+   "battery_pct": 89.0,
+   "power": {
+    "p0_w": 161.1,
+    "k_v": 0.196,
+    "e_climb_wh_per_m": 0.047
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H15",
+   "type": "effector",
+   "home": [
+    238.9,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 18.9,
+   "v_up_mps": 5.0,
+   "v_down_mps": 12.0,
+   "capacity_wh": 69.7,
+   "battery_pct": 99.0,
+   "power": {
+    "p0_w": 165.7,
+    "k_v": 0.196,
+    "e_climb_wh_per_m": 0.033
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H16",
+   "type": "effector",
+   "home": [
+    216.7,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 21.2,
+   "v_up_mps": 10.0,
+   "v_down_mps": 13.9,
+   "capacity_wh": 73.9,
+   "battery_pct": 98.0,
+   "power": {
+    "p0_w": 141.4,
+    "k_v": 0.178,
+    "e_climb_wh_per_m": 0.037
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H17",
+   "type": "effector",
+   "home": [
+    227.8,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 23.1,
+   "v_up_mps": 8.3,
+   "v_down_mps": 14.3,
+   "capacity_wh": 61.2,
+   "battery_pct": 85.0,
+   "power": {
+    "p0_w": 124.4,
+    "k_v": 0.105,
+    "e_climb_wh_per_m": 0.048
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H18",
+   "type": "effector",
+   "home": [
+    250.0,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 18.4,
+   "v_up_mps": 8.7,
+   "v_down_mps": 11.1,
+   "capacity_wh": 70.3,
+   "battery_pct": 82.0,
+   "power": {
+    "p0_w": 174.3,
+    "k_v": 0.124,
+    "e_climb_wh_per_m": 0.05
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H19",
+   "type": "effector",
+   "home": [
+    194.4,
+    227.8,
+    0.0
+   ],
+   "v_h_mps": 20.8,
+   "v_up_mps": 5.8,
+   "v_down_mps": 12.9,
+   "capacity_wh": 63.1,
+   "battery_pct": 83.0,
+   "power": {
+    "p0_w": 154.4,
+    "k_v": 0.189,
+    "e_climb_wh_per_m": 0.05
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H20",
+   "type": "effector",
+   "home": [
+    161.1,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 23.9,
+   "v_up_mps": 5.5,
+   "v_down_mps": 10.3,
+   "capacity_wh": 62.7,
+   "battery_pct": 97.0,
+   "power": {
+    "p0_w": 155.3,
+    "k_v": 0.185,
+    "e_climb_wh_per_m": 0.043
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H21",
+   "type": "effector",
+   "home": [
+    216.7,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 22.3,
+   "v_up_mps": 5.9,
+   "v_down_mps": 14.8,
+   "capacity_wh": 58.0,
+   "battery_pct": 99.0,
+   "power": {
+    "p0_w": 150.8,
+    "k_v": 0.16,
+    "e_climb_wh_per_m": 0.031
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H22",
+   "type": "effector",
+   "home": [
+    172.2,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 22.0,
+   "v_up_mps": 8.9,
+   "v_down_mps": 13.7,
+   "capacity_wh": 68.7,
+   "battery_pct": 89.0,
+   "power": {
+    "p0_w": 136.2,
+    "k_v": 0.158,
+    "e_climb_wh_per_m": 0.043
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H23",
+   "type": "effector",
+   "home": [
+    216.7,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 24.1,
+   "v_up_mps": 6.8,
+   "v_down_mps": 12.1,
+   "capacity_wh": 62.9,
+   "battery_pct": 93.0,
+   "power": {
+    "p0_w": 125.1,
+    "k_v": 0.19,
+    "e_climb_wh_per_m": 0.031
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H24",
+   "type": "effector",
+   "home": [
+    150.0,
+    183.3,
+    0.0
+   ],
+   "v_h_mps": 21.8,
+   "v_up_mps": 7.5,
+   "v_down_mps": 14.4,
+   "capacity_wh": 70.8,
+   "battery_pct": 98.0,
+   "power": {
+    "p0_w": 129.9,
+    "k_v": 0.137,
+    "e_climb_wh_per_m": 0.039
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H25",
+   "type": "effector",
+   "home": [
+    238.9,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 23.2,
+   "v_up_mps": 5.7,
+   "v_down_mps": 14.5,
+   "capacity_wh": 64.1,
+   "battery_pct": 98.0,
+   "power": {
+    "p0_w": 122.6,
+    "k_v": 0.143,
+    "e_climb_wh_per_m": 0.042
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H26",
+   "type": "effector",
+   "home": [
+    227.8,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 21.5,
+   "v_up_mps": 7.4,
+   "v_down_mps": 10.1,
+   "capacity_wh": 57.7,
+   "battery_pct": 95.0,
+   "power": {
+    "p0_w": 120.6,
+    "k_v": 0.163,
+    "e_climb_wh_per_m": 0.047
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H27",
+   "type": "effector",
+   "home": [
+    161.1,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 21.2,
+   "v_up_mps": 8.7,
+   "v_down_mps": 11.4,
+   "capacity_wh": 67.2,
+   "battery_pct": 71.0,
+   "power": {
+    "p0_w": 135.6,
+    "k_v": 0.193,
+    "e_climb_wh_per_m": 0.034
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H28",
+   "type": "effector",
+   "home": [
+    161.1,
+    150.0,
+    0.0
+   ],
+   "v_h_mps": 21.7,
+   "v_up_mps": 5.2,
+   "v_down_mps": 14.2,
+   "capacity_wh": 57.1,
+   "battery_pct": 87.0,
+   "power": {
+    "p0_w": 145.3,
+    "k_v": 0.158,
+    "e_climb_wh_per_m": 0.045
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H29",
+   "type": "effector",
+   "home": [
+    250.0,
+    238.9,
+    0.0
+   ],
+   "v_h_mps": 21.1,
+   "v_up_mps": 9.4,
+   "v_down_mps": 13.8,
+   "capacity_wh": 63.8,
+   "battery_pct": 84.0,
+   "power": {
+    "p0_w": 129.4,
+    "k_v": 0.144,
+    "e_climb_wh_per_m": 0.048
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H30",
+   "type": "effector",
+   "home": [
+    250.0,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 24.2,
+   "v_up_mps": 6.8,
+   "v_down_mps": 10.8,
+   "capacity_wh": 61.0,
+   "battery_pct": 78.0,
+   "power": {
+    "p0_w": 139.0,
+    "k_v": 0.191,
+    "e_climb_wh_per_m": 0.032
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H31",
+   "type": "effector",
+   "home": [
+    150.0,
+    216.7,
+    0.0
+   ],
+   "v_h_mps": 24.1,
+   "v_up_mps": 9.2,
+   "v_down_mps": 10.3,
+   "capacity_wh": 56.2,
+   "battery_pct": 99.0,
+   "power": {
+    "p0_w": 161.4,
+    "k_v": 0.171,
+    "e_climb_wh_per_m": 0.04
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H32",
+   "type": "effector",
+   "home": [
+    238.9,
+    172.2,
+    0.0
+   ],
+   "v_h_mps": 20.5,
+   "v_up_mps": 8.2,
+   "v_down_mps": 14.1,
+   "capacity_wh": 70.0,
+   "battery_pct": 92.0,
+   "power": {
+    "p0_w": 124.2,
+    "k_v": 0.192,
+    "e_climb_wh_per_m": 0.043
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H33",
+   "type": "effector",
+   "home": [
+    161.1,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 19.8,
+   "v_up_mps": 8.8,
+   "v_down_mps": 14.3,
+   "capacity_wh": 62.2,
+   "battery_pct": 90.0,
+   "power": {
+    "p0_w": 133.4,
+    "k_v": 0.165,
+    "e_climb_wh_per_m": 0.045
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H34",
+   "type": "effector",
+   "home": [
+    194.4,
+    194.4,
+    0.0
+   ],
+   "v_h_mps": 19.4,
+   "v_up_mps": 8.6,
+   "v_down_mps": 14.6,
+   "capacity_wh": 68.6,
+   "battery_pct": 80.0,
+   "power": {
+    "p0_w": 158.6,
+    "k_v": 0.15,
+    "e_climb_wh_per_m": 0.044
+   },
+   "subtype": "heavy"
+  },
+  {
+   "id": "H35",
+   "type": "effector",
+   "home": [
+    172.2,
+    205.6,
+    0.0
+   ],
+   "v_h_mps": 24.8,
+   "v_up_mps": 6.6,
+   "v_down_mps": 14.0,
+   "capacity_wh": 71.5,
+   "battery_pct": 82.0,
+   "power": {
+    "p0_w": 126.9,
+    "k_v": 0.161,
+    "e_climb_wh_per_m": 0.031
+   },
+   "subtype": "heavy"
+  }
+ ],
+ "contacts": [
+  {
+   "id": "C01",
+   "class": "hostile",
+   "pos": [
+    4517.3,
+    6700.0,
+    0.0
+   ],
+   "points": 98,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    88.0,
+    385.6
+   ]
+  },
+  {
+   "id": "C02",
+   "class": "hostile",
+   "pos": [
+    4007.1,
+    5246.4,
+    0.0
+   ],
+   "points": 70,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 1
+   },
+   "window_s": [
+    145.4,
+    358.5
+   ]
+  },
+  {
+   "id": "C03",
+   "class": "hostile",
+   "pos": [
+    4926.1,
+    4782.1,
+    0.0
+   ],
+   "points": 78,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    75.4,
+    284.5
+   ]
+  },
+  {
+   "id": "C04",
+   "class": "hostile",
+   "pos": [
+    5067.3,
+    5844.6,
+    0.0
+   ],
+   "points": 84,
+   "engage_needs": {
+    "light": 3,
+    "heavy": 1
+   },
+   "window_s": [
+    407.2,
+    655.9
+   ]
+  },
+  {
+   "id": "C05",
+   "class": "hostile",
+   "pos": [
+    6700.0,
+    708.7,
+    0.0
+   ],
+   "points": 54,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    314.1,
+    563.0
+   ]
+  },
+  {
+   "id": "C06",
+   "class": "hostile",
+   "pos": [
+    4154.3,
+    6151.6,
+    0.0
+   ],
+   "points": 86,
+   "engage_needs": {
+    "light": 1
+   },
+   "window_s": [
+    387.8,
+    611.6
+   ]
+  },
+  {
+   "id": "C07",
+   "class": "hostile",
+   "pos": [
+    3357.5,
+    5347.4,
+    0.0
+   ],
+   "points": 80,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    455.6,
+    708.1
+   ]
+  },
+  {
+   "id": "C08",
+   "class": "hostile",
+   "pos": [
+    4341.4,
+    4339.5,
+    0.0
+   ],
+   "points": 56,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    352.5,
+    692.9
+   ]
+  },
+  {
+   "id": "C09",
+   "class": "hostile",
+   "pos": [
+    5376.0,
+    6208.8,
+    0.0
+   ],
+   "points": 85,
+   "engage_needs": {
+    "light": 2,
+    "heavy": 2
+   },
+   "window_s": [
+    447.2,
+    763.1
+   ]
+  },
+  {
+   "id": "C10",
+   "class": "hostile",
+   "pos": [
+    6536.2,
+    2033.1,
+    0.0
+   ],
+   "points": 85,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    86.7,
+    368.6
+   ]
+  },
+  {
+   "id": "C11",
+   "class": "hostile",
+   "pos": [
+    4058.5,
+    5986.0,
+    0.0
+   ],
+   "points": 41,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    410.5,
+    677.5
+   ]
+  },
+  {
+   "id": "C12",
+   "class": "hostile",
+   "pos": [
+    3700.8,
+    4119.4,
+    0.0
+   ],
+   "points": 65,
+   "engage_needs": {
+    "light": 3,
+    "heavy": 1
+   },
+   "window_s": [
+    407.0,
+    656.0
+   ]
+  },
+  {
+   "id": "C13",
+   "class": "hostile",
+   "pos": [
+    3514.0,
+    4520.6,
+    0.0
+   ],
+   "points": 95,
+   "engage_needs": {
+    "light": 4
+   },
+   "window_s": [
+    17.3,
+    236.8
+   ]
+  },
+  {
+   "id": "C14",
+   "class": "hostile",
+   "pos": [
+    5291.1,
+    6302.0,
+    0.0
+   ],
+   "points": 62,
+   "engage_needs": {
+    "heavy": 2
+   },
+   "window_s": [
+    139.6,
+    493.3
+   ]
+  },
+  {
+   "id": "C15",
+   "class": "hostile",
+   "pos": [
+    6075.1,
+    2629.6,
+    0.0
+   ],
+   "points": 65,
+   "engage_needs": {
+    "heavy": 2
+   },
+   "window_s": [
+    59.4,
+    391.6
+   ]
+  },
+  {
+   "id": "C16",
+   "class": "hostile",
+   "pos": [
+    3446.7,
+    5743.5,
+    0.0
+   ],
+   "points": 61,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    365.3,
+    603.7
+   ]
+  },
+  {
+   "id": "C17",
+   "class": "hostile",
+   "pos": [
+    4235.1,
+    5025.4,
+    0.0
+   ],
+   "points": 63,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    389.4,
+    666.3
+   ]
+  },
+  {
+   "id": "C18",
+   "class": "hostile",
+   "pos": [
+    2913.0,
+    4300.0,
+    0.0
+   ],
+   "points": 99,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    130.1,
+    351.6
+   ]
+  },
+  {
+   "id": "C19",
+   "class": "hostile",
+   "pos": [
+    6085.2,
+    6267.2,
+    0.0
+   ],
+   "points": 49,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    453.6,
+    706.2
+   ]
+  },
+  {
+   "id": "C20",
+   "class": "hostile",
+   "pos": [
+    6700.0,
+    1980.4,
+    0.0
+   ],
+   "points": 86,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    198.0,
+    440.3
+   ]
+  },
+  {
+   "id": "C21",
+   "class": "hostile",
+   "pos": [
+    5167.1,
+    6700.0,
+    0.0
+   ],
+   "points": 67,
+   "engage_needs": {
+    "light": 4
+   },
+   "window_s": [
+    431.8,
+    676.7
+   ]
+  },
+  {
+   "id": "C22",
+   "class": "hostile",
+   "pos": [
+    3566.3,
+    4608.4,
+    0.0
+   ],
+   "points": 76,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    397.2,
+    614.1
+   ]
+  },
+  {
+   "id": "C23",
+   "class": "hostile",
+   "pos": [
+    2873.7,
+    4641.1,
+    0.0
+   ],
+   "points": 79,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    478.4,
+    758.5
+   ]
+  },
+  {
+   "id": "C24",
+   "class": "hostile",
+   "pos": [
+    5302.1,
+    6633.2,
+    0.0
+   ],
+   "points": 97,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 2
+   },
+   "window_s": [
+    317.7,
+    597.9
+   ]
+  },
+  {
+   "id": "C25",
+   "class": "hostile",
+   "pos": [
+    6341.9,
+    2142.6,
+    0.0
+   ],
+   "points": 40,
+   "engage_needs": {
+    "light": 1
+   },
+   "window_s": [
+    79.4,
+    289.9
+   ]
+  },
+  {
+   "id": "C26",
+   "class": "hostile",
+   "pos": [
+    3893.7,
+    6700.0,
+    0.0
+   ],
+   "points": 92,
+   "engage_needs": {
+    "heavy": 2
+   },
+   "window_s": [
+    379.9,
+    731.8
+   ]
+  },
+  {
+   "id": "C27",
+   "class": "hostile",
+   "pos": [
+    4306.2,
+    4624.1,
+    0.0
+   ],
+   "points": 72,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    470.8,
+    766.1
+   ]
+  },
+  {
+   "id": "C28",
+   "class": "hostile",
+   "pos": [
+    4746.1,
+    3852.1,
+    0.0
+   ],
+   "points": 40,
+   "engage_needs": {
+    "light": 1
+   },
+   "window_s": [
+    32.4,
+    272.5
+   ]
+  },
+  {
+   "id": "C29",
+   "class": "hostile",
+   "pos": [
+    5286.7,
+    6700.0,
+    0.0
+   ],
+   "points": 74,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    55.5,
+    371.3
+   ]
+  },
+  {
+   "id": "C30",
+   "class": "hostile",
+   "pos": [
+    6700.0,
+    2623.5,
+    0.0
+   ],
+   "points": 60,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 1
+   },
+   "window_s": [
+    129.6,
+    470.6
+   ]
+  },
+  {
+   "id": "C31",
+   "class": "hostile",
+   "pos": [
+    3830.4,
+    6138.7,
+    0.0
+   ],
+   "points": 90,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    300.7,
+    482.9
+   ]
+  },
+  {
+   "id": "C32",
+   "class": "hostile",
+   "pos": [
+    3803.9,
+    4578.1,
+    0.0
+   ],
+   "points": 67,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    345.7,
+    685.2
+   ]
+  },
+  {
+   "id": "C33",
+   "class": "hostile",
+   "pos": [
+    4903.8,
+    3651.1,
+    0.0
+   ],
+   "points": 64,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 2
+   },
+   "window_s": [
+    187.0,
+    455.9
+   ]
+  },
+  {
+   "id": "C34",
+   "class": "hostile",
+   "pos": [
+    6078.0,
+    6700.0,
+    0.0
+   ],
+   "points": 68,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    265.2,
+    565.5
+   ]
+  },
+  {
+   "id": "C35",
+   "class": "hostile",
+   "pos": [
+    6700.0,
+    2334.3,
+    0.0
+   ],
+   "points": 47,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    292.6,
+    589.6
+   ]
+  },
+  {
+   "id": "C36",
+   "class": "hostile",
+   "pos": [
+    3771.3,
+    5691.2,
+    0.0
+   ],
+   "points": 47,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    367.7,
+    721.5
+   ]
+  },
+  {
+   "id": "C37",
+   "class": "hostile",
+   "pos": [
+    4070.1,
+    3976.4,
+    0.0
+   ],
+   "points": 40,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    470.3,
+    725.1
+   ]
+  },
+  {
+   "id": "C38",
+   "class": "hostile",
+   "pos": [
+    4547.9,
+    4507.6,
+    0.0
+   ],
+   "points": 92,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 2
+   },
+   "window_s": [
+    374.1,
+    604.9
+   ]
+  },
+  {
+   "id": "C39",
+   "class": "hostile",
+   "pos": [
+    5792.3,
+    6433.8,
+    0.0
+   ],
+   "points": 79,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    222.5,
+    550.5
+   ]
+  },
+  {
+   "id": "C40",
+   "class": "hostile",
+   "pos": [
+    6700.0,
+    1910.0,
+    0.0
+   ],
+   "points": 79,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    233.5,
+    576.3
+   ]
+  },
+  {
+   "id": "C41",
+   "class": "hostile",
+   "pos": [
+    3619.4,
+    5780.3,
+    0.0
+   ],
+   "points": 65,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    427.4,
+    618.5
+   ]
+  },
+  {
+   "id": "C42",
+   "class": "hostile",
+   "pos": [
+    3407.1,
+    4618.3,
+    0.0
+   ],
+   "points": 47,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    339.5,
+    623.3
+   ]
+  },
+  {
+   "id": "C43",
+   "class": "hostile",
+   "pos": [
+    3600.7,
+    4448.8,
+    0.0
+   ],
+   "points": 95,
+   "engage_needs": {
+    "light": 2,
+    "heavy": 2
+   },
+   "window_s": [
+    135.5,
+    490.2
+   ]
+  },
+  {
+   "id": "C44",
+   "class": "hostile",
+   "pos": [
+    5896.4,
+    6012.6,
+    0.0
+   ],
+   "points": 45,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    48.7,
+    317.3
+   ]
+  },
+  {
+   "id": "C45",
+   "class": "hostile",
+   "pos": [
+    5706.2,
+    2174.7,
+    0.0
+   ],
+   "points": 52,
+   "engage_needs": {
+    "heavy": 1
+   },
+   "window_s": [
+    443.6,
+    702.2
+   ]
+  },
+  {
+   "id": "C46",
+   "class": "hostile",
+   "pos": [
+    3956.4,
+    5840.3,
+    0.0
+   ],
+   "points": 93,
+   "engage_needs": {
+    "light": 2
+   },
+   "window_s": [
+    448.9,
+    654.0
+   ]
+  },
+  {
+   "id": "C47",
+   "class": "hostile",
+   "pos": [
+    3154.5,
+    4889.8,
+    0.0
+   ],
+   "points": 97,
+   "engage_needs": {
+    "light": 1,
+    "heavy": 1
+   },
+   "window_s": [
+    13.1,
+    295.4
+   ]
+  },
+  {
+   "id": "C48",
+   "class": "hostile",
+   "pos": [
+    4016.0,
+    3946.3,
+    0.0
+   ],
+   "points": 83,
+   "engage_needs": {
+    "light": 3
+   },
+   "window_s": [
+    137.9,
+    496.0
+   ]
+  },
+  {
+   "id": "C49",
+   "class": "hostile",
+   "pos": [
+    5804.4,
+    5696.0,
+    0.0
+   ],
+   "points": 84,
+   "engage_needs": {
+    "light": 4
+   },
+   "window_s": [
+    318.5,
+    536.9
+   ]
+  },
+  {
+   "id": "C50",
+   "class": "hostile",
+   "pos": [
+    6120.5,
+    1683.1,
+    0.0
+   ],
+   "points": 45,
+   "engage_needs": {
+    "light": 4
+   },
+   "window_s": [
+    481.5,
+    694.5
+   ]
+  },
+  {
+   "id": "C51",
+   "class": "unknown",
+   "pos": [
+    5482.4,
+    2135.2,
+    0.0
+   ],
+   "points": 12,
+   "window_s": [
+    493.5,
+    768.1
+   ]
+  },
+  {
+   "id": "C52",
+   "class": "unknown",
+   "pos": [
+    2615.1,
+    4213.6,
+    0.0
+   ],
+   "points": 12,
+   "window_s": [
+    310.3,
+    565.8
+   ]
+  },
+  {
+   "id": "C53",
+   "class": "unknown",
+   "pos": [
+    4781.8,
+    6645.5,
+    0.0
+   ],
+   "points": 19,
+   "window_s": [
+    391.3,
+    697.3
+   ]
+  },
+  {
+   "id": "C54",
+   "class": "unknown",
+   "pos": [
+    2123.6,
+    1457.6,
+    0.0
+   ],
+   "points": 14,
+   "window_s": [
+    453.6,
+    786.9
+   ]
+  },
+  {
+   "id": "C55",
+   "class": "unknown",
+   "pos": [
+    1292.6,
+    4196.3,
+    0.0
+   ],
+   "points": 26,
+   "window_s": [
+    196.4,
+    507.6
+   ]
+  },
+  {
+   "id": "C56",
+   "class": "unknown",
+   "pos": [
+    4244.3,
+    1539.6,
+    0.0
+   ],
+   "points": 29,
+   "window_s": [
+    229.5,
+    542.8
+   ]
+  },
+  {
+   "id": "C57",
+   "class": "unknown",
+   "pos": [
+    1286.4,
+    4035.0,
+    0.0
+   ],
+   "points": 22,
+   "window_s": [
+    57.2,
+    401.5
+   ]
+  },
+  {
+   "id": "C58",
+   "class": "unknown",
+   "pos": [
+    2615.6,
+    2410.0,
+    0.0
+   ],
+   "points": 12,
+   "window_s": [
+    301.4,
+    489.5
+   ]
+  },
+  {
+   "id": "C59",
+   "class": "unknown",
+   "pos": [
+    4499.4,
+    5395.1,
+    0.0
+   ],
+   "points": 29,
+   "window_s": [
+    494.9,
+    775.3
+   ]
+  },
+  {
+   "id": "C60",
+   "class": "unknown",
+   "pos": [
+    6319.5,
+    6683.1,
+    0.0
+   ],
+   "points": 21,
+   "window_s": [
+    393.7,
+    607.0
+   ]
+  },
+  {
+   "id": "C61",
+   "class": "unknown",
+   "pos": [
+    3141.5,
+    1997.4,
+    0.0
+   ],
+   "points": 22,
+   "window_s": [
+    492.7,
+    759.0
+   ]
+  },
+  {
+   "id": "C62",
+   "class": "unknown",
+   "pos": [
+    2324.7,
+    5358.9,
+    0.0
+   ],
+   "points": 27,
+   "window_s": [
+    155.5,
+    462.0
+   ]
+  },
+  {
+   "id": "C63",
+   "class": "unknown",
+   "pos": [
+    4892.7,
+    1477.9,
+    0.0
+   ],
+   "points": 11,
+   "window_s": [
+    450.0,
+    747.3
+   ]
+  },
+  {
+   "id": "C64",
+   "class": "unknown",
+   "pos": [
+    6577.2,
+    2644.9,
+    0.0
+   ],
+   "points": 23,
+   "window_s": [
+    233.1,
+    435.6
+   ]
+  },
+  {
+   "id": "C65",
+   "class": "unknown",
+   "pos": [
+    4826.1,
+    2311.4,
+    0.0
+   ],
+   "points": 13,
+   "window_s": [
+    110.2,
+    392.8
+   ]
+  },
+  {
+   "id": "C66",
+   "class": "unknown",
+   "pos": [
+    319.3,
+    6036.9,
+    0.0
+   ],
+   "points": 27,
+   "window_s": [
+    280.1,
+    496.8
+   ]
+  },
+  {
+   "id": "C67",
+   "class": "unknown",
+   "pos": [
+    5582.0,
+    1318.1,
+    0.0
+   ],
+   "points": 19,
+   "window_s": [
+    434.8,
+    786.1
+   ]
+  },
+  {
+   "id": "C68",
+   "class": "unknown",
+   "pos": [
+    5385.2,
+    2257.3,
+    0.0
+   ],
+   "points": 19,
+   "window_s": [
+    465.1,
+    773.8
+   ]
+  },
+  {
+   "id": "C69",
+   "class": "unknown",
+   "pos": [
+    4430.6,
+    4949.3,
+    0.0
+   ],
+   "points": 30,
+   "window_s": [
+    274.9,
+    541.6
+   ]
+  },
+  {
+   "id": "C70",
+   "class": "unknown",
+   "pos": [
+    1068.0,
+    4886.8,
+    0.0
+   ],
+   "points": 10,
+   "window_s": [
+    471.0,
+    709.7
+   ]
+  },
+  {
+   "id": "C71",
+   "class": "friendly",
+   "pos": [
+    1207.0,
+    1606.0,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C72",
+   "class": "friendly",
+   "pos": [
+    2412.3,
+    4273.0,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C73",
+   "class": "friendly",
+   "pos": [
+    2988.8,
+    4407.8,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C74",
+   "class": "friendly",
+   "pos": [
+    3512.8,
+    4673.5,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C75",
+   "class": "friendly",
+   "pos": [
+    1561.3,
+    4156.4,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C76",
+   "class": "friendly",
+   "pos": [
+    4816.7,
+    3492.7,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C77",
+   "class": "friendly",
+   "pos": [
+    4117.0,
+    5218.7,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C78",
+   "class": "friendly",
+   "pos": [
+    4303.6,
+    6244.3,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C79",
+   "class": "friendly",
+   "pos": [
+    5769.1,
+    2661.6,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C80",
+   "class": "friendly",
+   "pos": [
+    432.3,
+    5692.5,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C81",
+   "class": "friendly",
+   "pos": [
+    2623.2,
+    1506.9,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C82",
+   "class": "friendly",
+   "pos": [
+    2818.9,
+    4419.3,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C83",
+   "class": "civilian",
+   "pos": [
+    1438.2,
+    3655.3,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C84",
+   "class": "civilian",
+   "pos": [
+    4214.0,
+    2196.4,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C85",
+   "class": "civilian",
+   "pos": [
+    3793.6,
+    1927.0,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C86",
+   "class": "civilian",
+   "pos": [
+    2849.3,
+    5115.8,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C87",
+   "class": "civilian",
+   "pos": [
+    3340.8,
+    3682.0,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C88",
+   "class": "civilian",
+   "pos": [
+    3956.0,
+    6032.8,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C89",
+   "class": "civilian",
+   "pos": [
+    3158.9,
+    3335.6,
+    0.0
+   ],
+   "window_s": null
+  },
+  {
+   "id": "C90",
+   "class": "civilian",
+   "pos": [
+    2804.1,
+    3323.2,
+    0.0
+   ],
+   "window_s": null
+  }
+ ],
+ "zones": [
+  {
+   "id": "Z01",
+   "center": [
+    1654.5,
+    2296.8
+   ],
+   "radius_m": 321.0,
+   "top_m": 63.0
+  },
+  {
+   "id": "Z02",
+   "center": [
+    1308.2,
+    842.2
+   ],
+   "radius_m": 342.0,
+   "top_m": 100.0
+  },
+  {
+   "id": "Z03",
+   "center": [
+    1322.6,
+    3176.4
+   ],
+   "radius_m": 274.0,
+   "top_m": 63.0
+  },
+  {
+   "id": "Z04",
+   "center": [
+    3785.9,
+    1037.6
+   ],
+   "radius_m": 385.0,
+   "top_m": 115.0
+  },
+  {
+   "id": "Z05",
+   "center": [
+    2367.9,
+    810.4
+   ],
+   "radius_m": 210.0,
+   "top_m": 53.0
+  },
+  {
+   "id": "Z06",
+   "center": [
+    1674.7,
+    4952.9
+   ],
+   "radius_m": 207.0,
+   "top_m": 82.0
+  },
+  {
+   "id": "Z07",
+   "center": [
+    849.4,
+    4439.4
+   ],
+   "radius_m": 347.0,
+   "top_m": 50.0
+  },
+  {
+   "id": "Z08",
+   "center": [
+    4958.9,
+    2970.8
+   ],
+   "radius_m": 350.0,
+   "top_m": 112.0
+  }
+ ],
+ "rules": {
+  "z_min_m": 30.0,
+  "z_max_m": 150.0,
+  "R_obs_m": 150.0,
+  "obs_dwell_s": 20.0,
+  "confirm_margin_s": 10.0,
+  "protect_radius_m": 100.0,
+  "collateral_radius_m": 200.0,
+  "d_sep_m": 40.0,
+  "exempt_radius_m": 100.0,
+  "R_eng_m": 25.0,
+  "sync_window_s": 20.0,
+  "verify_window_s": 120.0,
+  "verify_bonus": 0.25,
+  "lambda_e": 0.5,
+  "c_eff": 10.0
+ },
+ "events": []
+}

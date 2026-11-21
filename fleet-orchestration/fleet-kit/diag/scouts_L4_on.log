@@ -1,0 +1,23 @@
+OK  L4-0    score   1165.5    7.9s
+OK  L4-1    score   1070.5   14.2s
+OK  L4-2    score    918.0   17.8s
+OK  L4-3    score   1063.4   27.9s
+OK  L4-4    score    944.5    6.3s
+OK  L4-5    score   1306.3    7.6s
+OK  L4-6    score    942.6   24.3s
+OK  L4-7    score    931.5   16.8s
+OK  L4-8    score   1270.8   25.7s
+OK  L4-9    score   1060.6   31.3s
+OK  L4-10   score   1074.0   21.1s
+OK  L4-11   score    947.9   18.4s
+OK  L4-12   score    879.0   38.2s
+OK  L4-13   score   1356.6   22.3s
+OK  L4-14   score    982.9   27.2s
+OK  L4-15   score   1226.8   13.0s
+OK  L4-16   score   1251.6   11.5s
+OK  L4-17   score   1107.6    9.4s
+OK  L4-18   score    777.7   22.2s
+OK  L4-19   score   1144.1   13.1s
+--- résumé (somme des scores)
+L4: n=20 mine=21421.7 base=0.0 ratio=nan tmax=38.2s
+TOTAL mine=21421.7 base=0.0 invalides/échecs=0

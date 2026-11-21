@@ -1,0 +1,469 @@
+{
+ "rows": [
+  {
+   "level": "S-battery",
+   "seed": 0,
+   "mine": 909.166934561676,
+   "base": 429.67229633663396,
+   "valid": true,
+   "time": 38.26,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 1,
+   "mine": 930.3788706591702,
+   "base": 280.26183451444183,
+   "valid": true,
+   "time": 38.32,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 2,
+   "mine": 426.4246632592062,
+   "base": 265.2492078285971,
+   "valid": true,
+   "time": 38.25,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 3,
+   "mine": 508.37539808384463,
+   "base": 253.41564645277947,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 4,
+   "mine": 1202.292785354185,
+   "base": 509.1464819288883,
+   "valid": true,
+   "time": 38.51,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 5,
+   "mine": 770.6664590709456,
+   "base": 127.02694449098072,
+   "valid": true,
+   "time": 38.49,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 6,
+   "mine": 899.9584392062577,
+   "base": 515.5813921640213,
+   "valid": true,
+   "time": 38.44,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 7,
+   "mine": 317.0687535726636,
+   "base": 90.44554310741356,
+   "valid": true,
+   "time": 38.4,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 8,
+   "mine": 991.9167181381551,
+   "base": 449.93152845319617,
+   "valid": true,
+   "time": 39.46,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 9,
+   "mine": 1149.510877148709,
+   "base": 448.20850976683244,
+   "valid": true,
+   "time": 38.32,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 10,
+   "mine": 581.062818295194,
+   "base": 370.07454759011,
+   "valid": true,
+   "time": 38.26,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 11,
+   "mine": 742.7908357290894,
+   "base": 252.27642943666655,
+   "valid": true,
+   "time": 38.25,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 12,
+   "mine": 542.0021168902956,
+   "base": 261.89824464708124,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 13,
+   "mine": 543.442535882239,
+   "base": 370.1579499403591,
+   "valid": true,
+   "time": 38.34,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 14,
+   "mine": 778.2691473602154,
+   "base": 359.5650457426947,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 15,
+   "mine": 371.5100080514452,
+   "base": 121.51028191523339,
+   "valid": true,
+   "time": 38.28,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 16,
+   "mine": 878.7465542353746,
+   "base": 318.0617895611138,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 17,
+   "mine": 406.98969774197053,
+   "base": 164.83152669018853,
+   "valid": true,
+   "time": 38.42,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 18,
+   "mine": 819.5647581364535,
+   "base": 487.45239847393555,
+   "valid": true,
+   "time": 38.67,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 19,
+   "mine": 413.55002541393594,
+   "base": 305.95994967080816,
+   "valid": true,
+   "time": 38.25,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 20,
+   "mine": 929.608061043919,
+   "base": 437.94304636645234,
+   "valid": true,
+   "time": 38.39,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 21,
+   "mine": 712.3956042331347,
+   "base": 247.0206243643397,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 22,
+   "mine": 853.5927188125622,
+   "base": 402.43712461453356,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 23,
+   "mine": 1122.9074020635344,
+   "base": 517.4203862273204,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 24,
+   "mine": 428.5607131244707,
+   "base": 201.6547478525091,
+   "valid": true,
+   "time": 38.22,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 25,
+   "mine": 901.014340418345,
+   "base": 252.23353447961006,
+   "valid": true,
+   "time": 38.27,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 26,
+   "mine": 657.5008439730682,
+   "base": 309.3239932320818,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 27,
+   "mine": 973.9919716028749,
+   "base": 408.1919384745919,
+   "valid": true,
+   "time": 38.41,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 28,
+   "mine": 827.4124470792083,
+   "base": 482.68653803328425,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 29,
+   "mine": 969.1400366042158,
+   "base": 379.04499312304824,
+   "valid": true,
+   "time": 38.21,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 30,
+   "mine": 544.048613023421,
+   "base": 204.7155694951894,
+   "valid": true,
+   "time": 38.26,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 31,
+   "mine": 816.3104899065884,
+   "base": 267.5098210797428,
+   "valid": true,
+   "time": 38.27,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 32,
+   "mine": 551.3602903828321,
+   "base": 322.06776984266156,
+   "valid": true,
+   "time": 38.16,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 33,
+   "mine": 915.0271795982235,
+   "base": 404.652162547014,
+   "valid": true,
+   "time": 38.3,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 34,
+   "mine": 1003.0642754177954,
+   "base": 193.01545212145652,
+   "valid": true,
+   "time": 38.26,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 35,
+   "mine": 1125.2077185846895,
+   "base": 550.5065517133798,
+   "valid": true,
+   "time": 38.62,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 36,
+   "mine": 855.2016717936365,
+   "base": 406.4062994097992,
+   "valid": true,
+   "time": 38.17,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 37,
+   "mine": 546.0014144654716,
+   "base": 352.45801039376795,
+   "valid": true,
+   "time": 38.16,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 38,
+   "mine": 546.3947796954455,
+   "base": 237.2004010513802,
+   "valid": true,
+   "time": 38.43,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 39,
+   "mine": 504.37083073200836,
+   "base": 232.30300240259362,
+   "valid": true,
+   "time": 38.13,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 40,
+   "mine": 714.24381119082,
+   "base": 171.48061840225284,
+   "valid": true,
+   "time": 38.41,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 41,
+   "mine": 685.4051547044103,
+   "base": 293.09387048304023,
+   "valid": true,
+   "time": 38.26,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 42,
+   "mine": 793.7278501503854,
+   "base": 193.9776184746433,
+   "valid": true,
+   "time": 38.33,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 43,
+   "mine": 806.4523797010329,
+   "base": 359.94654100406956,
+   "valid": true,
+   "time": 38.19,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 44,
+   "mine": 1025.1830866953596,
+   "base": 307.9554046433683,
+   "valid": true,
+   "time": 38.23,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 45,
+   "mine": 878.4569969743363,
+   "base": 488.1402038706203,
+   "valid": true,
+   "time": 38.24,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 46,
+   "mine": 1063.1388062881883,
+   "base": 581.7537150416127,
+   "valid": true,
+   "time": 38.2,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 47,
+   "mine": 781.8222683245324,
+   "base": 432.3199377830965,
+   "valid": true,
+   "time": 38.23,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 48,
+   "mine": 561.305625797341,
+   "base": 205.9776452760587,
+   "valid": true,
+   "time": 38.2,
+   "err": ""
+  },
+  {
+   "level": "S-battery",
+   "seed": 49,
+   "mine": 584.3308673617194,
+   "base": 293.9047770897842,
+   "valid": true,
+   "time": 38.34,
+   "err": ""
+  }
+ ],
+ "summary": {
+  "S-battery": {
+   "n": 50,
+   "mine": 37860.866646534596,
+   "base": 16518.06984760528,
+   "ratio": 2.2920878163027933,
+   "failures": 0,
+   "tmax": 39.46,
+   "delta_mean": 426.85593597858633,
+   "delta_se": 24.0016038611381,
+   "worse": 0,
+   "worse_share": 0.0,
+   "paired_n": 50
+  }
+ }
+}
