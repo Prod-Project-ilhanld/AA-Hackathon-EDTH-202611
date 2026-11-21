@@ -391,7 +391,6 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
             return empty
     except Exception:
         return empty
-    _keep(best[1])  # on disk now: the alarm backstop writes this plan, not the empty one
     return best[1]
 
 
@@ -445,6 +444,7 @@ def main() -> None:
         signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
     plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
+    _keep(plan)  # validated, never negative: the alarm backstop now writes this plan, not the empty one
     while params.INJECT_HANG:  # test hook: the alarm must write the kept plan
         time.sleep(1)
     _keep(_official_guard(data, plan))
