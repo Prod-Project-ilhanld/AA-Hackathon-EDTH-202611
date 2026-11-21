@@ -2,7 +2,9 @@
 
 Greedy planner of the kit, made faster and wider:
 - a cheap pre-filter (validate only the touched routes, check R8 only against the others) runs
-  before the authoritative full validation, so many more scouts and options can be tried;
+  before the authoritative full validation, so many more scouts and options can be tried: the 6
+  nearest scouts with all options, then every other scout with plain options (on L4 the near scouts
+  saturate while others stay on the ground);
 - restarts under an internal time budget keep the best valid plan: a few deterministic orders of
   the contacts (points per effector needed), then hill-climbing around the best order, spread over
   the available cores (serial fallback);
@@ -57,6 +59,7 @@ class FastPlanner(_Planner):
         self.aircraft = scenario.aircraft_by_id()
         self.contacts = scenario.contact_by_id()
         self.items: Dict[str, tuple] = {}
+        self.far = True     # also try the scouts beyond the nearest n_scouts (plain options only)
 
     def _check_time(self) -> None:
         if time.monotonic() > self.deadline:
@@ -110,20 +113,26 @@ class FastPlanner(_Planner):
                 return False
             pool[sub] = free[:n]
         effectors = [a for sub in sorted(pool) for a in pool[sub]]
-        for scout in self._scout_candidates(contact):
-            for z in SCOUT_LAYERS:
-                for angle in (0.0, 60.0, -60.0):
-                    for dep_shift in (0.0, 7.0):
-                        built = self._add_observation(scout, contact, z, angle, dep_shift)
-                        if built is None:
-                            continue
-                        tasks, route = built
-                        if not self._prefilter({scout.id: route}):
-                            continue
-                        obs_end = max(w["t"] + w.get("dwell_s", 0.0) for w in route
-                                      if w.get("target") == contact.id and w.get("action") == "observe")
-                        if self._place_effectors(contact, effectors, obs_end, scout, tasks, route):
-                            return True
+        scouts = [a for a in sc.aircraft if a.type == SCOUT]
+        scouts.sort(key=lambda s: hdist(s.home, contact.pos))
+        # tier 1: the nearest scouts with the full set of options; tier 2: the others, plain options only
+        tiers = ((scouts[:self.n_scouts], (0.0, 60.0, -60.0), (0.0, 7.0)),
+                 (scouts[self.n_scouts:] if self.far else [], (0.0,), (0.0, 7.0)))
+        for cands, angles, shifts in tiers:
+            for scout in cands:
+                for z in SCOUT_LAYERS:
+                    for angle in angles:
+                        for dep_shift in shifts:
+                            built = self._add_observation(scout, contact, z, angle, dep_shift)
+                            if built is None:
+                                continue
+                            tasks, route = built
+                            if not self._prefilter({scout.id: route}):
+                                continue
+                            obs_end = max(w["t"] + w.get("dwell_s", 0.0) for w in route
+                                          if w.get("target") == contact.id and w.get("action") == "observe")
+                            if self._place_effectors(contact, effectors, obs_end, scout, tasks, route):
+                                return True
         return False
 
 
@@ -180,9 +189,10 @@ class RoutedPlanner(FastPlanner):
 
 
 
-def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner_cls=None):
+def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner_cls=None, far: bool = True):
     """One greedy construction; returns the plan built so far (valid by construction) at the deadline."""
     planner = (planner_cls or FastPlanner)(scenario, deadline, n_scouts)
+    planner.far = far
     hostiles = sorted((c for c in scenario.contacts if c.cls == HOSTILE), key=order_key)
     unknowns = sorted((c for c in scenario.contacts if c.cls == UNKNOWN), key=lambda c: -c.points)
     try:
@@ -208,32 +218,38 @@ def _key(scenario: Scenario, alpha: float, noise: Dict[str, float]):
 def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     """Builds plans until the deadline; returns the best valid (score, plan) of this worker.
 
-    The first two builds use the same contact order with each router (the team's routing module,
-    the kit's own); then the worker hill-climbs around the best (router, order) it has found.
+    The first two builds of a worker use two variants of the construction (router of the team or of the
+    kit, with or without the far scouts); even workers start with the far scouts, odd workers without, so that
+    two workers already cover the four variants. Then the worker hill-climbs around the best variant and order.
     """
     alphas = [0.0, 1.0, 0.5, 1.5]
     classes = [RoutedPlanner, FastPlanner] if _routing is not None else [FastPlanner]
+    n_far = max(0, sum(1 for a in scenario.aircraft if a.type == SCOUT) - N_SCOUTS)
     first = worker % len(classes)
+    far0 = (worker % 2 == 0) or n_far == 0
     rng = random.Random(1000 + worker)
     best = (-1.0, {"seed": scenario.seed, "routes": []})
     base_alpha = alphas[(worker // len(classes)) % len(alphas)]
-    best_alpha, best_noise, best_cls = base_alpha, {}, classes[first]
+    best_alpha, best_noise, best_cls, best_far = base_alpha, {}, classes[first], far0
+    best_val = -1.0
     attempt = 0
     while time.monotonic() < deadline:
         if attempt < len(classes):
-            cls, alpha, noise = classes[(first + attempt) % len(classes)], base_alpha, {}
+            cls, far, alpha, noise = classes[(first + attempt) % len(classes)], far0, base_alpha, {}
+            if worker % 2 == 1 and n_far > 0:
+                far = False
         else:
-            cls = best_cls
+            cls, far = best_cls, best_far
             sigma = 0.12 if worker % 2 == 0 else 0.3
             alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-0.2, 0.2)))
             noise = {c.id: max(0.2, best_noise.get(c.id, 1.0) * rng.gauss(1.0, sigma)) for c in scenario.contacts}
         try:
-            plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS, cls)
+            plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS, cls, far)
             res = evaluate(scenario, plan)
         except Exception:  # a failing router never costs the whole run
             res = None
         if res is not None and res.valid and res.score > best[0]:
-            best, best_alpha, best_noise, best_cls = (res.score, plan), alpha, noise, cls
+            best, best_alpha, best_noise, best_cls, best_far = (res.score, plan), alpha, noise, cls, far
         attempt += 1
     return best
 
@@ -247,6 +263,9 @@ def _worker(args):
 
 
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
+    # beyond the official L4 (100 aircraft) route building and validation overshoot the deadline more and more
+    # (measured: +1 s at 100, +9 s at 300, +11 s at 400 aircraft): shrink the budget so the 60 s limit holds
+    budget_s = max(10.0, budget_s - 0.04 * max(0, len(scenario.aircraft) - 100))
     deadline = time.monotonic() + budget_s
     empty = {"seed": scenario.seed, "routes": []}
     best = (0.0, empty)
