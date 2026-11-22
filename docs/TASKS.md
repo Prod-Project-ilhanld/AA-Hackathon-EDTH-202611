@@ -22,7 +22,8 @@ GitHub Issues are off in this repo, so the open tasks live here. **This file is 
 - **#27** (polygon router note + `tools/check_routing.py`) and **#28** (Louis's opsview demo) are merged. Neither touches the hand-in code.
 - **Task 11** is being built in a Claude session (branch `feature/never-below-greedy`, planner gate, PR by 08:30). Louis: skip it unless you already started; say so in the chat.
 - **Tasks 8 → 12 → 9** are being built in a Claude session, one PR each, link-loss gate, last PR by 08:30. P3: claim any of them in the chat before starting so we don't do it twice.
-- Still open: repo visibility (still public), shift suite (task 4: who's running it?), organiser answers (task 5).
+- The repo stays public (owner decision, Sun 03:10).
+- Still open: shift suite (task 4: who's running it?), organiser answers (task 5).
 
 ## Where we stand (Sun 01:30)
 
@@ -68,7 +69,7 @@ Official sizing grid (all 20 cells, 5 comm seeds), seeds 5–14 / fresh 15–24:
 | When | Task | Done when |
 |---|---|---|
 | ~~now~~ done 03:00 | **Unblock #23:** in `tests/test_policy_r8.py`, line 52 asserts `msg[0] == 4` and line 60 `msg[0] == 2` (the policy now sends lists). Then retarget #23 to `main` and merge it with a merge commit. Don't delete `feature/policy-r8` first: #19 closes as merged on its own | main CI green |
-| now | Make the repo private (GitHub Settings) | The API says private |
+| ~~now~~ dropped | Make the repo private: owner decided to keep it public (Sun 03:10) | – |
 | as PRs come in | Run the gate on every link-loss and planner PR, one bench at a time, and post the numbers on the PR | Merged or rejected with numbers |
 | 08:00 | **Review:** shift results, open PRs, #19 + #23 against #19 alone | Decision posted in the chat |
 | 08:00–09:00 | **Organiser answers, in person (task 5):** cores, multiprocessing allowed, hand-in format, Python version | Answers posted here |
