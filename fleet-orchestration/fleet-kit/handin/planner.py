@@ -16,6 +16,7 @@ Greedy planner of the kit, made faster and wider:
   (same scores on 50 seeds, 12 s instead of 38 s: only the time tie-break changes).
 """
 import json
+import math
 import multiprocessing
 import os
 import random
@@ -315,6 +316,8 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     base_alpha = alphas[(worker // len(classes)) % len(alphas)]
     best_alpha, best_noise, best_cls, best_far = base_alpha, {}, classes[first], far0
     best_val = -1.0
+    cur_val = -1.0  # ANNEAL: score of the order the hill-climb perturbs (best_alpha... below); it may drop below best[0]
+    t_start = time.monotonic()
     attempt = 0
     builds = 0  # attempt restarts when the router falls back; FLEET_ITERS counts every build
     last_gain = time.monotonic()
@@ -330,7 +333,7 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
         else:
             cls, far = best_cls, best_far
             sigma = params.SIGMA_EVEN if worker % 2 == 0 else params.SIGMA_ODD
-            alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-0.2, 0.2)))
+            alpha = min(2.0, max(0.0, best_alpha + rng.uniform(-params.ALPHA_STEP, params.ALPHA_STEP)))
             noise = {c.id: max(0.2, best_noise.get(c.id, 1.0) * rng.gauss(1.0, sigma)) for c in scenario.contacts}
         try:
             plan, _ = build(scenario, _key(scenario, alpha, noise), deadline, N_SCOUTS, cls, far)
@@ -342,10 +345,30 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
             classes, best_cls, attempt = [FastPlanner], FastPlanner, -1
         if res is not None and res.valid and res.score > best[0]:
             best, best_alpha, best_noise, best_cls, best_far = (res.score, plan), alpha, noise, cls, far
+            cur_val = res.score
             last_gain = time.monotonic()
+        elif params.ANNEAL and attempt >= len(classes) and res is not None and res.valid and _anneal_accept(
+                cur_val, res.score, builds, t_start, deadline, rng):
+            best_alpha, best_noise, best_cls, best_far = alpha, noise, cls, far  # the centre moves, best stays
+            cur_val = res.score
         attempt += 1
         builds += 1
     return best
+
+
+def _anneal_accept(cur: float, new: float, builds: int, t_start: float, deadline: float, rng) -> bool:
+    """Simulated-annealing acceptance: always when not worse, else with probability exp(-drop / T).
+
+    T = ANNEAL_T0 x current score, cooling linearly to 0 over the run (builds under FLEET_ITERS, else time).
+    """
+    if new >= cur:
+        return True
+    if params.FLEET_ITERS > 0:
+        left = 1.0 - builds / params.FLEET_ITERS
+    else:
+        left = (deadline - time.monotonic()) / max(1e-9, deadline - t_start)
+    temp = params.ANNEAL_T0 * max(cur, 0.0) * left
+    return temp > 0 and rng.random() < math.exp(-(cur - new) / temp)
 
 
 def _worker(args):
