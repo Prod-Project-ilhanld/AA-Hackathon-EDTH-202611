@@ -61,14 +61,20 @@ def test_an_aborted_aircraft_in_an_on_plan_peers_way_backs_off_within_one_step()
     assert msg[0] == 2   # status 2: return
 
 
-def test_a_co_effector_of_an_aborted_partner_stays_on_plan_and_stops_short_of_the_target():
+def test_a_co_effector_aborts_when_it_hears_a_flagged_hold():
     sc, plan = scenario_and_plan(PARALLEL)
     p = Policy(sc, plan, "L02")
     heard = {"from": "L01", "sent_t": 29.0, "payload": {"hd": 1, "u": 29.0, "ab": 1}}
     action, _ = p.step(obs(30.0, 30.0, inbox=[heard]))
-    assert action == {"kind": "continue"}   # on the plan: deconflicted, and never inside a pop-up when it appears
+    assert action["kind"] != "continue"   # before: it kept flying and waited behind the hovering partner
+
+
+def test_a_reclassified_target_keeps_the_effector_on_plan_until_just_short_of_it():
+    sc, plan = scenario_and_plan(CROSSING)
+    p = Policy(sc, plan, "L01")
+    assert p.step(obs(30.0, 30.0, sensed=[RECLASSIFY_C01]))[0] == {"kind": "continue"}   # planned: never in a pop-up
     action, _ = p.step(obs(51.0, 51.0))
-    assert action["kind"] != "continue" and p._last_mode == "return"   # 9 s before the target: group abort
+    assert action["kind"] != "continue" and p._last_mode == "return"                     # 9 s before C01
 
 
 def test_an_aborted_hover_never_expires_into_an_on_plan_belief():

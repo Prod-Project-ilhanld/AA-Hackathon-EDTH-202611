@@ -17,7 +17,7 @@ from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 MAX_MSG_BYTES = 64
 SEP_PAD_M = 6.0
 OB_WAIT_MAX_S = 40.0   # longest an effector waits short of its target for a late observation
-STOP_S = 10.0          # a reclassify or group abort keeps flying the plan until this long before the target
+STOP_S = 10.0          # an effector whose target was reclassified keeps to its plan until this long before it
 
 
 def _seg_min_dist3(
@@ -508,10 +508,12 @@ class Policy:
 
         if not abort and self.is_effector and self.target is not None:
             peers = self.peers_by_target.get(self.target, set())
-            if self.target in self.reclassified or any(p in self.aborted_peers for p in peers if p != self.aircraft_id):
-                # Reclassified target, or a co-effector aborted (group abort). On the plan we stay deconflicted, and a
-                # pop-up zone never covers a planned position when it appears: stop only short of the target.
+            if self.target in self.reclassified:
+                # On the plan we stay deconflicted, and a pop-up zone never covers a planned position when it
+                # appears: stop only short of the reclassified target.
                 abort = self.clock.end - tau <= STOP_S
+            elif any(p in self.aborted_peers for p in peers if p != self.aircraft_id):
+                abort = True   # group abort: a co-effector aborted
             else:
                 # R4 guard: never engage without a confirmed observation. Without one close to the target, wait
                 # for a late scout while the delay and the target window allow, else abort.
