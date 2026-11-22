@@ -45,8 +45,20 @@ Times are targets. The spoken text runs 2:13 at 140 words per minute; the rest i
 | 1:17 | **Tab 4** `view_linkloss.html`, at t = 0, **Link** tab open. Banner: `LINK UP · FOLLOWING THE PLAN`. | "Now the link is cut, at 434 seconds." |
 | 1:20 | Click **`popup_zone t = 618 · r 82 m`** in the Link tab. The page jumps to t = 615 s; banner turns to `LINK CUT · POLICY IN COMMAND`. | "Each aircraft decides alone, with our policy on board. At 618 seconds a no-fly zone pops up across a four-aircraft strike." |
 | 1:30 | Press Space (8×). Count **four** seconds, press Space again: about **t = 645 s**. Three seconds stops at 639 s, before the hold. | "Watch:" |
-| 1:34 | Point at the **four orange hold rings** next to the zone labelled `NEW`, just right of `Z02`. They are H02, L02, L10, L27, all due to strike C47; they hold from t = 640 s. | "all four stop and hold, in orange. The strike is dropped as a group, and nobody fires without a confirmed observation." |
+| 1:34 | Point at the **four orange hold rings** next to the zone labelled `NEW`, just right of `Z02`. They are H02, L02, L10, L27, all due to strike C47: L02 holds at t = 639 s, the other three at 640 s, on its message. | "all four stop and hold, in orange. The strike is dropped as a group, and nobody fires without a confirmed observation." |
 | 1:43 | Point at the top right: `RUN COMPLETED WITHOUT FAILURE`, **100 % retention**, points 2086 of 2086. | "Every reachable point kept. On the official grid: zero failed runs, down to 50 bytes per second." |
+
+Times in this beat, checked against the kit's link-loss rules (`LINKLOSS.md`) by rerunning the simulation at its
+real 1 Hz step (the viewer samples every 2 s):
+
+| Moment | Time | Rule it follows |
+|---|---|---|
+| Link cut | 434 s, 0.48 of the plan (last waypoint 899.5 s) | the cut falls a quarter to half of the way through the plan |
+| L47 fails | 500 s, on the ground (planned take-off 513.7 s) | `failure` removes the aircraft; nobody senses it |
+| Pop-up zone | 618 s; H02 and L22 sense it that second and broadcast it | sensed by aircraft within 300 m |
+| L02 holds | 639 s, before its route enters the zone | policy decides once per second; `hold` is the only way to avoid a danger |
+| H02, L10, L27 hold | 640 s | messages arrive one step later; the group aborts together |
+| End | 900 s; 2086 of 2086 reachable points (C47 and L47's C32 are lost for the oracle too) | judged on real times; retention = points / oracle points |
 
 ### Beat 5: every decision explained (1:52 to 2:12)
 
@@ -118,6 +130,7 @@ Sources: final-set bench (Mahmoud, CP5); `handin/check_handin.py` on an idle mac
 | Where does the link-loss policy fail? | One known case: on scenario L3-6, retention is 0.611, because two aircraft abort just after take-off and hover over the base, head-on with departing aircraft. Flying them home fixed it but broke three other scenarios, so we didn't ship that. |
 | Why so many messages? Could you cut traffic? | We tried a lower-traffic variant: better on paper (0.967 against 0.949) but one failed run at 250 m. A failed run scores zero, so we kept the safer policy. |
 | What did you try that didn't work? | Squeaky Wheel reordering +0.13 % (noise), light-effector pricing ±0.5 %, scout tours +0.12 %, altitude layers for strike groups (noise), constant tuning (not enough compute to prove a gain). We keep a change only if it beats the noise. |
+| How do the aircraft learn about the zone? | Two aircraft within 300 m sense it the second it appears and broadcast it; aircraft whose route stays clear carry on. L02 holds at 639 s before its route enters the zone, and the rest of its strike group holds one second later, on its message. |
 | Why leave an 85-point target? | Three reasons, each on a Why card: a rule (C27 is 140 m from a civilian), resources (C50 needs 4 light effectors and all 50 are in use), or reach (C37: the real router finds no route in its time window). |
 | Is ×2 cherry-picked? | The demo is one seed (×2.0). The ×2.22 is the total over 50 unseen L4 seeds, and none of the 200 final runs is below baseline. |
 | What does the product look like? | A planning aid next to the operator: it takes the fleet, contacts and zones, returns a valid plan in under a minute on a laptop, with a Why card per contact, a ranked list of the tightest margins and a one-page brief (key B). The operator approves; if the link drops, the on-board policy keeps the aircraft safe. |
