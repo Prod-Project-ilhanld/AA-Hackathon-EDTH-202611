@@ -1,0 +1,15 @@
+<section id="solution" class="dark">
+<p class="eyebrow">Our solution</p>
+<h2>Every drone assigned, every route planned, in under 40 seconds</h2>
+<div class="flow">
+<div class="box in"><p class="tag">In</p><p class="head">The situation</p><p>Drones, targets, no-fly zones, civilians and friendly forces.</p></div>
+<p class="arrow in" style="--i:1">→</p>
+<div class="box in" style="--i:2;border:3px solid var(--amber)"><p class="tag">Our planner</p><p class="head">Many plans, one kept</p><p>Many variants tried in parallel. Only plans that pass every rule are kept, and the best one wins.</p></div>
+<p class="arrow in" style="--i:3">→</p>
+<div class="box in" style="--i:4"><p class="tag">Out</p><p class="head">The mission plan</p><p>Who confirms what, who strikes where, on which 3D route, at what time.</p></div>
+</div>
+<p class="foot">Source: the planning software of our final submission.</p>
+<aside>“In under forty seconds, our planner decides who confirms what, who strikes where, on which route, at what time. It tries many variants in parallel and keeps the best safe one.”
+
+If asked (handin/planner.py): the kit’s greedy construction made about 3 times faster by checking only what changed; restarts and hill-climbing over the contact order, spread over up to 8 worker processes; every kept step passes the official scorer and the final plan is re-validated. Search stops at 38 s, a 52 s alarm writes the best valid plan, limit 60 s.</aside>
+</section>

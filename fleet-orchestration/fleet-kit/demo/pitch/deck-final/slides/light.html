@@ -1,0 +1,14 @@
+<section id="light" class="dark" style="justify-content:center">
+<p class="eyebrow in">Light and deployable</p>
+<h2 class="in" style="--i:1">Runs on the laptop you already have</h2>
+<div class="stats in" style="--i:2">
+<div class="stat"><p class="head">Plain Python</p><p class="label">Nothing exotic to install or maintain.</p></div>
+<div class="stat"><p class="head">No GPU</p><p class="label">No special hardware.</p></div>
+<div class="stat"><p class="head">No training data</p><p class="label">Explicit rules, nothing to learn or leak.</p></div>
+<div class="stat"><p class="head">No dependencies</p><p class="label">Standard library only.</p></div>
+</div>
+<p class="in" style="--i:3;font-size:36px">Runs from a single core up. More cores mean more search, with the same safety.</p>
+<aside>“Plain Python, no GPU, no training data. One core is enough; more cores mean more search, same safety.”
+
+If asked: up to 8 worker processes, capped by the machine’s core count, with a serial fallback. The final set was measured with 2 cores per run. Do not claim the same score on 1 core: not measured.</aside>
+</section>

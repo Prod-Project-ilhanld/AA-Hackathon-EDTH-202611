@@ -1,5 +1,8 @@
 # Jury pitch: 2:30, English
 
+> **Out of date (Sun 22 Nov evening):** the deck now follows the planning-first storyline (see `pitch/HANDOFF.md`, top
+> section). This script still describes the link-loss pitch; use the deck's speaker notes until it is rewritten.
+
 SUB-15 Fleet Orchestration. Slot **2:30** (hard window 2:00 to 3:00), with a **2:00 cut** below. Jury: army officers,
 investors, potential military customers, mostly **not technical**. **One presenter**, who also drives the laptop. Demo
 scenario: **L4 seed 3** (100 drones: 15 scouts, 50 light and 35 heavy strikers; 90 contacts), every page built from the

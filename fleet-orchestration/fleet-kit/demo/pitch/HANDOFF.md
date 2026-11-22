@@ -1,6 +1,23 @@
 # Jury pitch: handoff
 
-## Update, Sun 22 Nov afternoon: link-loss pitch
+## Update, Sun 22 Nov evening: planning-first deck
+
+The deck now follows the team's planning-first storyline (link loss is a bonus slide near the end):
+
+- 12 slides: hook, problem, goal, solution, results, safe by design, explainable, light and deployable, auditable,
+  bonus link loss, next, close. Speaker notes = suggested spoken lines (about 306 words, about 2:20 with slide changes)
+  plus the exact figures under "If asked".
+- Same artifact, version 9: https://claude.ai/artifact/Sa6b5ogCyT77EG7GL9apLi (**private** until shared). Sources and
+  offline PDF (12 pages, no notes) in `deck-final/` (renamed from `deck-linkloss/`; the link-loss deck is in git history,
+  commit d5b1946).
+- Kept off the slides on purpose: "never below baseline" (two test cases are a hair under), "same score on 1 core" (not
+  measured), any link-loss figure (PRs #19 and #23 not merged), and "same situation = same plan" (the search is
+  time-limited and spread over the available cores, so two runs can differ; both pass the same checks).
+- **×2.1 at 100 drones / 70 targets** comes from the team brief; this repo only has **×2.22** on L4 (final set). Check
+  which one to say before the pitch.
+- **`../SCRIPT_JURY.md` still describes the link-loss pitch** and does not match this deck yet.
+
+## Earlier update, Sun 22 Nov afternoon: link-loss pitch
 
 The pitch is now built around **link loss and safety** (branch `feature/pitch-linkloss`):
 
@@ -13,7 +30,7 @@ The pitch is now built around **link loss and safety** (branch `feature/pitch-li
 - New deck: 8 pitch slides + 3 Q&A slides (Why cards, known limit, score if asked). Claude Slides artifact
   https://claude.ai/artifact/Sa6b5ogCyT77EG7GL9apLi (**private** until its owner shares it). Sources in
   `deck-linkloss/` (same layout as `deck/`, speaker notes = the spoken lines), offline backup
-  `deck-linkloss/deck_linkloss.pdf` (11 pages, rendered from those sources, no speaker notes).
+  `deck_linkloss.pdf` (11 pages; both are now in git history, commit d5b1946).
 - `deck/`, `timing/` and the rest of this file describe the earlier sales-pitch version and are kept as they were.
 
 Written Sun 22 Nov, 10:47 CET, by Mahmoud's session, for whoever picks up the pitch. Everything below is in this
