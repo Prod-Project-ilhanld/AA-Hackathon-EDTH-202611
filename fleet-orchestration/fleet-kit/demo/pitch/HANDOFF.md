@@ -15,7 +15,10 @@ The deck now follows the team's planning-first storyline (link loss is a bonus s
   time-limited and spread over the available cores, so two runs can differ; both pass the same checks).
 - **×2.1 at 100 drones / 70 targets** comes from the team brief; this repo only has **×2.22** on L4 (final set). Check
   which one to say before the pitch.
-- **`../SCRIPT_JURY.md` still describes the link-loss pitch** and does not match this deck yet.
+- **`../SCRIPT_JURY.md` rewritten to match this deck**: 12 timed parts, one tab only (no live viewer), 305 words,
+  2:11 spoken, about 2:23 with slide changes; 2:00 cut 244 words, about 1:57 (trigger: more than 1:05 on slide 5).
+  New Q&A answers for "same situation, same plan?", "one core?" and link loss without figures; facts table rebuilt,
+  demo pages kept as Q&A spares only.
 
 ## Earlier update, Sun 22 Nov afternoon: link-loss pitch
 
