@@ -416,11 +416,21 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
             return _greedy_fallback(scenario) or empty
     except Exception:
         return _greedy_fallback(scenario) or empty
+    if params.KEEP_BETTER_GREEDY and len(scenario.aircraft) <= params.KEEP_GREEDY_MAX_AC:  # never below the kit baseline: keep its greedy plan if it scores strictly more
+        if _checkpoint is not None:
+            _checkpoint(best[1])  # on disk first: if the greedy runs into the alarm, the alarm writes this plan
+        greedy = _greedy_fallback(scenario)
+        try:
+            if greedy is not None and evaluate(scenario, greedy).score > res.score:
+                return greedy
+        except Exception:
+            pass
     return best[1]
 
 
 _OUT = sys.argv[2] if len(sys.argv) > 2 else "plan.json"
 _best_text = None  # pre-serialised last validated plan, written by the alarm handler
+_checkpoint = None  # set by main(): solve() keeps its validated plan on disk before the optional greedy comparison
 
 
 def _write(text: str, suffix: str = ".tmp") -> None:
@@ -468,6 +478,8 @@ def main() -> None:
         signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
+    global _checkpoint
+    _checkpoint = _keep
     try:
         plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
     except Exception:  # solve crashed: the kit's greedy plan beats the empty one that is already on disk
