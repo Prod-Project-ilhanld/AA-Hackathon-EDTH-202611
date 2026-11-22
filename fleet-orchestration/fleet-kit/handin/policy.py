@@ -16,7 +16,7 @@ from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
 SEP_PAD_M = 6.0
-HOME_S = 30.0          # an aircraft aborting this soon after take-off flies home and lands
+HOME_S = 15.0          # an aircraft aborting this soon after take-off flies home and lands (departure phase)
 OB_WAIT_MAX_S = 40.0   # longest an effector waits short of its target for a late observation
 
 
