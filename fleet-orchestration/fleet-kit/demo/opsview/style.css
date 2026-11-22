@@ -9,6 +9,9 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#111111;--panel:#181817;--panel2:#20201e;--border:rgba(244,243,239,.12);--text:#f4f3ef;--muted:#a3a29d;--accent:#ff480d;
 --scout:#f4f3ef;--light:#f2b84b;--heavy:#61d095;--hostile:#ff3031;--unknown:#ffff00;--friendly:#00a8dc;--civilian:#00e200;
 --zone:#ff5c77;--ok:#00e200;--bad:#ff5c77;--warn:#f2b84b;--grid:rgba(244,243,239,.07);--map:#0b0b0a}}
+:root[data-theme=night]{--bg:#070303;--panel:#0d0504;--panel2:#150a08;--border:rgba(255,140,110,.16);--text:#ff9d84;--muted:#b0604f;--accent:#ff5a33;
+--scout:#ffb9a6;--light:#e0a23a;--heavy:#c4894a;--hostile:#ff4d3a;--unknown:#d9c04a;--friendly:#7f8fd6;--civilian:#7fbf6a;
+--zone:#d9506a;--ok:#7fbf6a;--bad:#ff5a5a;--warn:#e0a23a;--grid:rgba(255,140,110,.07);--map:#050202}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--text);font:13px/1.5 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}
@@ -16,7 +19,7 @@ body{background:var(--bg);color:var(--text);font:13px/1.5 var(--sans);-webkit-fo
 header{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--panel)}
 .brand{display:flex;align-items:baseline;gap:10px;font-size:14px;font-weight:500;letter-spacing:-.01em}
 .logo{width:22px;height:22px;align-self:center;filter:invert(1)}
-:root[data-theme=dark] .logo{filter:none}
+:root[data-theme=dark] .logo,:root[data-theme=night] .logo{filter:none}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .logo{filter:none}}
 .wordmark{font-weight:600;font-size:12px;letter-spacing:.18em;color:var(--text);white-space:nowrap}
 .slash{color:var(--accent);font-weight:400}
@@ -106,3 +109,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:5px 16px;bord
  .chip:first-child{display:inline-block}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.classif{flex:none;text-align:center;font:600 10px/16px var(--mono);letter-spacing:.22em;color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--bg));border-block:1px solid color-mix(in srgb,var(--warn) 35%,transparent);text-transform:uppercase;user-select:none}
+:root[data-theme=night] .classif{color:var(--text)}
+#clock{min-width:150px}

@@ -7,7 +7,8 @@ const hasPlan = !!plan;
 const acById = {}; M.aircraft.forEach((a) => { acById[a.id] = a; });
 const coById = {}; W.contacts.forEach((c) => { coById[c.id] = c; });
 const N = hasPlan ? M.tracks[M.aircraft[0].id].p.length : 1;
-const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false,
+const THEMES = ["light", "dark", "night"];
+const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light",
   show: { zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
 (M.layers || []).forEach((l, i) => { state.layers[i] = l.visible !== false; });
 let view = { cx: 0, cy: 0, k: 1 };
@@ -313,7 +314,8 @@ if (link) link.links.forEach((l) => { const s = Math.floor(l[0]) + 1; (linkBySec
 // ---------- controls ----------
 function select(id) { state.sel = id; dirty = true; updatePanels(); }
 function setT(v) { state.t = Math.min(Math.max(v, T0), T1); dirty = true; updateClock(); updatePanels(); }
-function updateClock() { $("clock").textContent = `t = ${state.t.toFixed(1)} s / ${Math.round(T1)} s`; if (link) { const cut = state.t >= link.t_loss; const b = $("banner"); b.textContent = cut ? "LINK CUT · policy in command" : "link up · following the plan"; b.className = cut ? "cut" : ""; } else $("banner").style.display = "none"; }
+const hplus = (s) => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "H+" + String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0") + ":" + String(r).padStart(2, "0"); };
+function updateClock() { $("clock").textContent = `${hplus(state.t)} / ${hplus(T1)}`; $("clock").title = `t = ${state.t.toFixed(1)} s`; if (link) { const cut = state.t >= link.t_loss; const b = $("banner"); b.textContent = cut ? "LINK CUT · policy in command" : "link up · following the plan"; b.className = cut ? "cut" : ""; } else $("banner").style.display = "none"; }
 function togglePlay() { if (!hasPlan) return; if (state.t >= T1 - 0.01) state.t = T0; state.playing = !state.playing; $("play").textContent = state.playing ? "❚❚" : "▶"; last = performance.now(); }
 let last = performance.now();
 function frame(now) {
@@ -349,17 +351,18 @@ function legend() {
   const sw = (cls, txt) => `<span><i style="background:var(--${cls});border-radius:${cls === "civilian" || cls === "scout" ? "50%" : "2px"}"></i>${txt}</span>`;
   $("legend").innerHTML = hasPlan ? `${sw("scout", "scout")}${sw("light", "light effector")}${sw("heavy", "heavy effector")}${sw("hostile", "hostile")}${sw("unknown", "unknown")}${sw("friendly", "friendly")}${sw("civilian", "civilian")}<span style="color:var(--warn)">○ hold</span>` : `${sw("hostile", "hostile")}${sw("unknown", "unknown")}${sw("friendly", "friendly")}${sw("civilian", "civilian")}`;
 }
-function theme(dark) { state.dark = dark; document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); try { localStorage.setItem("fleetkit-theme", dark ? "dark" : "light"); } catch (e) { /* no storage */ } dirty = true; }
+function theme(name) { if (!THEMES.includes(name)) name = "light"; state.theme = name; state.dark = name !== "light"; document.documentElement.setAttribute("data-theme", name); try { localStorage.setItem("opsview-theme", name); } catch (e) { /* no storage */ } dirty = true; }
+const nextTheme = () => THEMES[(THEMES.indexOf(state.theme) + 1) % THEMES.length];
 function init() {
-  let dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  try { const s = localStorage.getItem("fleetkit-theme"); if (s) dark = s === "dark"; } catch (e) { /* no storage */ }
-  theme(dark);
+  let name = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  try { const s = localStorage.getItem("opsview-theme"); if (s) name = s; } catch (e) { /* no storage */ }
+  theme(name);
   $("title").textContent = M.meta.title;
   $("chips").innerHTML = [M.meta.level, "seed " + M.meta.seed, M.aircraft.length + " aircraft", W.contacts.length + " contacts"].map((c) => `<span class="chip">${c}</span>`).join("");
   $("foot-info").textContent = link ? "link-loss replay" : hasPlan ? "plan replay" : "scenario";
   $("speeds").innerHTML = [1, 2, 4, 8, 16, 32].map((s) => `<button data-s="${s}" class="${s === state.speed ? "on" : ""}">${s}×</button>`).join("");
   $("speeds").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; state.speed = +b.dataset.s; document.querySelectorAll("#speeds button").forEach((x) => x.classList.toggle("on", x === b)); };
-  $("play").onclick = togglePlay; $("theme").onclick = () => theme(!state.dark); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
+  $("play").onclick = togglePlay; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
   $("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").hidden = true; };
   if (!hasPlan) { $("transport").style.display = "none"; $("alt").style.display = "none"; }
   buildCard(); buildTabs(); buildPanels(); legend(); bindMap(); bindScrub($("tl"), 8); bindScrub($("alt"), 0);
@@ -367,7 +370,7 @@ function init() {
     if (e.target.tagName === "INPUT") return; const k = e.key;
     if (k === " ") { e.preventDefault(); togglePlay(); } else if (k === "ArrowRight") setT(state.t + (e.shiftKey ? 10 : 1)); else if (k === "ArrowLeft") setT(state.t - (e.shiftKey ? 10 : 1));
     else if (k === "Home") setT(T0); else if (k === "End") setT(T1); else if (k === "f" || k === "F") fitView(); else if (k === "l" || k === "L") { state.labels = !state.labels; dirty = true; }
-    else if (k === "t" || k === "T") theme(!state.dark); else if (k === "Escape") { select(null); $("modal").hidden = true; } else if (k === "?") $("modal").hidden = false;
+    else if (k === "t" || k === "T") theme(nextTheme()); else if (k === "Escape") { select(null); $("modal").hidden = true; } else if (k === "?") $("modal").hidden = false;
   });
   window.addEventListener("resize", () => { dirty = true; });
   new ResizeObserver(() => { dirty = true; }).observe($("mapwrap"));
