@@ -69,12 +69,12 @@ def test_a_co_effector_aborts_when_it_hears_a_flagged_hold():
     assert action["kind"] != "continue"   # before: it kept flying and waited behind the hovering partner
 
 
-def test_a_reclassified_target_keeps_the_effector_on_plan_until_just_short_of_it():
+def test_a_reclassified_target_keeps_the_effector_on_plan_until_30_s_short_of_it():
     sc, plan = scenario_and_plan(CROSSING)
     p = Policy(sc, plan, "L01")
-    assert p.step(obs(30.0, 30.0, sensed=[RECLASSIFY_C01]))[0] == {"kind": "continue"}   # planned: never in a pop-up
-    action, _ = p.step(obs(51.0, 51.0))
-    assert action["kind"] != "continue" and p._last_mode == "return"                     # 9 s before C01
+    assert p.step(obs(20.0, 20.0, sensed=[RECLASSIFY_C01]))[0] == {"kind": "continue"}   # planned: never in a pop-up
+    action, _ = p.step(obs(31.0, 31.0))
+    assert action["kind"] != "continue" and p._last_mode == "return"                     # 29 s before C01
 
 
 def test_an_aborted_hover_never_expires_into_an_on_plan_belief():
