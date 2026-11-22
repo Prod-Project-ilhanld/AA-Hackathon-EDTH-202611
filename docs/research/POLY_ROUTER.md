@@ -57,11 +57,11 @@ Result on `main` (8e4a799):
 L4-7 at 40 m; L4-8 at 85 m). The validator allows that (`z < top - EPS` counts as inside). Our router
 treats a zone as active while `z < top + SAFE_MARGIN_Z / 2`, so at z == top the zone blocks, and a leg
 with an endpoint inside its footprint has no path. It is a deliberate safety margin, not a safety bug.
-It matters because `ALTITUDE_LAYERS` includes 72 m and generated zone tops are whole metres: a zone
-topped at exactly 72 m blocks that layer for legs that start or end over it (not measured: how often the
-planner hits this, or what it costs).
-Possible follow-up: fly layers at an offset from whole metres (e.g. 72.5 m) rather than shrinking the
-margin.
+It matters because the planner's cruise layers are whole metres (effectors 40/85/130 m and scouts 70/110 m,
+from `fk.baseline`; `ALTITUDE_LAYERS` in `routing.py` is unused) and so are generated zone tops (40-120 m).
+**31 of 100 L4 scenarios** (15/100 L3, 7/100 L2, 4/100 L1) have a zone topped at exactly one of those layers,
+which then blocks that layer for legs that start or end over the zone.
+Follow-up: cruise 0.5 m above each layer instead of shrinking the margin (paired gate in progress).
 
 ## Recommendation
 
