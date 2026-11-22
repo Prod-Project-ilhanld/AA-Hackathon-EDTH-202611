@@ -8,7 +8,7 @@
 """
 from pathlib import Path
 
-from test_policy_r8 import CROSSING, RECLASSIFY_C01, TAU_AT_800, obs, scenario_and_plan
+from test_policy_r8 import CROSSING, TAU_AT_800, ZONE_AHEAD, obs, scenario_and_plan
 from fleetkit.baseline import greedy_plan
 from fleetkit.generator import generate
 from fleetkit.linkloss import simulate
@@ -25,7 +25,7 @@ def test_an_aborted_aircraft_backs_off_for_a_peer_that_waits_for_it():
     sc, plan = scenario_and_plan(CROSSING)
     p = Policy(sc, plan, "L01")
     waiting = {"from": "L02", "sent_t": 29.0, "payload": [1, 170]}   # L02 holds at tau 17, 90 m short of our hover
-    action, _ = p.step(obs(30.0, TAU_AT_800, sensed=[RECLASSIFY_C01], inbox=[waiting]))
+    action, _ = p.step(obs(30.0, TAU_AT_800, sensed=[ZONE_AHEAD], inbox=[waiting]))
     assert action == {"kind": "return"}
 
 

@@ -6,12 +6,9 @@ POLICY against it, which no other test does.
 
 What it pins down (measured on main, L1 to L3, popup-only events and combined events):
 - a zone that appears on the way forward is avoided: green regression guard;
-- a zone that appears BEHIND an aircraft that has already turned back is not: in `return` mode the policy
-  never looks at the way home (`_route_hits_known_zone` only checks the route ahead), so the aircraft retraces
-  its route into the disc. Both the hand-built case and check_policy's L1-6 fail on main, and the shipped
-  `broadcast` baseline (BroadcastSensePolicy) handles the hand-built case, so the team policy is below the floor
-  there. These two are marked xfail(strict=True) for the hand-built one: when the policy is fixed, the test
-  XPASSes, CI says so, and the marker must be removed.
+- a zone that appears BEHIND an aircraft that has already turned back: the policy used to retrace its route into
+  it. Since #19 an aborted aircraft hovers, and every back-off checks known zones on the way back, so the
+  hand-built case passes (its xfail marker is removed). check_policy's L1-6 still fails (also with `broadcast`).
 
 `POLICY_UNDER_TEST=path/to/policy.py python3 -m pytest tests/test_policy_popup.py` runs the same tests on
 another copy of the policy (e.g. a patch under review). Standard library only, Python 3.9.
@@ -74,10 +71,6 @@ def test_the_hand_built_case_is_fair(scenario, plan):
     assert any("engaged C01" in f for f in simulate(scenario, plan, events, ContinuePolicy).failed)
 
 
-@pytest.mark.xfail(strict=True, reason="in return mode the policy never checks the way home: L01 retraces its route "
-                                       "into a zone that appeared behind it (handin/policy.py step(): "
-                                       "`abort = mode == 'return'`, _route_hits_known_zone looks ahead only). "
-                                       "Remove this marker when fixed.")
 def test_a_zone_behind_an_aircraft_that_turned_back_is_avoided(scenario, plan, team):
     events = ev(RECLASSIFY_C01, popup(118.0, 700.0, -20.0, 30.0))
     assert simulate(scenario, plan, events, team).ok
@@ -142,3 +135,13 @@ def test_l1_seed_6_of_check_policy_does_not_fail(team):
     plan = greedy_plan(sc)
     events = make_events(sc, plan, 7)                           # check_policy.py uses seed + 1
     assert simulate(sc, plan, events, team).ok
+
+
+def test_l3_21_of_the_sizing_grid_does_not_hover_into_a_popup_at_2000_m(team):
+    """Sizing case L3-21 (events seed 1): at 2000 m, H03 hears C06's reclassification early and used to hover where
+    a zone appeared 8 s later (4 failed runs out of 5 in every 2000 m cell). A planned position is never inside a
+    zone when it appears, so a reclassified effector now keeps to its plan until just short of its target."""
+    sc = Scenario.from_dict(generate("L3", 21))
+    plan = greedy_plan(sc)
+    events = make_events(sc, plan, 1)
+    assert simulate(sc, plan, events, team, setting=(2000.0, 50.0), run_seed=1).ok
