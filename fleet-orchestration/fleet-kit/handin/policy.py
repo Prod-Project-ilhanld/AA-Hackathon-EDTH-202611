@@ -16,6 +16,7 @@ from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
 SEP_PAD_M = 6.0
+HOVER_PAD_M = 5.5  # an aborted hover is exact: less margin than for a dead-reckoned peer (4.5-5.0 failed R4/R8 cells)
 
 
 def _seg_min_dist3(
@@ -266,6 +267,7 @@ class Policy:
         if rate == 0.0:
             return False
         d_lim = self.rules.d_sep_m + SEP_PAD_M
+        d_hover = self.rules.d_sep_m + HOVER_PAD_M
         i_am_returning = rate < 0.0
         i_am_off_plan = i_am_returning or abs(tau - t) >= 0.25
 
@@ -307,14 +309,15 @@ class Policy:
                     q0 = q1
                 if q1 is None:
                     q1 = q0
-                if _seg_min_dist3(p0, p1, q0, q1) < d_lim:
-                    cur_pm = self.peer_state.get(aid, (0.0, 0.0, "route"))[2]
+                cur_pm = self.peer_state.get(aid, (0.0, 0.0, "route"))[2]
+                lim = d_hover if (cur_pm == "hold" and aid in self.aborted_peers) else d_lim
+                if _seg_min_dist3(p0, p1, q0, q1) < lim:
                     if cur_pm == "hold":
                         if self.aircraft_id > aid:
                             return True
                         d_now = dist3(p0, q0)
                         d_next = dist3(p1, q0)
-                        if d_next < d_now - 1e-3 and d_next < d_lim:
+                        if d_next < d_now - 1e-3 and d_next < lim:
                             return True
                         break
                     # A returning aircraft yields to any on-plan peer (which may not have heard the abort).

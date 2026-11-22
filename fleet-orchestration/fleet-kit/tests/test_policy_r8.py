@@ -88,6 +88,19 @@ def test_an_aborted_hover_never_expires_into_an_on_plan_belief():
     assert p._peer_pos_at("L01", 90.0, 90.0) == RouteClock(p.routes["L01"]).position(29.0)   # still hovering at 29
 
 
+@pytest.mark.parametrize("offset, kind", [(45.8, "continue"), (42.0, "hold")])
+def test_an_on_plan_aircraft_passes_an_aborted_hover_clear_of_d_sep(offset, kind):
+    # L02 hovers (aborted) at (800, offset, 130), beside L01's path; before: a 46 m limit froze L01 at 45.8 m (L4-21)
+    hover_route = [wp(0, 800, offset, 0), wp(20, 800, offset, 130), wp(60, 800, offset + 600, 130, action="engage",
+                                                                       target="C04")]
+    sc, plan = scenario_and_plan(hover_route)
+    p = Policy(sc, plan, "L01")
+    t = TAU_AT_800 - 2.0
+    heard = {"from": "L02", "sent_t": t - 1.0, "payload": [4, 200]}
+    action, _ = p.step(obs(t, t, inbox=[heard]))
+    assert action["kind"] == kind
+
+
 @pytest.fixture(scope="module")
 def l4_run():
     sc = Scenario.from_dict(generate("L4", 0))
