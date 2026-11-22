@@ -52,6 +52,18 @@ def test_an_aborted_aircraft_hovers_and_flags_its_abort():
     assert msg[0] == 4   # status 4: hold while aborted (list message since #23)
 
 
+def test_an_aborted_hover_beats_three_times_then_every_12_s_when_nobody_closes_in():
+    sc, plan = scenario_and_plan(CROSSING)
+    p = Policy(sc, plan, "L01")
+    beats = []
+    for t in range(30, 46):   # L02 crossed at t = 20 and flies away: nobody closes in
+        action, msg = p.step(obs(float(t), TAU_AT_800, sensed=[RECLASSIFY_C01] if t == 30 else []))
+        assert action == {"kind": "hold"}
+        if msg is not None and msg[0] == 4:
+            beats.append(t)
+    assert beats == [30, 31, 32, 44]
+
+
 def test_an_aborted_aircraft_in_an_on_plan_peers_way_backs_off_within_one_step():
     sc, plan = scenario_and_plan(CROSSING)
     p = Policy(sc, plan, "L01")

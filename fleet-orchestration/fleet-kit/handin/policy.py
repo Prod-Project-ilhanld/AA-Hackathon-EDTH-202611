@@ -332,10 +332,10 @@ class Policy:
                     break
         return False
 
-    def _blocking(self, t: float, tau: float, horizon: int = 6) -> bool:
-        """True if an on-plan peer is predicted to pass within separation of our position in the next seconds."""
+    def _blocking(self, t: float, tau: float, horizon: int = 6, d_lim: float = 0.0) -> bool:
+        """True if an on-plan peer is predicted to pass within `d_lim` (default separation) of our position."""
         me = self.clock.position(tau)
-        d_lim = self.rules.d_sep_m + SEP_PAD_M
+        d_lim = d_lim or self.rules.d_sep_m + SEP_PAD_M
         for aid in self.clocks:
             if aid == self.aircraft_id or self.peer_state.get(aid, (0.0, 0.0, "route"))[2] != "route":
                 continue
@@ -386,7 +386,12 @@ class Policy:
         st = 0
         u_tenths = 0
         if action_kind == "hold":
-            gap = 1.0 if (self._last_mode != "return" or self._peer_near(t, tau, 350.0)) else 15.0
+            # Peers never expire an aborted hover, so after the first few beats only a closing on-plan peer needs it.
+            if self._last_mode == "return":
+                closing = self._blocking(t, tau, 10, 2.0 * (self.rules.d_sep_m + SEP_PAD_M))
+                gap = 1.0 if closing else 12.0
+            else:
+                gap = 3.0  # peers expire an on-plan hold only after 15 s
             if self._hold_streak <= 3 or t - self._last_hd_sent >= gap:
                 st = 4 if self._last_mode == "return" else 1
                 u_tenths = int(round(tau * 10.0))
