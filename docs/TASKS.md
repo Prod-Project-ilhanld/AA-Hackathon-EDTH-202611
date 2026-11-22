@@ -1,363 +1,219 @@
-# Open tasks (Sun 22 Nov, 00:40: night and Sunday morning)
+# Open tasks: final stretch (Sun 22 Nov, from 01:30)
 
-GitHub Issues are off in this repo, so the open tasks live here. Pick one, put your name next to it in the team chat, work on a `feature/...` branch from current `main`, and open a PR with the evidence each task asks for. **This file is the source of truth.** The checkpoint board (https://claude.ai/artifact/7VzgyqXg2owcpXosdeK2sc) can't be opened from outside the owner's organisation, so not everyone can see it.
+GitHub Issues are off in this repo, so the open tasks live here. **This file is the source of truth.** The checkpoint board can't be opened from outside the owner's organisation, so not everyone can see it. Task numbers stay the same as in the PR comments. The previous version is in git history (`git show 5e7cca1:docs/TASKS.md`).
 
-Rules for every task:
-- Train seeds 0–199 only. The holdout (5000–5049) is run only at checkpoints, by Mahmoud.
-- A result with any invalid plan or failed run is a fail.
-- Compare with `FLEET_ITERS` or fixed seeds.
-- Run wall-clock benches only on an idle machine, one at a time.
+**Fixed times**
+- **08:00:** review
+- **08:30:** last PR opened
+- **09:00:** last merge
+- **10:00:** freeze (tag `handin-final`)
+- **11:00:** hand-in (deadline 12:00)
+
+**Rules for every task**
+- Train seeds 0–199 only. The holdout 5000–5049 and the final set 9000–9049 are run by Mahmoud.
+- Any invalid plan or failed run is a fail.
+- Run timing benches on an idle machine, one at a time.
+- Ship everything through a PR with CI green.
 - Plain commit messages.
 
-## Where we stand (checked by Mahmoud, Sat 23:45)
+## Where we stand (Sun 01:30)
 
-### Planner: frozen at `cdc0671`
+**Planner (`main` = `5e7cca1`, hand-in code identical to `cdc0671`)**
+- CP4 holdout (seeds 5000–5049): **×1.59** total, **L4 ×2.13**, 0 failures, slowest 40.0 s.
+- Louis's train bench (0–49): ×1.616, 81.7 % of the upper bound.
+- Two holdout seeds are a hair below the kit greedy plan: L1-5010 −0.6 and L2-5031 −0.1 (task 11).
+- Squeaky Wheel and an adaptive budget were measured and dropped: noise, and 38 s is right.
 
-`main` is now `17739f1`: PR #16 adds diagnostics only, and the hand-in code is identical to `cdc0671`.
+**The planner isn't frozen, but any change must earn its place.** A planner change is allowed only if it fixes a real problem (failure, crash, timeout, a seed below baseline), and only through the planner gate below. Any planner change invalidates the CP4 holdout and the shift run. CP5's final set (9000–9049) is then the only unseen-seed check before the hand-in.
 
-- The planner code hasn't changed since PR #11, and that PR gives byte-identical plans.
-- CI is green, and the 319 tests pass on Python 3.9.
-- There is no Squeaky Wheel branch yet (task 3). So the night runs use `cdc0671`: the shift suite (task 4) and the CP4 holdout (task 6).
-- **CP4 holdout passed on `cdc0671`** (seeds 5000–5049, 200 runs, Python 3.9.6):
-  - total **101,908.6** against a baseline of 63,989.4, so **×1.59**. The last holdout, on `55327de`, gave ×1.51.
-  - by level: L1 ×1.09, L2 ×1.10, L3 ×1.26, **L4 ×2.13** (was ×1.95).
-  - 0 invalid or failed runs; slowest run 40.0 s.
-  - Two seeds land a hair below the baseline, and both reproduce exactly on re-run: L1-5010 79.2 against 79.8, and L2-5031 208.7 against 208.8. That's task 11.
-- If task 3 lands by 08:00 with its gate passed, it gets merged and re-checked.
+**Link-loss: we ship PR #19 (Martin) + PR #23 (Youcef)**
 
-### Link-loss: PR #19 (Martin) + PR #23 (Youcef, stacked on #19) is what we ship
-
-Setup: both PRs were re-run on the official sizing grid with `tools/linkloss_diag.py --sizing`. That means kit baseline plans, events seed 1, 5 comm seeds, and all 20 cells. Seeds 15–24 are fresh: neither author tuned on them.
+Official sizing grid (all 20 cells, 5 comm seeds), seeds 5–14 / fresh 15–24:
 
 |  | main | #19 | #19 + #23 |
 |---|---|---|---|
-| Sizing score, seeds 5–14 | 0.00 | 0.60 | **1.00** |
-| Sizing score, seeds 15–24 | 0.00 | 0.00 | **0.75** |
-| Frontier (smallest C that meets the bar) at 250/500/1000/2000 m, seeds 5–14 | none everywhere | none/100/100/100 | **50/50/50/50** |
-| Failed runs over the 20 cells, seeds 5–14 | 142 | 31 | **0** |
-| Failed runs over the 20 cells, seeds 15–24 | 328 | 118 | **20**: one case, see task 10 |
-| 1000×200 retention (5–14 / 15–24) | 0.966 / 0.948 | 0.978 / 0.981 | 0.974 / **0.999** |
-| 1000×200 messages per aircraft per minute | 5.4–5.9 | 7.9–8.1 | **17–18** |
-| 1000×200 S_loss (5–14 / 15–24) | 0.954 / 0.937 | **0.962** / 0.965 | 0.938 / 0.965 |
-| `check_policy` L1–L4, seeds 0–9: scenarios clean (retention ≥ 0.9, 0 failed runs) | – | 38/40 | 38/40 |
-| Unit tests (Python 3.9) | 319 pass | 325 pass | 2 fail (test format only, see below) |
+| Sizing score | 0.00 / 0.00 | 0.60 / 0.00 | **1.00 / 0.75** |
+| Failed runs | 142 / 328 | 31 / 118 | **0 / 20** |
+| Frontier, seeds 5–14 (B/s at 250/500/1000/2000 m) | none | none/100/100/100 | **50/50/50/50** |
+| 1000×200 S_loss | 0.954 / 0.937 | **0.962** / 0.965 | 0.938 / 0.965 |
+| Messages per aircraft per minute at 1000×200 | ~5.5 | ~8 | ~17.5 |
 
-- **Why we ship both:**
-  - #23 removes almost every failed run, and a failed run scores 0.
-  - The frontier is part of the hand-in.
-  - The price is messages: S_loss is retention − 0.002 × messages, and #23 sends twice as many. That's task 8.
-- **#23's red CI:** two tests in `tests/test_policy_r8.py` read messages as dicts (`msg["hd"]`, `msg["rt"]`), but #23 sends compact lists. The behaviour those tests check still holds (hold, then back off). Fix: assert `msg[0] == 4` (hold + abort) and `msg[0] == 2` (return).
-- **Merge path:**
-  1. Youcef fixes the two tests and CI goes green.
-  2. Mahmoud retargets #23 to `main` and merges it with a merge commit. Martin's commits are kept, and #19 closes as merged.
-- **The two bad `check_policy` scenarios (same on #19 and #23):**
-  - L1-6 fails with an R6 pop-up zone. The shipped `broadcast` baseline fails it too, so we accept it.
-  - L3-6 drops to retention 0.611. It was 0.780 on main, and broadcast gets 1.000. That's task 9.
-- **Policy cost per step:** at most 0.045 ms per call. The limit is 50 ms.
-
-### Cross-check on seeds 20–29 (Louis, re-run by Mahmoud at 00:30)
-Setup: `check_policy.py --levels L1,L2,L3,L4 --seeds 20-29`, at the leaderboard setting (1000×200), 2 runs per scenario. Louis's numbers for main and #23 reproduce exactly; #19 alone is added here.
+`check_policy` L1–L4 at 1000×200:
 
 |  | main | #19 | #19 + #23 |
 |---|---|---|---|
-| Mean retention | 0.871 | **0.974** | 0.969 |
-| Failed runs (of 80) | 8 | **0** | **0** |
-| Messages per aircraft per minute | 6.5 | 8.0 | 18.7 |
-| Mean S_loss | 0.858 | **0.958** | 0.932 |
+| Seeds 0–9, scenarios clean | – | 38/40 | 38/40 |
+| Seeds 20–29, retention / failed runs / S_loss | 0.871 / 8 / 0.858 | **0.974** / 0 / **0.958** | 0.969 / 0 / 0.932 |
 
-- **At the leaderboard setting, #19 alone has the best S_loss.** #23's lead is robustness across the sizing grid (failed runs 0 / 20 against 31 / 118). Its S_loss deficit is messages only, which is task 8.
-- **L2-21: 1.000 on main, 0.148 on both #19 and #23.** It comes from #19 and is folded into task 9.
-- **L4-21: 0.901 with #19, 0.620 with #23.** That's a #23-only regression: task 12.
-- **The decision stands:** ship #19 + #23, then tasks 8, 9 and 12 against the gate. If task 8 can't bring messages down by 08:00, we revisit shipping #19 alone at the 08:00 review, with the numbers.
+- **Why #23 ships:** it removes almost every failed run across the grid (a failed run scores 0), and its frontier is part of the hand-in.
+- **Its cost is messages:** #23 sends twice as many, and S_loss is retention − 0.002 × messages. That's task 8. If task 8 isn't in by 08:30, the 08:00 review picks between #19 + #23 and #19 alone, with these numbers.
+- **Known defects:**
+  - L2-21 and L3-6 regress with #19 (task 9);
+  - L4-21 regresses with #23 (task 12);
+  - L3-21 enters a pop-up zone at 2000 m (task 10, dropped);
+  - L1-6 also fails with the organisers' `broadcast` baseline, so we accept it.
 
-### Numbers for the slides (Swann)
-Use these two benches, and say which one each number comes from:
-- **Unseen seeds (CP4 holdout, 5000–5049, `cdc0671`):** ×1.59 total, L4 ×2.13.
-- **Train 0–49 on `cdc0671` (Louis, `bench50_main_cdc0671.json`):** ×1.616 over the kit greedy, **81.7 % of the bound** (greedy 50.6 %). By level, ratio and share of the bound: L1 ×1.069 (93.6 %), L2 ×1.107 (94.8 %), L3 ×1.276 (93.4 %), L4 ×2.188 (74.6 %).
+## Who does what
 
-The 71.4 % (L4) and 79.4 % (total) quoted earlier come from an older bench (before the R8 scheduler): drop them.
+### Mahmoud: owner, merges, checks, hand-in
 
-### Still open
-- Organiser answers (task 5).
-- The live board submission (Louis): post the total from the frozen planner.
-- The repo is still public: the owner has to switch it to private.
-
-## Night plan
-
-| When | What | Who |
+| When | Task | Done when |
 |---|---|---|
-| now | Shift suite, all 50 seeds, on `cdc0671` (task 4) | Martin's PC |
-| done 23:50 | CP4 holdout on `cdc0671` (task 6): ×1.59, L4 ×2.13, 0 failures | Mahmoud |
-| tonight | #23: fix the two tests, CI green, then merge (path above) | Youcef, then Mahmoud |
-| by 08:00 | Tasks 8, 9, 10: one PR each on top of the merged policy, each passing the link-loss gate below | Youcef (8), Martin (9), free (10) |
-| by 08:00 | Task 3 PR with its gate evidence, or it's dropped for this hand-in | Louis |
-| 09:00 | **Last merge window** | Mahmoud |
-| 09:00–09:45 | CP5 on the candidate: final set 9000–9049, `check_handin`, `check_policy`, sizing on seeds 5–24 | Mahmoud |
-| 10:00 | **Freeze:** tag `handin-final` | Mahmoud |
+| now | **Unblock #23:** in `tests/test_policy_r8.py`, line 52 asserts `msg[0] == 4` and line 60 `msg[0] == 2` (the policy now sends lists). Then retarget #23 to `main` and merge it with a merge commit. Don't delete `feature/policy-r8` first: #19 closes as merged on its own | main CI green |
+| now | Make the repo private (GitHub Settings) | The API says private |
+| as PRs come in | Run the gate on every link-loss and planner PR, one bench at a time, and post the numbers on the PR | Merged or rejected with numbers |
+| 08:00 | **Review:** shift results, open PRs, #19 + #23 against #19 alone | Decision posted in the chat |
+| 08:00–09:00 | **Organiser answers, in person (task 5):** cores, multiprocessing allowed, hand-in format, Python version | Answers posted here |
+| 09:00–09:45 | **CP5 on the candidate:** final set 9000–9049, `check_handin`, `check_policy`, both edge packs, pytest, and sizing seeds 5–24 on the final policy | 0 failures, no level below baseline |
+| 09:45 | **Task 13:** write the frontier table into the hand-in README and a slide | Table from the CP5 sizing run |
+| 10:00 | **Freeze:** `git tag handin-final <sha>`, post the SHA in the chat | Tag pushed |
+| 10:00–10:40 | **Package from the tag** (`git archive`). Re-run `check_handin` and `check_policy` from the copy, with `/usr/bin/python3` and `env -i` | Same scores as the repo |
+| 11:00 | **Hand in.** Re-download what we handed in and re-check it | Same score |
 
-### Link-loss gate (every `policy.py` PR from now on)
+### Louis: planner, board, jury numbers
+
+| When | Task | Done when |
+|---|---|---|
+| tonight, optional | **Task 11:** never below the kit baseline on a seed | Planner gate. PR by 08:30, or skip |
+| tonight | **Task 4:** shift suite, only if Martin isn't running it | 0 failures, no variant below baseline, totals posted |
+| morning, optional | **Task 14:** scaling re-run on the current planner | Numbers for one slide |
+| morning | **Task 15:** jury presentation, with Swann | Slides and demo script use the numbers above |
+| 10:00–10:40 | Second pair of eyes on the packaging | Your check matches Mahmoud's |
+| 10:40 | **Live board:** submit the 8 plans regenerated from the tag | Total posted |
+
+### P3: link-loss owner (Youcef or Martin; confirm in the chat)
+
+`policy.py` only. One PR per task, in this order, each from `main` after #23 is merged, each passing the link-loss gate, each opened by 08:30.
+
+| Order | Task | Done when |
+|---|---|---|
+| 1 | **Task 8:** cut the hover heartbeat | ≤ ~10 messages per aircraft per minute at 1000×200, S_loss ≥ 0.960 on both seed sets, failed runs no higher |
+| 2 | **Task 12:** L4-21 regression in #23 | L4-21 ≥ 0.9 |
+| 3 | **Task 9:** mutual hold between on-plan aircraft (L2-21), and L3-6 | L2-21 ≥ 0.9; L3-6 ≥ 0.780 if it's the same cause |
+
+If Mahmoud builds one of these overnight, he claims it in the chat first, so P3 skips it.
+
+## Gates
+
+### Link-loss gate (every `policy.py` PR)
 Commands, from `fleet-orchestration/fleet-kit/`:
 - `python3 tools/linkloss_diag.py --policy handin/policy.py --sizing --seeds 5-14 -o runs/<name>-5-14.json`
 - the same with `--seeds 15-24`
 - `python3 handin/check_policy.py --levels L1,L2,L3,L4 --seeds 0-9`
 
 Done when, compared with #19 + #23 (numbers above):
-- Failed runs no higher (0 on seeds 5–14, 20 on 15–24).
-- Sizing score no lower (1.00 and 0.75).
-- 1000×200 S_loss higher, or the same with fewer failed runs.
-- `check_policy` gives no new unclean scenario.
-- pytest is green on Python 3.9, and a step stays under 50 ms.
-- Raw JSON is attached to the PR.
+- failed runs no higher;
+- sizing score no lower;
+- 1000×200 S_loss higher, or the same with fewer failed runs;
+- no new unclean `check_policy` scenario;
+- pytest green on Python 3.9;
+- step under 50 ms;
+- raw JSON attached to the PR.
 
-| # | Task | Owner | Status |
-|---|---|---|---|
-| 1 | Link-loss: R8 separation failures and mutual-hold deadlocks | Martin (#19), Youcef (#23) | Reviewed. Merge once #23's tests are fixed |
-| 2 | Link-loss: deliver `ob` at short range | Youcef (#23) | Reviewed, same merge |
-| 3 | Planner: Squeaky Wheel feedback in the order search | Louis | **Dropped**: +0.13 % on 40 L4 seeds (15 better, 12 worse), within noise. Not merged |
-| 4 | Shift suite in jury conditions | Martin | **Go now** on `cdc0671`, all 50 seeds |
-| 5 | Organiser answers: cores, multiprocessing, format, Python | Ilhan | Blocking |
-| 6 | CP4 holdout on current main + L1-0 check | Mahmoud | **Done**: ×1.59, L4 ×2.13, 0 failures, max 40.0 s |
-| 7 | Link-loss: compact messages | Youcef (#23) | Done in #23: 8.3–8.5 bytes per message |
-| 8 | Link-loss: cut the hover heartbeat (S_loss) | Youcef | **New, link-loss priority 1** |
-| 9 | Link-loss: L3-6 and L2-21 retention drops after hover-on-abort | Martin | New, priority 2 |
-| 10 | Link-loss: L3-21 enters a pop-up zone at 2000 m | free | New, priority 3 |
-| 11 | Planner: never below the kit baseline on a seed | Louis | New, optional, by 08:00 |
-| 12 | Link-loss: L4-21 retention drop in #23 (0.901 → 0.620) | Youcef | New, priority 2 |
-
-Tasks 1, 2 and 7: the full briefs are in git history (`git show cdc0671:docs/TASKS.md`); the evidence is in PRs #19 and #23.
+### Planner gate (every `planner.py` / `params.py` / `deconflict.py` / `routing.py` / `targets.py` PR)
+- **Behind a flag** in `params.py`. Flag off gives byte-identical plans under `FLEET_ITERS` (test).
+- **Paired and deterministic, train seeds only:**
+  - `FLEET_ITERS=N PLANNER_WORKERS=2 python3 tools/bench.py --levels L4 --seeds 0-39 --base <main copy> --json …`: mean gain > 0, at most 40 % of seeds worse, 0 invalid;
+  - L1–L3 seeds 0–19: mean ≥ 0, 0 invalid.
+- **Timing:** `/usr/bin/python3 handin/check_handin.py` gives 8/8, max time ≤ 45 s on an idle machine.
+- **Only to fix a real problem**, and Mahmoud agrees before merging.
 
 ---
 
-## 8. Link-loss: cut the hover heartbeat (policy.py)
-
-**Owner:** Youcef. **Priority:** link-loss 1. **Effort:** ~1–2 h.
-
-### Why
-At 1000×200, #23 sends 17–18 messages per aircraft per minute, against 8 for #19. That costs ~0.02 of S_loss, the leaderboard metric. A probe on L2–L4 seeds 15–17 shows where the traffic goes:
-- **78 %** is `hd+ab`, the heartbeat of an aborted aircraft hovering in place;
-- **14 %** is `ob` re-sends (the near-range re-send plus anti-entropy every 8 s);
-- the rest is under 10 %.
-
-In `_build_message`, an aborted hoverer beacons at 1 Hz while any peer is predicted within 350 m. Since #19, peers **never expire** an aborted hold. So after the first few deliveries, a heartbeat only helps a peer that missed them.
-
-### Task
-- Keep the first 3 heartbeats.
-- After that, beacon only when an on-plan peer is predicted to close in. Reuse `_blocking` with a longer horizon (~10 s) and a wider radius (~2 × (d_sep + pad)). Otherwise beacon every ~10–15 s.
-- Check whether 1 Hz is really needed at 250 m. If it is, keep it only while a peer is closing in.
-- Optional: anti-entropy only from aircraft that have an effector of that contact within range.
-
-### Done when
-- The link-loss gate holds.
-- 1000×200 messages are back to ≤ ~10 per aircraft per minute, and S_loss at 1000×200 is ≥ 0.960 on both seed sets.
-
----
-
-## 9. Link-loss: L3-6 and L2-21 retention drops after hover-on-abort (policy.py)
-
-**Owner:** Martin. **Priority:** link-loss 2. **Effort:** ~1 h.
-
-### Why
-In `check_policy`, L3-6 (events `popup_zone` + `reclassify`):
-- main: retention **0.780**;
-- #19 and #19 + #23: **0.611** (C19 lost);
-- `broadcast`: **1.000**.
-
-Every other scenario in seeds 0–9 is clean or unchanged.
-
-**L2-21** (events seed 22: failures of S03 at 286 s and L02 at 303 s; found by Louis): main **1.000**, #19 and #19 + #23 **0.148** (only C08 served).
-
-Traced by Mahmoud. **This isn't an aborted aircraft blocking traffic.** Two **on-plan** aircraft wait for each other until the end:
-- From t = 537 s, S01 holds for H02, and from 538 s H02 holds for S01, 72 m apart. H02 is C05's effector.
-- #23's id order doesn't break it. H02 has the lower id, but moving would close on S01, so it yields. S01 always yields to a holding lower id. Their routes pass within separation of each other's held positions, so one of them has to **back off** first. Today only aborted aircraft back off (`_blocking`, from #19).
-- Separately, L05 (C01) is in abort mode from about 572 s, hovering 60 m from L03, so C01 is lost. That abort's cause isn't known yet.
-- A quick probe that lets aborted hoverers back off for *holding* peers changes nothing here. The fix belongs to the on-plan pair.
-
-### Task
-1. **L2-21:** when two non-aborted aircraft hold for each other for more than ~10 s, let the higher id back off along its route (rate −1), if that path is clear. Then resume once the lower id has passed. Also find why L05 aborts.
-2. **L3-6:** trace the run (`python3 -m fleetkit linkloss ... --trace`, or the viewer) and find who stops serving C19 and why. Suspects: the group abort (`ab`), or the same mutual hold as L2-21.
-3. Fix both without adding failed runs.
-
-Repro, from `fleet-kit/`: `python3 diag/stuck.py . handin/policy.py L2 21` lists who ends frozen and who is near them. `python3 diag/who.py . handin/policy.py L2 21 S01,H02 535 545` prints who each aircraft holds for, every second.
-
-### Done when
-- L3-6 is ≥ 0.780 and L2-21 is ≥ 0.9.
-- The link-loss gate holds.
-
----
-
-## 10. Link-loss: L3-21 enters a pop-up zone at 2000 m (policy.py)
-
-**Owner:** free (Martin or Youcef, after 8 or 9). **Priority:** link-loss 3.
-
-### Why
-All 20 failed runs left with #19 + #23 on seeds 15–24 are **one case**: L3-21 (events seed 1). H03 flies into a pop-up zone around t = 356 s:
-- it happens only at 2000 m, in 4 of 200 runs at every capacity;
-- it never happens at 1000 m;
-- #19 alone fails it 9–10 times;
-- this one case costs the 2000 m frontier.
-
-### Task
-Trace the run and find why H03 doesn't stop. Check:
-- that the zone reached it in time;
-- the position decode;
-- that the compact `zn` encoding doesn't truncate the radius with `int()`.
-
-### Done when
-- 0 failed runs on L3-21 in every cell.
-- The link-loss gate holds.
-
----
-
-## 12. Link-loss: L4-21 retention drop in #23 (policy.py)
-
-**Owner:** Youcef. **Priority:** link-loss 2. **Effort:** ~1 h.
-
-### Why
-`check_policy` seeds 20–29, L4-21: main 0.620, #19 **0.901**, #19 + #23 **0.620**. Something in #23's additions gives back what #19 won here. The candidates: the id order in `_r8_conflict`, the 6 s return lookahead, `SEP_PAD_M` 4.5 → 6.0, and `ob` delivery.
-
-### Task
-Bisect #23's four additions on L4-21 (events seed 22, 1000×200, run seeds 0–1). Find the culprit and fix it. Don't just revert it: it carries the sizing gains.
-
-### Done when
-- L4-21 ≥ 0.9.
-- The link-loss gate holds.
-
----
-
-## 11. Planner: never below the kit baseline on a seed (planner.py)
-
-**Owner:** Louis. **Priority:** optional, last planner change. Merge only by 08:00 with the gate below, or skip it.
-
-### Why
-On the CP4 holdout, two seeds score a hair under the kit baseline, deterministically:
-- L1-5010: 79.2 against 79.8;
-- L2-5031: 208.7 against 208.8.
-
-The money is negligible (0.7 points out of 101,909). But "never below the baseline" is a claim for the pitch, and it held on `55327de`.
-
-### Task
-- At the end of `main()`, if at least ~8 s are left before the alarm, build the kit `greedy_plan` (already used by the greedy fallback). Score both plans with the vendored evaluator, and write the better one.
-- Put a flag in `params.py`, default on.
-
-### Done when
-- Flag off: byte-identical plans.
-- Flag on: L1-5010 and L2-5031 score at least the baseline. Train seeds L1–L4 0–19 under `FLEET_ITERS` give byte-identical plans wherever ours already beats greedy.
-- `check_handin` on an idle machine: 8/8, max time no higher than today (~40 s).
-
----
-
-## 3. Planner: Squeaky Wheel feedback in the order search, on half the workers (planner.py)
-
-**Status (Sun 00:40): dropped.**
-- Louis built it behind a flag, with 5 tests. In real time on 40 L4 seeds: +0.13 % (15 better, 12 worse), inside the usual 0.1–0.5 % noise. No PR, and `handin/` is unchanged.
-- Louis's **budget curve** (L3/L4 seeds 0–19, 2 workers, score against 38 s):
-  - 10 s: L3 −0.56 %, L4 −5.12 %;
-  - 20 s: L3 −0.30 %, L4 −1.37 %;
-  - 30 s: L3 −0.05 %, L4 −0.35 %;
-  - 45 s: L3 +0.05 %, L4 +0.12 %.
-  - So **38 s stays**. An adaptive budget would gain nothing measurable.
-
-**Owner suggestion:** Louis (`_search` in `handin/planner.py` is his code). **Priority: 3** (planner, last planner change before the freeze). **Effort:** 1–2 h.
-
-### Why
-After this afternoon's merges (R8 scheduler + cache, R7 skip, greedy fallback), the cheap planner levers have been measured and **none gives more**:
-- light/heavy pricing: noise;
-- `scouts.py`: +0.12 %, a single seed;
-- strike-group altitude spread: +5.7 ± 6.8 per seed over 40 seeds, 16 worse.
-
-The search itself is still blind: after each build, the next contact order is the best one plus **random Gaussian noise**. Squeaky Wheel Optimization (Joslin & Clements, JAIR 1999) replaces the blind noise with feedback: **move the contacts the last build failed to serve forward** in the order. Details: `docs/research/ALGORITHMS_R2.md` §2a.
-
-### Task
-- In `_search`, after each build, read which hostiles were served (engage targets in the plan). Then multiply the next order's weight of each **unserved** hostile by `(1 + k · blame)`, where `blame ∝ points − 10·needs`. Keep some Gaussian noise, since pure SWO can cycle.
-- **Safe rollout:** odd workers only. Even workers keep today's noise, so the worst case is wasting half the restarts.
-- Put a flag in `params.py`. The jury passes no env vars, so the default decides.
-
-### Done when (team rule)
-- **Flag off ⇒ byte-identical plans to `main`** under `FLEET_ITERS` (test).
-- Paired, deterministic, train seeds only:
-  - `FLEET_ITERS=N PLANNER_WORKERS=2 python3 tools/bench.py --levels L4 --seeds 0-39 --base <main copy> --json …`
-  - mean gain > 0, ≤ 40 % of seeds worse (or mean > 2 standard errors), 0 invalid;
-  - L2/L3 seeds 0–19 mean ≥ 0.
-- `/usr/bin/python3 handin/check_handin.py` 8/8, max time ≤ ~41 s **on an idle machine**. Run one timing job at a time: load from other benches spoiled several measurements today.
-
-### Don't touch
-`deconflict.py` (just changed, PR #11), `policy.py`.
-
----
-
-## 4. Shift suite in jury conditions on the final main (overnight, Martin's PC)
-
-**Status (Sat 23:45): go now.** `main` stays `cdc0671` for the planner: the only open merges (#23, tasks 8–10) touch `policy.py`, which the shift suite doesn't run. Run all 50 seeds (`0-49`, ~3 h), not half. Your Docker Python 3.9.25 setup is fine.
-
-**Owner suggestion:** Martin, on his PC. **When:** tonight, once `main` is final for the night (Mahmoud will say). **Effort:** ~3 h of machine time, almost no human time.
-
-### Why
-The shift suite is our guard against hidden scenarios that differ from the four public levels. Martin's jury-condition run (PR #15: 250 runs, 0 failures, ×2.07) used `main` at `ec5c41e`. That was **before** the R8 scheduler (PR #6), its cache (PR #11), the greedy fallback (PR #7) and the edge packs were merged. The code we hand in has never been through the shift suite in jury conditions.
-
-### Task
-1. From `fleet-orchestration/fleet-kit/` on the final `main`:
-   `/usr/bin/python3 tools/shift.py --seeds 0-49 --jobs 1 --json shift_final.json`
-   Use one job (strictly sequential) and 8 workers (default), on an otherwise idle machine.
-2. **Use a Python 3.9 if possible.** The jury promises 3.9+ and our CI tests 3.9; last run used 3.14 under WSL.
-3. Post per variant: total, ratio vs baseline, failures, worst seed, max time. Compare with the `ec5c41e` run.
-
-### Done when
-- **0 failures, no variant below baseline**, max time well under 60 s.
-- Any crash or invalid plan: write down the scenario that triggers it and tell the file owner. Don't fix it yourself.
-
-PR #16 (Martin's diag and scouts bench) was squash-merged on Sun 00:05 (`17739f1`). It holds no hand-in code.
-
----
-
-## 5. Organiser answers: jury core count, multiprocessing, hand-in format, Python version
-
-**Status (Sat 23:45):** still no answers; still blocking. If nothing comes by 09:00, follow the fallback in `research/ENDGAME.md` (default workers, 1-worker L4 above baseline).
-
-**Owner suggestion:** Ilhan (mentor link). **Priority: blocking for the hand-in.** **Effort:** one conversation with the organisers.
-
-### Why
-Four answers change what we ship, and we don't have them yet:
-
-1. **Jury machine core count, and is `multiprocessing` allowed?**
-   - The planner runs up to 8 worker processes (`params.MAX_WORKERS`).
-   - At 1 worker it stays valid and above baseline, but scores less.
-   - With a slow or small machine, L4 runs already reach 39–41 s of the 60 s limit when our machine is loaded.
-   - The answer decides the worker default, and whether we lower the 38 s budget for safety.
-2. **Hand-in format:** a folder? Which files? We plan the whole `handin/` folder: `planner.py`, `params.py`, `fk/`, `routing.py`, `targets.py`, `deconflict.py`, `scouts.py`, and `policy.py` for link-loss.
-3. **Python version** on the jury machine (we test 3.9).
-4. **Link-loss:** is `policy.py` handed in the same folder, and which plans does the jury use for it (theirs or ours)?
-
-### Done when
-Answers posted as a comment here. The checkpoint board items "Organiser answers" and "Hand-in format confirmed" are marked done.
-
----
-
-## 6. CP4 holdout on current main + confirm L1-0 is not below baseline
-
-**Status (Sat 23:50): done** on `cdc0671` (Python 3.9.6, `PLANNER_WORKERS=2`, `--jobs 4`).
-- Total 101,908.6 against 63,989.4, so ×1.59.
-- By level: L1 ×1.089, L2 ×1.101, L3 ×1.262, L4 ×2.130.
-- 0 invalid or failed runs; slowest run 40.0 s.
-- No level is below the baseline. Two seeds are a hair below it, and both reproduce exactly on re-run: L1-5010 −0.6 and L2-5031 −0.1 (task 11).
-
-**Owner:** Mahmoud. **When:** tonight, on an idle machine, after the evening merges.
-
-### Why
-- The last holdout (seeds 5000–5049) was on `main` at `55327de`: ×1.51 total, L4 ×1.95. Since then `main` gained:
-  - the R8 scheduler + cache;
-  - the R7 skip;
-  - the greedy fallback;
-  - the routing fix.
-- Nobody has measured the hand-in code on unseen seeds.
-- On `717535a`, `check_handin` was run under heavy load (31–36), giving a total of 4229.7. That run also showed **L1-0 at 123.7 vs baseline 123.8**, the first time anything has dipped below the kit baseline. Probably load, but CP2's rule is "no level below baseline".
-
-### Task
-1. With no other bench running (`uptime` load < ~6), on the final `main`:
-   `/usr/bin/python3 handin/check_handin.py` and `python3 tools/bench.py --levels L1 --seeds 0-9 --python /usr/bin/python3`.
-   Check L1 is never below baseline.
-2. **CP4 holdout:** `PLANNER_WORKERS=2 python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 5000-5049 --jobs 4 --python /usr/bin/python3 --json holdout_cp4.json`. Compare with ×1.51 / L4 ×1.95.
-
-### Done when
-Totals posted here and on the checkpoint board. 0 failures, no level below baseline. If L1 regresses for real, bisect between `55327de` and `main`.
-
----
+## Task briefs
+
+### 4. Shift suite in jury conditions (Martin's PC, or Louis as backup)
+- **Why:** the hand-in code has never been through the shift suite in jury conditions. The last run (×2.07, 0 failures) was on `ec5c41e`, before the R8 scheduler, its cache and the greedy fallback.
+- **Run:** from `fleet-kit/`, on an otherwise idle machine, with Python 3.9:
+  `/usr/bin/python3 tools/shift.py --seeds 0-49 --jobs 1 --json shift_final.json`
+  That's ~3 h. Use `--seeds 0-24` if it can't finish by 08:00. The suite doesn't run `policy.py`, so link-loss merges don't affect it. A planner change does.
+- **Done when:** 0 failures, no variant below baseline, max time well under 60 s. Post per variant: total, ratio, failures, worst seed, max time. A crash or invalid plan: post the scenario; don't fix it yourself.
+
+### 5. Organiser answers (Mahmoud, in person, Sunday morning)
+- **Questions:**
+  1. The jury machine's core count, and whether `multiprocessing` is allowed. The planner runs up to 8 workers; at 1 worker it stays valid and above baseline.
+  2. The hand-in format. Plan: the whole `handin/` folder (`planner.py`, `params.py`, `fk/`, `routing.py`, `targets.py`, `deconflict.py`, `scouts.py`, `policy.py`).
+  3. The Python version (we test 3.9).
+  4. For link-loss, which plans the jury uses.
+- **No answer by 09:00:** keep the default workers. The 1-worker L4 numbers already stay above baseline.
+
+### 8. Link-loss: cut the hover heartbeat (P3)
+- **Why:** 78 % of #23's messages are `hd+ab` heartbeats from aborted aircraft hovering in place, sent at 1 Hz while a peer is within 350 m. `ob` re-sends are another 14 %. That's ~0.02 of S_loss at 1000×200. Since #19, peers **never expire** an aborted hold, so after the first few deliveries a heartbeat only helps a peer that missed them.
+- **Task:**
+  - Keep the first 3 heartbeats.
+  - After that, beacon only when an on-plan peer is predicted to close in. Reuse `_blocking` with a ~10 s horizon and a radius of ~2 × (d_sep + pad). Otherwise beacon every 10–15 s.
+  - Check whether 1 Hz is really needed at 250 m.
+  - Optional: anti-entropy only from aircraft that have an effector of that contact within range.
+- **Done when:** the link-loss gate holds, messages at 1000×200 are ≤ ~10 per aircraft per minute, and S_loss at 1000×200 is ≥ 0.960 on both seed sets.
+
+### 9. Link-loss: mutual hold between on-plan aircraft, L2-21 and L3-6 (P3)
+- **Why:**
+  - L2-21 (events seed 22): main 1.000, #19 and #19 + #23 **0.148**.
+  - L3-6: 0.780 → 0.611.
+- **What the L2-21 trace shows:**
+  - Two **on-plan** aircraft, S01 and H02, hold for each other from t = 537 s until the end, 72 m apart.
+  - #23's id order can't break it. H02 has the lower id, but moving would close on S01, so it yields. S01 always yields to a holding lower id.
+  - Their routes pass within separation of each other's held positions, so one must **back off**. Today only aborted aircraft back off (`_blocking`).
+  - Separately, L05 (C01) goes into abort mode from ~572 s. Cause unknown.
+- **Task:**
+  1. When two non-aborted aircraft hold for each other for more than ~10 s, the higher id backs off along its route (rate −1) if that path is clear, then resumes once the lower id has passed.
+  2. Find why L05 aborts.
+  3. Check whether L3-6 is the same cause.
+- **Repro, from `fleet-kit/`:**
+  - `python3 diag/stuck.py . handin/policy.py L2 21`
+  - `python3 diag/who.py . handin/policy.py L2 21 S01,H02 535 545`
+- **Done when:** L2-21 ≥ 0.9, L3-6 ≥ 0.780 if it's the same cause, and the link-loss gate holds.
+
+### 11. Planner: never below the kit baseline on a seed (Louis, optional)
+- **Why:** on the holdout, L1-5010 (79.2 against 79.8) and L2-5031 (208.7 against 208.8) score a hair under the kit greedy plan, deterministically. It's 0.7 points in total, but "never below the baseline" is a claim for the pitch.
+- **Task:**
+  - In `solve()`, after the last guard, call `_greedy_fallback(scenario)`, which already builds and validates the kit greedy plan (2.7 s at most on L4).
+  - If its score is strictly higher, return it.
+  - Add `KEEP_BETTER_GREEDY = True` to `params.py`.
+  - About 6 lines, 1 h at most.
+- **Done when:** the planner gate holds, and L1-5010 and L2-5031 score at least the baseline. On L1–L4 seeds 0–19 under `FLEET_ITERS`, plans are byte-identical wherever ours already beats greedy. Max time ≤ 45 s idle (the greedy adds up to 2.7 s on L4).
+
+### 12. Link-loss: L4-21 regression in #23 (P3)
+- **Why:** `check_policy` seeds 20–29, L4-21: main 0.620, #19 **0.901**, #19 + #23 **0.620**.
+- **Task:** bisect #23's four additions on L4-21 (events seed 22, 1000×200, run seeds 0–1): the id order in `_r8_conflict`, the 6 s return lookahead, `SEP_PAD_M` 4.5 → 6.0, and `ob` delivery. Fix the culprit. Don't just revert it: it carries the sizing gains.
+- **Done when:** L4-21 ≥ 0.9 and the link-loss gate holds.
+
+### 13. Link-loss frontier in the hand-in (Mahmoud, at CP5)
+- **Why:** LINKLOSS.md says *"the frontier is part of what you hand in"*. We have the numbers but haven't packaged them.
+- **Task:** at CP5, run the sizing on the **final** policy (seeds 5–14 and 15–24). Write a short table into a hand-in README (`handin/LINKLOSS_FRONTIER.md`) and onto one slide:
+  - the frontier per range;
+  - the sizing score;
+  - S_loss at 1000×200;
+  - messages per aircraft per minute;
+  - the seeds and the command.
+- **Done when:** the table matches the CP5 JSON, and the file is in the tagged hand-in folder.
+
+### 14. Scaling re-run on the current planner (Louis, optional)
+- **Why:** the brief asks about larger fleets. Our scaling numbers (valid up to 500 aircraft, budget shrinking above 100) come from planner v4–v5, before the R8 scheduler.
+- **Task:** `python3 tools/scaling.py` on `main` (L4 ×1 to ×4, 2 seeds) on an idle machine.
+- **Done when:** a table of valid / score against baseline / time per size, for one slide. If anything fails or runs past 50 s, tell Mahmoud: that would be a real problem for the planner gate.
+
+### 15. Jury presentation (Louis + Swann, morning; no hand-in code)
+"A jury also looks at the soundness and presentation of your approach." In order:
+1. **Link-loss replay in the kit viewer (zero code):** `python3 -m fleetkit view scenario.json plan.json --events events.json --policy handin/policy.py`. It shows the cut, every hold and return, and messages delivered or lost. Pick one scenario.
+2. **Kit viewer playback (zero code):** play at 1–32×, scrubber, altitude strip.
+3. **Greedy against ours, side by side**, on the demo seed: the ×2.13 story on L4.
+4. **Numbers:** CP4 holdout ×1.59 / L4 ×2.13 (unseen seeds), and Louis's bench ×1.616 / 81.7 % of the bound. Drop the old 71.4 % / 79.4 %. Add Louis's budget curve: 38 s, with +0.12 % at 45 s.
+5. **Robustness page:** the shift results (task 4) plus the green CI run (both edge packs), and the frontier table (task 13).
+6. **Optional:**
+   - a convergence curve, offline: `FLEET_ITERS` 1/2/4/8/16 on one L4 seed;
+   - a scout-use table (assigned against idle scouts on the demo seed).
+
+## Done or dropped (details in git history)
+- **Done:**
+  - CP4 holdout (task 6);
+  - Squeaky Wheel measured (task 3);
+  - budget curve;
+  - link-loss tasks 1, 2 and 7 (in #19 + #23);
+  - PR #16 merged.
+- **Dropped:**
+  - task 3 (Squeaky Wheel: +0.13 %, noise);
+  - task 10 (L3-21: one case, at 2000 m only);
+  - the adaptive budget;
+  - the auto-generated adversarial scenario;
+  - the `--verify` bonus (separate board, not in the ranking).
