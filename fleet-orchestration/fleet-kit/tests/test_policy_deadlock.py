@@ -4,7 +4,7 @@
 - an effector without its observation waits for a late scout instead of aborting, and then engages only
   confirm_margin after it heard of the observation (R4);
 - L2-21 of check_policy (events seed = seed + 1, 1000x200), which ended in a permanent hold;
-- L4-24 of the sizing grid (events seed 1, 2000x50, run 1): after a back-off, holding until the peer moves.
+- R8 cases of the sizing grid (events seed 1) found on the way: L4-24 and L4-6.
 """
 from pathlib import Path
 
@@ -70,7 +70,15 @@ def test_l2_21_no_longer_ends_in_a_mutual_hold():
     assert res.ok and ret >= 0.9
 
 
-def test_after_a_back_off_an_aircraft_holds_until_the_peer_moves():
-    sc = Scenario.from_dict(generate("L4", 24))   # L20 backed off for L18, resumed at once, then held; its hold
-    plan = greedy_plan(sc)                         # was lost and L18 flew into it (33 m)
-    assert simulate(sc, plan, make_events(sc, plan, 1), Policy, setting=(2000.0, 50.0), run_seed=1).ok
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("level,seed,setting,run_seed", [
+    ("L4", 24, (2000.0, 50.0), 1),   # L20 backed off for L18, resumed at once, then held; the hold was lost (33 m)
+    ("L4", 24, (250.0, 50.0), 2),    # L18 kept flying on a "resumed" belief while L20 had stopped again (33 m)
+    ("L4", 6, (250.0, 50.0), 2),     # on-plan S04 skipped L32, which had resumed 16 s late and did not yield (32 m)
+])
+def test_sizing_r8_cases_found_while_breaking_holds(level, seed, setting, run_seed):
+    sc = Scenario.from_dict(generate(level, seed))
+    plan = greedy_plan(sc)
+    assert simulate(sc, plan, make_events(sc, plan, 1), Policy, setting=setting, run_seed=run_seed).ok
