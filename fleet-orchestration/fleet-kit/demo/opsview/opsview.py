@@ -25,7 +25,8 @@ if str(KIT) not in sys.path:
     sys.path.insert(0, str(KIT))
 
 from fleetkit.geometry import hdist  # noqa: E402
-from fleetkit.model import CIVILIAN, FRIENDLY, HOSTILE, SCOUT, UNKNOWN, load_json, parse_plan  # noqa: E402
+from fleetkit.model import CIVILIAN, FRIENDLY, HOSTILE, SCOUT, UNKNOWN, Scenario, load_json, parse_plan  # noqa: E402
+from fleetkit.scorer import evaluate  # noqa: E402
 from fleetkit.viewer import Viewer  # noqa: E402
 from fleetkit.viewer.brand import font_face_css, logo_data_uri  # noqa: E402
 
@@ -151,15 +152,30 @@ class OpsViewer(Viewer):
         return render_ops(self.model())
 
 
+def run_diagnosis(scenario: Scenario, plan: dict) -> Dict[str, Dict[str, str]]:
+    """Diagnostic réel de Swann (`demo/swann_demo.py`) pour chaque contact utile non servi. Compter ~30 s sur L4."""
+    sys.path.insert(0, str(KIT / "demo"))
+    import swann_demo  # noqa: WPS433
+
+    routes = parse_plan(plan)[0] or {}
+    served = set(evaluate(scenario, plan).served)
+    diag = {c.id: swann_demo.diagnose(scenario, routes, c) for c in swann_demo.servable(scenario) if c.id not in served}
+    return reasons_from_diagnosis(diag)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Vue opérateur d'un scénario et d'un plan.")
     ap.add_argument("scenario")
     ap.add_argument("plan", nargs="?")
     ap.add_argument("-o", "--output", default="view_ops.html")
     ap.add_argument("--title", default=None)
+    ap.add_argument("--diagnose", action="store_true",
+                    help="rejoue le routage réel pour expliquer chaque contact non servi (lent : ~30 s sur L4)")
     args = ap.parse_args()
+    scenario = Scenario.from_dict(load_json(args.scenario))
     plan = load_json(args.plan) if args.plan else None
-    out = OpsViewer(load_json(args.scenario), plan, title=args.title).save(args.output)
+    reasons = run_diagnosis(scenario, plan) if args.diagnose and plan else None
+    out = OpsViewer(scenario, plan, title=args.title, reasons=reasons).save(args.output)
     print("écrit", os.path.abspath(out))
 
 
