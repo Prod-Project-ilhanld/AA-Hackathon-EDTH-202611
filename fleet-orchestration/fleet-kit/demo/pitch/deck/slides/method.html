@@ -1,0 +1,31 @@
+<section id="method" class="light">
+<div class="head">
+<p class="eyebrow">Planner</p>
+<h2>How the planner works</h2>
+</div>
+<div class="row" style="gap:32px">
+<div class="card in">
+<p class="num">01</p>
+<h3>Build</h3>
+<p class="small muted">A greedy builder serves one contact at a time: a scout to observe, then the effectors it needs.</p>
+</div>
+<div class="card in" style="--i:1">
+<p class="num">02</p>
+<h3>Search</h3>
+<p class="small muted">Hill-climb over the order of contacts, with restarts on all cores, inside a 38 s budget.</p>
+</div>
+<div class="card in" style="--i:2">
+<p class="num">03</p>
+<h3>Stay legal</h3>
+<p class="small muted">40 m between aircraft, staggered take-offs from the shared pad, no strike within 200 m of a civilian or friendly, over zones only above their ceiling.</p>
+</div>
+<div class="card in" style="--i:3">
+<p class="num">04</p>
+<h3>Never worse</h3>
+<p class="small muted">Every plan passes the kit’s own validator, and we hand in the better of our plan and the kit greedy plan.</p>
+</div>
+</div>
+<p class="muted">Python standard library only. No GPU. Up to 8 worker processes.</p>
+<p class="foot">SUB-15 Fleet Orchestration · EDTH Paris 2026</p>
+<aside>“How: a fast builder, then a search over target order, on every core, inside the time limit. Aircraft stay 40 metres apart, take-offs are staggered on the shared pad, and hostiles that can never be legally struck are skipped.”</aside>
+</section>

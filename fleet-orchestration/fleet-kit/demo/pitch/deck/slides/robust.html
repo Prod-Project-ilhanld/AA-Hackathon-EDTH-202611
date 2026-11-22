@@ -1,0 +1,26 @@
+<section id="robust" class="light">
+<div class="head">
+<p class="eyebrow">Robustness</p>
+<h2>Valid everywhere we looked</h2>
+</div>
+<div class="row" style="gap:32px">
+<div class="card in">
+<p class="num">8 public scenarios</p>
+<p class="stat">8/8 valid</p>
+<p class="small muted">4252.9 against 2748.6 for the kit greedy plan. Slowest run: 39.5 s of the 60 s limit.</p>
+</div>
+<div class="card in" style="--i:1">
+<p class="num">5 shifted generators</p>
+<p class="stat">×1.98</p>
+<p class="small muted">125 runs: low battery, more points, no feasibility, L3 on L4, half the scouts. 0 invalid, no variant below baseline.</p>
+</div>
+<div class="card in" style="--i:2">
+<p class="num">Safety net</p>
+<p class="stat">Always a plan</p>
+<p class="small muted">Plan file written first. Time-limited search. A 52 s alarm writes the best valid plan. Greedy fallback on any error. Keep greedy’s plan if it scores better.</p>
+</div>
+</div>
+<p class="cap">Shift suite measured on main f0a5f14, just before the keep-better-greedy guard, which can only raise a seed’s score.</p>
+<p class="foot">SUB-15 Fleet Orchestration · EDTH Paris 2026</p>
+<aside>“Five shifted generators, like low battery: 1.98 times.” If asked what happens when it breaks: the plan file is written first, the search is time-limited, a 52-second alarm writes the best valid plan, any error falls back to the kit greedy plan.</aside>
+</section>
