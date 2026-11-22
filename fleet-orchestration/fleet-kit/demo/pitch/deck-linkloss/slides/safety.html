@@ -1,0 +1,13 @@
+<section id="safety" class="accent">
+<p class="eyebrow">Safety first</p>
+<h2>We threw away the variant<br>that scored better</h2>
+<div class="compare">
+<div class="cmp in"><p class="tag">Shipped policy</p><p class="big">0.949</p><p class="line">S_loss at 1000 × 200</p><p class="line">0 failed runs · sizing score 1.00</p></div>
+<div class="cmp in" style="--i:1"><p class="tag">Lower-traffic variant · rejected</p><p class="big">0.967</p><p class="line">S_loss at 1000 × 200, about 9 messages per minute</p><p class="line">1 failed run at 250 m · sizing score 0.75</p></div>
+</div>
+<p class="in" style="--i:2;font-size:40px;font-weight:700;font-family:'Space Grotesk', Arial, sans-serif">A failed run scores zero. Safety wins the tie.</p>
+<p class="foot">Source: handin/LINKLOSS_FRONTIER.md, “Known limits”. S_loss = retention − 0.002 × messages per drone per minute.</p>
+<aside>“When we had to choose, we chose safety. A quieter variant scored better on paper, but failed one run. We threw it away.”
+
+Known limit, only if asked: on scenario L3-6, retention is 0.611, because two drones abort seconds after take-off and hover over the base, head-on with departing drones. Flying them home fixed it but broke three other scenarios, so it is not in.</aside>
+</section>

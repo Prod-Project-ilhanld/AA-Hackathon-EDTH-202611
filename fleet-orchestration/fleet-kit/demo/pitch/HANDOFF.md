@@ -1,5 +1,18 @@
 # Jury pitch: handoff
 
+## Update, Sun 22 Nov afternoon: link-loss pitch
+
+The pitch is now built around **link loss and safety** (branch `feature/pitch-linkloss`):
+
+- `../SCRIPT_JURY.md` rewritten in this order: hook, the link-cut problem, live link-loss demo, official sizing grid,
+  five on-board rules, the rejected variant, planner safety nets, close. 312 words, about 2:25 with clicks; 2:00 cut
+  240 words, about 1:55. Two tabs only: the deck and `view_linkloss.html`. Facts table updated.
+- New deck: 8 pitch slides + 3 Q&A slides (Why cards, known limit, score if asked). Claude Slides artifact
+  https://claude.ai/artifact/Sa6b5ogCyT77EG7GL9apLi (**private** until its owner shares it). Sources in
+  `deck-linkloss/` (same layout as `deck/`, speaker notes = the spoken lines), offline backup
+  `deck-linkloss/deck_linkloss.pdf` (11 pages, rendered from those sources, no speaker notes).
+- `deck/`, `timing/` and the rest of this file describe the earlier sales-pitch version and are kept as they were.
+
 Written Sun 22 Nov, 10:47 CET, by Mahmoud's session, for whoever picks up the pitch. Everything below is in this
 folder or one level up, in `demo/`.
 
