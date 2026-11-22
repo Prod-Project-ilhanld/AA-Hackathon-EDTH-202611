@@ -1,0 +1,278 @@
+{
+ "cells": {
+  "250x200": {
+   "retention": 0.9874543377891238,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.113504495640974,
+   "s_loss": 0.9512273287978419,
+   "ms_per_call": 0.05178688455780411,
+   "failure_examples": [],
+   "meets": true
+  },
+  "250x400": {
+   "retention": 0.9874543377891238,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.113504495640974,
+   "s_loss": 0.9512273287978419,
+   "ms_per_call": 0.0518199911345612,
+   "failure_examples": [],
+   "meets": true
+  },
+  "250x100": {
+   "retention": 0.9874543377891238,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.113504495640974,
+   "s_loss": 0.9512273287978419,
+   "ms_per_call": 0.051927607940324326,
+   "failure_examples": [],
+   "meets": true
+  },
+  "250x50": {
+   "retention": 0.9874543377891238,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.113504495640974,
+   "s_loss": 0.9512273287978419,
+   "ms_per_call": 0.05197150499104542,
+   "failure_examples": [],
+   "meets": true
+  },
+  "500x50": {
+   "retention": 1.0,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 17.15919841353166,
+   "s_loss": 0.9656816031729367,
+   "ms_per_call": 0.05094557657894046,
+   "failure_examples": [],
+   "meets": true
+  },
+  "500x100": {
+   "retention": 1.0,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 17.19818096281426,
+   "s_loss": 0.9656036380743714,
+   "ms_per_call": 0.05101335804776626,
+   "failure_examples": [],
+   "meets": true
+  },
+  "500x200": {
+   "retention": 1.0,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 17.19818096281426,
+   "s_loss": 0.9656036380743714,
+   "ms_per_call": 0.051053665043136756,
+   "failure_examples": [],
+   "meets": true
+  },
+  "250x800": {
+   "retention": 0.9874543377891238,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.113504495640974,
+   "s_loss": 0.9512273287978419,
+   "ms_per_call": 0.05260804799765539,
+   "failure_examples": [],
+   "meets": true
+  },
+  "500x400": {
+   "retention": 1.0,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 17.19818096281426,
+   "s_loss": 0.9656036380743714,
+   "ms_per_call": 0.05081255197236949,
+   "failure_examples": [],
+   "meets": true
+  },
+  "500x800": {
+   "retention": 1.0,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 17.19818096281426,
+   "s_loss": 0.9656036380743714,
+   "ms_per_call": 0.05087423006459373,
+   "failure_examples": [],
+   "meets": true
+  },
+  "1000x50": {
+   "retention": 0.9986050724637682,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 16.98067081596829,
+   "s_loss": 0.9646437308318316,
+   "ms_per_call": 0.05675666536161794,
+   "failure_examples": [],
+   "meets": true
+  },
+  "1000x100": {
+   "retention": 0.9986050724637682,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 16.95765362706535,
+   "s_loss": 0.9646897652096375,
+   "ms_per_call": 0.056690263907660035,
+   "failure_examples": [],
+   "meets": true
+  },
+  "1000x200": {
+   "retention": 0.9986050724637682,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 16.957615288407204,
+   "s_loss": 0.9646898418869537,
+   "ms_per_call": 0.05612261681705551,
+   "failure_examples": [],
+   "meets": true
+  },
+  "1000x400": {
+   "retention": 0.9986050724637682,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 16.957615288407204,
+   "s_loss": 0.9646898418869537,
+   "ms_per_call": 0.05623057935192676,
+   "failure_examples": [],
+   "meets": true
+  },
+  "1000x800": {
+   "retention": 0.9986050724637682,
+   "failures": 0,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 16.957615288407204,
+   "s_loss": 0.9646898418869537,
+   "ms_per_call": 0.05658467324659679,
+   "failure_examples": [],
+   "meets": true
+  },
+  "2000x50": {
+   "retention": 0.9753076923076922,
+   "failures": 4,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.182496799974352,
+   "s_loss": 0.9389426987077435,
+   "ms_per_call": 0.06436643493017659,
+   "failure_examples": [
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s"
+   ],
+   "meets": false
+  },
+  "2000x100": {
+   "retention": 0.9753076923076922,
+   "failures": 4,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.15805839893928,
+   "s_loss": 0.9389915755098136,
+   "ms_per_call": 0.0645606782862389,
+   "failure_examples": [
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s"
+   ],
+   "meets": false
+  },
+  "2000x200": {
+   "retention": 0.9753076923076922,
+   "failures": 4,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.18187366592239,
+   "s_loss": 0.9389439449758474,
+   "ms_per_call": 0.06486906010280866,
+   "failure_examples": [
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s"
+   ],
+   "meets": false
+  },
+  "2000x400": {
+   "retention": 0.9753076923076922,
+   "failures": 4,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.185867442502893,
+   "s_loss": 0.9389359574226864,
+   "ms_per_call": 0.06397791671315985,
+   "failure_examples": [
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s"
+   ],
+   "meets": false
+  },
+  "2000x800": {
+   "retention": 0.9753076923076922,
+   "failures": 4,
+   "runs": 200,
+   "messages_per_aircraft_per_min": 18.185867442502893,
+   "s_loss": 0.9389359574226864,
+   "ms_per_call": 0.060885996032588645,
+   "failure_examples": [
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s",
+    "L3-21: R6 (exclusion) [H03]: flew into a pop-up zone around t = 356 s"
+   ],
+   "meets": false
+  }
+ },
+ "sizing_score": 0.75,
+ "frontier": {
+  "250": 50.0,
+  "500": 50.0,
+  "1000": 50.0,
+  "2000": null
+ },
+ "meta": {
+  "policy": "/private/tmp/claude-501/-Users-mahmoudelkassaby-EDTH-Paris--claude-worktrees-vigilant-mcnulty-8ca011/3ae327d8-e6f2-459c-aa46-b9ef6cc31a02/scratchpad/d/pol_gate.py",
+  "cases": [
+   "L1-15-e1",
+   "L1-16-e1",
+   "L1-17-e1",
+   "L1-18-e1",
+   "L1-19-e1",
+   "L1-20-e1",
+   "L1-21-e1",
+   "L1-22-e1",
+   "L1-23-e1",
+   "L1-24-e1",
+   "L2-15-e1",
+   "L2-16-e1",
+   "L2-17-e1",
+   "L2-18-e1",
+   "L2-19-e1",
+   "L2-20-e1",
+   "L2-21-e1",
+   "L2-22-e1",
+   "L2-23-e1",
+   "L2-24-e1",
+   "L3-15-e1",
+   "L3-16-e1",
+   "L3-17-e1",
+   "L3-18-e1",
+   "L3-19-e1",
+   "L3-20-e1",
+   "L3-21-e1",
+   "L3-22-e1",
+   "L3-23-e1",
+   "L3-24-e1",
+   "L4-15-e1",
+   "L4-16-e1",
+   "L4-17-e1",
+   "L4-18-e1",
+   "L4-19-e1",
+   "L4-20-e1",
+   "L4-21-e1",
+   "L4-22-e1",
+   "L4-23-e1",
+   "L4-24-e1"
+  ],
+  "comm_seeds": 5,
+  "wall_s": 395.2
+ }
+}

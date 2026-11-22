@@ -86,10 +86,10 @@ def test_lower_id_breaks_mutual_hold_when_not_closing() -> None:
 
 def test_effector_aborts_without_ob_and_accepts_relayed_ob() -> None:
     sc, plan = _make_simple_scenario()
-    # 1. No ob received before clock.end - 4 -> abort
+    # 1. No ob at clock.end - 4, and the longest wait for a late scout is over -> abort
     p1 = Policy(sc, plan, "L01")
     obs_near_end = {
-        "t": 97.0, "t_loss": 25.0, "pos": p1.clock.position(97.0), "vel": (12.0, 0.0, 0.0),
+        "t": 140.0, "t_loss": 25.0, "pos": p1.clock.position(97.0), "vel": (12.0, 0.0, 0.0),
         "tau": 97.0, "next_wp": 1, "mode": "route", "energy_left_wh": 80.0,
         "own_observed": [], "sensed": [], "inbox": [], "last_heard": {},
     }
