@@ -17,7 +17,7 @@ from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 MAX_MSG_BYTES = 64
 SEP_PAD_M = 6.0
 OB_WAIT_MAX_S = 40.0   # longest an effector waits short of its target for a late observation
-STOP_S = 10.0          # an effector whose target was reclassified keeps to its plan until this long before it
+STOP_S = 30.0          # an effector whose target was reclassified keeps to its plan until this long before it
 
 
 def _seg_min_dist3(
