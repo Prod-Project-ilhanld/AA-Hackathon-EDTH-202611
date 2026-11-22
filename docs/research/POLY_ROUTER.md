@@ -61,7 +61,11 @@ It matters because the planner's cruise layers are whole metres (effectors 40/85
 from `fk.baseline`; `ALTITUDE_LAYERS` in `routing.py` is unused) and so are generated zone tops (40-120 m).
 **31 of 100 L4 scenarios** (15/100 L3, 7/100 L2, 4/100 L1) have a zone topped at exactly one of those layers,
 which then blocks that layer for legs that start or end over the zone.
-Follow-up: cruise 0.5 m above each layer instead of shrinking the margin (paired gate in progress).
+Tested: cruise 0.5 m above each layer (`FLEET_ITERS=4 PLANNER_WORKERS=2`, paired against `main` 8e4a799).
+L4 seeds 0-39: +2.6 ± 2.5 per seed (+0.24 %), 25/40 seeds worse, 0 invalid. L1-L3 seeds 0-19: -0.0 to -0.1
+per seed. **Fails the planner gate** (more than 40 % of seeds worse; L3 mean below 0). Most worse seeds lose
+0.1-0.3 points (the extra 0.5 m of climb costs energy); the large swings (+48 to -31) are greedy order
+effects. Not worth changing: the blocked layers are real but the planner already routes around them.
 
 ## Recommendation
 
