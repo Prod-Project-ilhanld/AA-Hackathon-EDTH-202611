@@ -43,3 +43,12 @@ LNS_ITERS = 6          # with FLEET_ITERS > 0: exactly this many repairs per wor
 # Extending a scout tour keeps the observations of the contacts already struck early enough for R4 (latest_ends
 # of the team router): without it the rebuilt tour drifts later, breaks R4 and the contact goes to a new scout.
 LATEST_ENDS = os.environ.get("PLANNER_LATEST_ENDS", "1") != "0"
+
+# Tours first (as in a team orienteering model): one worker in TOURS_EVERY builds its plans by following scout
+# tours planned for the whole fleet at once (tours.py), the others keep the contact-by-contact search.
+TOURS = os.environ.get("PLANNER_TOURS", "1") != "0"
+TOURS_EVERY = 4
+TOURS_MIN_AC = 21
+TOURS_MAX_AC = 60      # L3 only: on L4 (100 aircraft) the guided worker cost more search than it found (paired
+                       # FLEET_ITERS=3 PLANNER_WORKERS=4, L4 seeds 0-19: about -6 per seed, 6/20 worse)
+TOURS_ITERS = 60       # ruin-and-recreate moves of the tours model per guided build

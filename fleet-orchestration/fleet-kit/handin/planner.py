@@ -39,6 +39,7 @@ import params  # noqa: E402       every tunable number and flag
 import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
 import targets  # noqa: E402     starter: which hostiles to try, priorities (off by default)
 import scouts  # noqa: E402      scout tours for the unknowns (off by default)
+import tours  # noqa: E402       tours-first model: which scout observes what, in which order
 
 try:  # routing module of the team (3D minimum-energy routes); the planner works without it
     from fk.baseline import EFFECTOR_LAYERS
@@ -73,6 +74,12 @@ class FastPlanner(_Planner):
     def _check_time(self) -> None:
         if time.monotonic() > self.deadline:
             raise OutOfTime()
+
+    def _scouts_for(self, contact: Contact) -> List[Aircraft]:
+        """Every scout, in the order they are tried for `contact`: nearest home first."""
+        scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
+        scouts.sort(key=lambda s: hdist(s.home, contact.pos))
+        return scouts
 
     def _scout_candidates(self, contact: Contact, limit: int = 0) -> List[Aircraft]:
         scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
@@ -185,8 +192,7 @@ class FastPlanner(_Planner):
                 return False
             pool[sub] = free[:n]
         effectors = [a for sub in sorted(pool) for a in pool[sub]]
-        scouts = [a for a in sc.aircraft if a.type == SCOUT]
-        scouts.sort(key=lambda s: hdist(s.home, contact.pos))
+        scouts = self._scouts_for(contact)
         # tier 1: the nearest scouts with the full set of options; tier 2: the others, plain options only
         tiers = ((scouts[:self.n_scouts], (0.0, 60.0, -60.0), (0.0, 7.0)),
                  (scouts[self.n_scouts:] if self.far else [], (0.0,), (0.0, 7.0)))
@@ -273,6 +279,50 @@ class RoutedPlanner(FastPlanner):
 
 
 
+class TourPlanner(RoutedPlanner):
+    """RoutedPlanner that tries first the scout a tours-first model planned for each contact (tours.py)."""
+
+    def __init__(self, scenario: Scenario, deadline: float, n_scouts: int, hint: Dict[str, str]):
+        super().__init__(scenario, deadline, n_scouts)
+        self.hint = hint
+
+    def _scouts_for(self, contact: Contact) -> List[Aircraft]:
+        planned = self.hint.get(contact.id)
+        scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
+        scouts.sort(key=lambda s: (s.id != planned, hdist(s.home, contact.pos)))
+        return scouts
+
+    def _scout_candidates(self, contact: Contact, limit: int = 0) -> List[Aircraft]:
+        return self._scouts_for(contact)[:limit or self.n_scouts]
+
+
+def build_guided(scenario: Scenario, model, rng: random.Random, deadline: float):
+    """One construction that follows the tours of `model` (contacts in tour order, planned scout first), then
+    serves the contacts left out in points order; returns the plan built so far (valid by construction)."""
+    tour = model.solve(rng, iters=params.TOURS_ITERS)
+    planner = TourPlanner(scenario, deadline, N_SCOUTS, {c: s for s, seq in tour.items() for c in seq})
+    order = []
+    for k in range(max((len(seq) for seq in tour.values()), default=0)):
+        order.extend(seq[k] for seq in tour.values() if k < len(seq))
+    by_id = scenario.contact_by_id()
+    rest = sorted((c for c in scenario.contacts if c.cls in (HOSTILE, UNKNOWN) and c.id not in order),
+                  key=lambda c: -c.points)
+    try:
+        for c in [by_id[cid] for cid in order] + rest:
+            try:
+                if c.cls == HOSTILE:
+                    planner.serve_hostile(c)
+                else:
+                    planner.serve_unknown(c)
+            except OutOfTime:
+                raise
+            except Exception:  # a contact that breaks the routing is skipped, never fatal
+                continue
+    except OutOfTime:
+        pass
+    return planner._plan({}), planner.score
+
+
 def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner_cls=None, far: bool = True):
     """One greedy construction; returns the plan built so far (valid by construction) at the deadline."""
     planner = (planner_cls or FastPlanner)(scenario, deadline, n_scouts)
@@ -332,6 +382,21 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     builds = 0  # attempt restarts when the router falls back; FLEET_ITERS counts every build
     last_gain = time.monotonic()
     small = len(scenario.aircraft) <= SMALL_FLEET
+    guided = (params.TOURS and _routing is not None
+              and params.TOURS_MIN_AC <= len(scenario.aircraft) <= params.TOURS_MAX_AC
+              and n_workers > 1 and worker % params.TOURS_EVERY == params.TOURS_EVERY - 1)
+    if guided:
+        model = tours.Model(scenario, skip=lambda c: targets.skip(scenario, c))
+        while time.monotonic() < deadline and (params.FLEET_ITERS <= 0 or builds < params.FLEET_ITERS):
+            try:
+                plan, _ = build_guided(scenario, model, rng, deadline)
+                res = evaluate(scenario, plan)
+            except Exception:
+                res = None
+            if res is not None and res.valid and res.score > best[0]:
+                best = (res.score, plan)
+            builds += 1
+        return best
     while time.monotonic() < deadline and (params.FLEET_ITERS <= 0 or builds < params.FLEET_ITERS):
         if (params.FLEET_ITERS <= 0 and small and attempt >= MIN_BUILDS
                 and time.monotonic() - last_gain > STAGNATION_S):
