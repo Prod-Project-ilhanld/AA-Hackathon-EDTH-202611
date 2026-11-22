@@ -341,6 +341,18 @@ class Policy:
                     if i_am_returning and cur_pm == "return" and k == 0 and dist3(p1, q0) < self.rules.d_sep_m + 1.5:
                         return True
                     break
+            # A peer that just resumed after a hold may stop again any second, and that hold may reach us late:
+            # also check it as held where we predict it now.
+            st = self.peer_state.get(aid)
+            if st is not None and st[2] == "route" and st[0] - st[1] >= 0.5 and t - st[0] <= 5.0:
+                q = self._peer_pos_at(aid, t, t)
+                if q is not None:
+                    for p0, p1 in my_segs:
+                        if _seg_min_dist3(p0, p1, q, q) < d_lim:
+                            d_next = dist3(p1, q)
+                            if self.aircraft_id > aid or (d_next < dist3(p0, q) - 1e-3 and d_next < d_lim):
+                                return True
+                            break
         return False
 
     def _blocking(self, t: float, tau: float, horizon: int = 6, below: Optional[str] = None) -> Optional[str]:
