@@ -42,12 +42,13 @@ def obs(t, tau, inbox=(), sensed=(), mode="route"):
 
 
 RECLASSIFY_C01 = {"kind": "reclassify", "contact": "C01"}
+ZONE_AHEAD = {"kind": "popup_zone", "center": [1100.0, 0.0], "radius_m": 50.0, "top_m": 200.0}   # on L01's way at x = 1100
 
 
 def test_an_aborted_aircraft_hovers_and_flags_its_abort():
     sc, plan = scenario_and_plan(CROSSING)
     p = Policy(sc, plan, "L01")
-    action, msg = p.step(obs(30.0, TAU_AT_800, sensed=[RECLASSIFY_C01]))   # L02 crossed at t = 20: nobody in the way
+    action, msg = p.step(obs(30.0, TAU_AT_800, sensed=[ZONE_AHEAD]))   # L02 crossed at t = 20: nobody in the way
     assert action == {"kind": "hold"}
     assert msg[0] == 4   # status 4: hold while aborted (list message since #23)
 
@@ -55,7 +56,7 @@ def test_an_aborted_aircraft_hovers_and_flags_its_abort():
 def test_an_aborted_aircraft_in_an_on_plan_peers_way_backs_off_within_one_step():
     sc, plan = scenario_and_plan(CROSSING)
     p = Policy(sc, plan, "L01")
-    action, msg = p.step(obs(17.0, TAU_AT_800, sensed=[RECLASSIFY_C01]))   # L02 reaches x = 800 at t = 20
+    action, msg = p.step(obs(17.0, TAU_AT_800, sensed=[ZONE_AHEAD]))   # L02 reaches x = 800 at t = 20
     assert action == {"kind": "return"}
     assert msg[0] == 2   # status 2: return
 
@@ -66,6 +67,14 @@ def test_a_co_effector_aborts_when_it_hears_a_flagged_hold():
     heard = {"from": "L01", "sent_t": 29.0, "payload": {"hd": 1, "u": 29.0, "ab": 1}}
     action, _ = p.step(obs(30.0, 30.0, inbox=[heard]))
     assert action["kind"] != "continue"   # before: it kept flying and waited behind the hovering partner
+
+
+def test_a_reclassified_target_keeps_the_effector_on_plan_until_30_s_short_of_it():
+    sc, plan = scenario_and_plan(CROSSING)
+    p = Policy(sc, plan, "L01")
+    assert p.step(obs(20.0, 20.0, sensed=[RECLASSIFY_C01]))[0] == {"kind": "continue"}   # planned: never in a pop-up
+    action, _ = p.step(obs(31.0, 31.0))
+    assert action["kind"] != "continue" and p._last_mode == "return"                     # 29 s before C01
 
 
 def test_an_aborted_hover_never_expires_into_an_on_plan_belief():

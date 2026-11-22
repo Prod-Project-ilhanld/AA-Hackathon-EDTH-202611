@@ -1,0 +1,120 @@
+L1-0  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 7.3 per aircraft per minute, S_loss 0.985, policy 0.019 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-1  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 35.9 per aircraft per minute, S_loss 0.928, policy 0.018 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-2  events ['popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 29.2 per aircraft per minute, S_loss 0.942, policy 0.028 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.003 ms per call
+L1-3  events ['failure', 'popup_zone', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 8.5 per aircraft per minute, S_loss 0.983, policy 0.011 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L1-4  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 48.2 per aircraft per minute, S_loss 0.904, policy 0.031 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-5  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 14.9 per aircraft per minute, S_loss 0.970, policy 0.016 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-6  events ['failure', 'reclassify', 'popup_zone']
+   yours:     retention 1.000, failed runs 0, messages 8.3 per aircraft per minute, S_loss 0.983, policy 0.013 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L1-7  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 11.5 per aircraft per minute, S_loss 0.977, policy 0.014 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-8  events ['reclassify', 'popup_zone']
+   yours:     retention 1.000, failed runs 0, messages 26.7 per aircraft per minute, S_loss 0.947, policy 0.012 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L1-9  events ['popup_zone', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 7.8 per aircraft per minute, S_loss 0.984, policy 0.012 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.003 ms per call
+L2-0  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 6.9 per aircraft per minute, S_loss 0.986, policy 0.022 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L2-1  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 5.3 per aircraft per minute, S_loss 0.989, policy 0.021 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L2-2  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 32.1 per aircraft per minute, S_loss 0.936, policy 0.024 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L2-3  events ['failure', 'reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 26.0 per aircraft per minute, S_loss 0.948, policy 0.023 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L2-4  events ['popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 37.3 per aircraft per minute, S_loss 0.925, policy 0.031 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.003 ms per call
+L2-5  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 6.3 per aircraft per minute, S_loss 0.987, policy 0.025 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L2-6  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 24.3 per aircraft per minute, S_loss 0.951, policy 0.025 ms per call
+   broadcast: retention 0.500, failed runs 1, messages 60.0 per aircraft per minute, S_loss 0.380, policy 0.002 ms per call
+L2-7  events ['failure', 'popup_zone']
+   yours:     retention 1.000, failed runs 0, messages 27.7 per aircraft per minute, S_loss 0.945, policy 0.020 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L2-8  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 5.5 per aircraft per minute, S_loss 0.989, policy 0.023 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L2-9  events ['popup_zone', 'reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 6.9 per aircraft per minute, S_loss 0.986, policy 0.017 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L3-0  events ['popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 35.3 per aircraft per minute, S_loss 0.929, policy 0.041 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.003 ms per call
+L3-1  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 6.3 per aircraft per minute, S_loss 0.987, policy 0.034 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L3-2  events ['popup_zone', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 42.3 per aircraft per minute, S_loss 0.915, policy 0.073 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.004 ms per call
+L3-3  events ['failure', 'reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 26.2 per aircraft per minute, S_loss 0.948, policy 0.043 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.003 ms per call
+L3-4  events ['popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 14.8 per aircraft per minute, S_loss 0.970, policy 0.033 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.003 ms per call
+L3-5  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 6.2 per aircraft per minute, S_loss 0.988, policy 0.032 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.003 ms per call
+L3-6  events ['popup_zone', 'reclassify']
+   yours:     retention 0.611, failed runs 0, messages 31.7 per aircraft per minute, S_loss 0.547, policy 0.120 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.005 ms per call
+L3-7  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 23.8 per aircraft per minute, S_loss 0.952, policy 0.042 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L3-8  events ['failure', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 11.2 per aircraft per minute, S_loss 0.978, policy 0.017 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L3-9  events ['reclassify', 'popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 22.2 per aircraft per minute, S_loss 0.956, policy 0.047 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.004 ms per call
+L4-0  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 6.0 per aircraft per minute, S_loss 0.988, policy 0.030 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L4-1  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 5.1 per aircraft per minute, S_loss 0.990, policy 0.026 ms per call
+   broadcast: retention 0.500, failed runs 1, messages 60.0 per aircraft per minute, S_loss 0.380, policy 0.003 ms per call
+L4-2  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 27.7 per aircraft per minute, S_loss 0.945, policy 0.054 ms per call
+   broadcast: retention 0.500, failed runs 1, messages 60.0 per aircraft per minute, S_loss 0.380, policy 0.002 ms per call
+L4-3  events ['reclassify', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 11.4 per aircraft per minute, S_loss 0.977, policy 0.034 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.004 ms per call
+L4-4  events ['failure', 'popup_zone', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 3.8 per aircraft per minute, S_loss 0.992, policy 0.031 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.004 ms per call
+L4-5  events ['reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 19.3 per aircraft per minute, S_loss 0.961, policy 0.101 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.003 ms per call
+L4-6  events ['failure', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 14.6 per aircraft per minute, S_loss 0.971, policy 0.062 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.002 ms per call
+L4-7  events ['reclassify', 'reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 27.3 per aircraft per minute, S_loss 0.945, policy 0.082 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.003 ms per call
+L4-8  events ['failure', 'reclassify', 'reclassify']
+   yours:     retention 1.000, failed runs 0, messages 25.3 per aircraft per minute, S_loss 0.949, policy 0.066 ms per call
+   broadcast: retention 0.000, failed runs 2, messages 60.0 per aircraft per minute, S_loss -0.120, policy 0.002 ms per call
+L4-9  events ['popup_zone', 'failure']
+   yours:     retention 1.000, failed runs 0, messages 4.6 per aircraft per minute, S_loss 0.991, policy 0.046 ms per call
+   broadcast: retention 1.000, failed runs 0, messages 60.0 per aircraft per minute, S_loss 0.880, policy 0.004 ms per call
