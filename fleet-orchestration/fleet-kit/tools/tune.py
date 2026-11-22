@@ -111,9 +111,9 @@ def main():
     for lv, sd in cases:
         save_json(generate(lv, sd), os.path.join(work, "%s-%d.json" % (lv, sd)))
     settings = [("", base_iters)] + [(" ".join(v.split()), args.iters) for v in args.var]
-    jobs = []
-    for setting, iters in settings:
-        for lv, sd in cases:
+    jobs = []  # seed-major: a run stopped early still leaves paired results
+    for lv, sd in cases:
+        for setting, iters in settings:
             key = "%s|%s|%d|%d|%d" % (setting, lv, sd, iters, args.workers)
             if key not in cache:
                 jobs.append((key, setting, iters, lv, sd))
