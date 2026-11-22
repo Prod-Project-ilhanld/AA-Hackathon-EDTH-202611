@@ -85,7 +85,7 @@ def chain(args):
     best_s, best_plan, served = build_order(scenario, order, far)
     cur_s, cur_order, cur_served = best_s, order, served
     t_end = time.monotonic() + seconds
-    temp0, n, n_acc = 6.0, 0, 0
+    temp0, n, n_acc = (2.0 if idx % 2 else 6.0), 0, 0
     while time.monotonic() < t_end:
         frac = 1.0 - (t_end - time.monotonic()) / seconds
         temp = temp0 * (1.0 - frac) + 0.05
@@ -110,12 +110,17 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--minutes", type=float, default=20.0)
     ap.add_argument("--chains", type=int, default=4)
+    ap.add_argument("--from-chains", metavar="DIR", help="start every chain from the best order saved in DIR")
     a = ap.parse_args()
     data = json.load(open(a.scenario))
     scenario = P.Scenario.from_dict(data) if hasattr(P.Scenario, "from_dict") else P.parse_scenario(data)
     out_dir = a.out + ".chains"
     os.makedirs(out_dir, exist_ok=True)
     start = default_order(scenario)
+    if a.from_chains:
+        saved = [json.load(open(os.path.join(a.from_chains, f))) for f in os.listdir(a.from_chains) if f.endswith(".json")]
+        if saved:
+            start = max(saved, key=lambda d: d["score"])["order"]
     t0 = time.monotonic()
     s0, plan0, _ = build_order(scenario, start, True)
     print(f"start order: {s0:.1f} in {time.monotonic() - t0:.1f} s per build", flush=True)
