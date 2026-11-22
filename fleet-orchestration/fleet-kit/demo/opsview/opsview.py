@@ -124,7 +124,45 @@ def build_ops(scenario: Any, plan: Optional[dict], model: Dict[str, Any], reason
             ops["feed"].append({"t": e["t"], "kind": "engage", "aid": e["aid"], "cid": cid,
                                 "text": "%s engages %s%s" % (e["aid"], cid, (" · %s served +%g pts" % (cid, info["points"])) if last else "")})
     ops["feed"].sort(key=lambda x: (x["t"], x["kind"], x["aid"]))
+    ops["drones"], ops["outcome"] = drone_outcomes(scenario, model)
     return ops
+
+
+def drone_outcomes(scenario: Any, model: Dict[str, Any]):
+    """Rôle de chaque drone dans le plan, tiré des marques et des contacts servis (exact, aucune supposition).
+
+    strike : a engagé un contact servi. spot : a seulement observé (observation valide) un contact servi.
+    wasted : a observé ou engagé sans contribuer à un contact servi. idle : aucune tâche.
+    `pts` répartit les points d'un contact servi à parts égales entre les drones qui y ont contribué.
+    """
+    served = model.get("served", {})
+    pts = {c.id: c.points for c in scenario.contacts}
+    marks_by: Dict[str, list] = {}
+    for m in model.get("marks", []):
+        marks_by.setdefault(m["aid"], []).append(m)
+    contrib: Dict[str, set] = {}
+    for aid, ms in marks_by.items():
+        for m in ms:
+            if m["contact"] in served and (m["kind"] == "engage" or m.get("ok")):
+                contrib.setdefault(m["contact"], set()).add(aid)
+    drones: Dict[str, Any] = {}
+    summary = {"strike": 0, "spot": 0, "wasted": 0, "idle": 0, "wasted_eff": 0}
+    for a in scenario.aircraft:
+        ms = marks_by.get(a.id, [])
+        good = [m for m in ms if m["contact"] in served and (m["kind"] == "engage" or m.get("ok"))]
+        if not ms:
+            cat = "idle"
+        elif any(m["kind"] == "engage" for m in good):
+            cat = "strike"
+        elif good:
+            cat = "spot"
+        else:
+            cat = "wasted"
+        summary[cat] += 1
+        summary["wasted_eff"] += sum(1 for m in ms if m["kind"] == "engage" and m["contact"] not in served)
+        share = sum(pts.get(m["contact"], 0) / len(contrib[m["contact"]]) for m in {(x["contact"]): x for x in good}.values())
+        drones[a.id] = {"cat": cat, "pts": round(share, 1), "targets": sorted({m["contact"] for m in ms})}
+    return drones, summary
 
 
 class OpsViewer(Viewer):

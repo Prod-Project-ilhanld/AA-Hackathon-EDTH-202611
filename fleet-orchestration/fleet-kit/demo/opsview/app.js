@@ -9,8 +9,8 @@ const acById = {}; M.aircraft.forEach((a) => { acById[a.id] = a; });
 const coById = {}; W.contacts.forEach((c) => { coById[c.id] = c; });
 const N = hasPlan ? M.tracks[M.aircraft[0].id].p.length : 1;
 const THEMES = ["light", "dark", "night"];
-const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light", selC: null, follow: null, script: null,
-  show: { bigdrones: true, zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
+const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light", selC: null, follow: null, script: null, filter: null,
+  show: { outcome: true, bigdrones: true, zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
 (M.layers || []).forEach((l, i) => { state.layers[i] = l.visible !== false; });
 let view = { cx: 0, cy: 0, k: 1 };
 let dirty = true;
@@ -27,6 +27,8 @@ function posAt(id, t) {
 }
 const statusAt = (id, t) => (M.tracks[id] ? M.tracks[id].s[Math.min(Math.floor(fidx(t)), N - 1)] : "g");
 const energyAt = (id, t) => (M.tracks[id] ? M.tracks[id].e[Math.min(Math.floor(fidx(t)), N - 1)] : 0);
+const OUTCOLOR = { strike: "--ok", spot: "--ok", wasted: "--bad", idle: "--muted" };
+const OUTLABEL = { strike: "Strike: engaged a served contact", spot: "Spotter: observed a served contact", wasted: "Wasted: tasked but no served contact", idle: "Idle: no task in this plan" };
 const STATUS = { g: "on the ground", f: "flying", o: "observing", x: "engaged (consumed)", l: "landed", h: "holding", r: "returning", L: "lost (battery)", F: "failed" };
 const typeKey = (a) => (a.type === "scout" ? "scout" : a.sub === "heavy" ? "heavy" : "light");
 const typeLabel = (a) => (a.type === "scout" ? "scout" : a.sub + " effector");
@@ -206,12 +208,20 @@ function drawMap() {
     let ang = -Math.PI / 2;
     if (q && q0 && (Math.abs(q[0] - q0[0]) + Math.abs(q[1] - q0[1])) > 0.5) ang = Math.atan2(-(q[1] - q0[1]), q[0] - q0[0]);
     const size = (a.type === "scout" ? 7 : a.sub === "heavy" ? 8.5 : 6.5) * (state.show.bigdrones ? 1.5 : 1);
+    const oc = OPS && OPS.drones[a.id], fl = state.filter && oc ? oc.cat !== state.filter && !(state.filter === "good" && (oc.cat === "strike" || oc.cat === "spot")) : false;
     if (st === "g" || st === "l") { ctx.globalAlpha = 0.55; }
+    if (fl) ctx.globalAlpha = 0.12;
     chevron(ctx, X, Y, size, ang); ctx.lineJoin = "round"; ctx.strokeStyle = css("--map"); ctx.lineWidth = 3.6; ctx.stroke(); ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1;
     if (st === "o") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke(); }
     if (st === "h") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = css("--warn"); ctx.lineWidth = 2.2; ctx.stroke(); ctx.fillStyle = css("--warn"); ctx.fillRect(X - 3, Y - size - 11, 2, 7); ctx.fillRect(X + 1, Y - size - 11, 2, 7); }
     if (st === "r") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = css("--civilian"); ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]); }
     if (st === "L" || st === "F") { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X - 7, Y - 7); ctx.lineTo(X + 7, Y + 7); ctx.moveTo(X + 7, Y - 7); ctx.lineTo(X - 7, Y + 7); ctx.stroke(); }
+    if (oc && state.show.outcome && !fl) {
+      const bx = X + size * 0.9 + 3, by = Y - size * 0.9 - 3, bc = css(OUTCOLOR[oc.cat]);
+      ctx.beginPath(); ctx.arc(bx, by, 4.2, 0, 6.2832); ctx.fillStyle = css("--map"); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, 3, 0, 6.2832); if (oc.cat === "idle") { ctx.strokeStyle = bc; ctx.lineWidth = 1.4; ctx.stroke(); } else { ctx.fillStyle = bc; ctx.fill(); }
+    }
+    if (state.filter && !fl) { ctx.beginPath(); ctx.arc(X, Y, size + 12, 0, 6.2832); ctx.strokeStyle = css(OUTCOLOR[oc.cat]); ctx.lineWidth = 2; ctx.stroke(); }
     if (state.sel === a.id || state.hover === a.id) { ctx.beginPath(); ctx.arc(X, Y, size + 9, 0, 6.2832); ctx.strokeStyle = css("--text"); ctx.lineWidth = 1.5; ctx.stroke(); }
     if (state.labels && (state.sel === a.id || view.k * 400 > 120)) { ctx.fillStyle = css("--text"); ctx.font = "10.5px 'Space Grotesk', system-ui, sans-serif"; ctx.fillText(a.id, X + 9, Y - 8); }
   });
@@ -260,27 +270,65 @@ function drawTimeline() {
   if (hasPlan) plan.violations.forEach((v) => { if (v.t === null || v.t === undefined) return; const x = tx(v.t, w, pad); ctx.fillStyle = css("--bad"); ctx.beginPath(); ctx.moveTo(x, y + 4); ctx.lineTo(x - 4, y + 12); ctx.lineTo(x + 4, y + 12); ctx.closePath(); ctx.fill(); });
   const X = tx(state.t, w, pad); ctx.fillStyle = css("--text"); ctx.fillRect(X - 1, 3, 2, h - 6);
 }
+// ---------- bottom strip: fleet activity (default) or altitude ----------
+let stripMode = "activity", ACT = null;
+function activity() {
+  if (ACT) return ACT; ACT = { f: [], o: [], hr: [], x: [], max: 1 };
+  for (let i = 0; i < N; i++) { let f = 0, o = 0, hr = 0, x = 0;
+    M.aircraft.forEach((a) => { const c = M.tracks[a.id].s[i]; if (c === "f") f++; else if (c === "o") o++; else if (c === "h" || c === "r") hr++; else if (c === "x") x++; });
+    ACT.f.push(f); ACT.o.push(o); ACT.hr.push(hr); ACT.x.push(x); ACT.max = Math.max(ACT.max, f + o + hr); }
+  return ACT;
+}
+function stripFrame(ctx, w, h, ymax, yfmt, ystep) {
+  const padL = 8, padR = 8, padT = 22, padB = 16;
+  const X = (t) => padL + ((t - T0) / (T1 - T0)) * (w - padL - padR), Y = (v) => h - padB - (v / ymax) * (h - padT - padB);
+  ctx.font = "10px 'Space Grotesk', system-ui, sans-serif"; ctx.lineWidth = 1;
+  for (let v = ystep; v <= ymax + 1e-6; v += ystep) { ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke(); ctx.fillStyle = css("--muted"); ctx.textAlign = "left"; ctx.fillText(yfmt(v), padL + 2, v >= ymax - 1e-6 ? Y(v) + 10 : Y(v) - 2); }
+  const steps = [30, 60, 120, 300, 600, 900, 1800, 3600], st = steps.find((q) => (T1 - T0) / q <= 12) || 3600;
+  ctx.textAlign = "center"; ctx.fillStyle = css("--muted");
+  for (let t = Math.ceil(T0 / st) * st; t <= T1; t += st) { ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(X(t), padT); ctx.lineTo(X(t), h - padB); ctx.stroke(); ctx.textAlign = X(t) < 30 ? "left" : "center"; ctx.fillText(hplus(t).slice(2), X(t) < 30 ? padL : X(t), h - 4); }
+  ctx.textAlign = "left"; return { X, Y, padL, padR, padT, padB };
+}
+function stripLegend(ctx, items, x0, y) {
+  let x = x0; items.forEach(([col, txt, dash]) => { ctx.fillStyle = col; ctx.strokeStyle = col; if (dash) { ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - 3); ctx.lineTo(x + 10, y - 3); ctx.stroke(); } else ctx.fillRect(x, y - 8, 9, 9); x += 14; ctx.fillStyle = css("--text"); ctx.fillText(txt, x, y); x += ctx.measureText(txt).width + 14; });
+}
+function drawActivity(ctx, w, h) {
+  const A = activity(), ymax = Math.ceil(A.max / 10) * 10 || 10, F = stripFrame(ctx, w, h, ymax, (v) => String(v), ymax > 40 ? 20 : 10), { X, Y } = F;
+  const layers = [["hr", css("--warn")], ["o", css("--ok")], ["f", css("--muted")]];
+  const tops = []; for (let i = 0; i < N; i++) tops.push([A.f[i], A.f[i] + A.o[i], A.f[i] + A.o[i] + A.hr[i]]);
+  [[2, "hr"], [1, "o"], [0, "f"]].forEach(([k, key]) => {
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0)); for (let i = 0; i < N; i++) ctx.lineTo(X(i * TM.dt), Y(tops[i][k])); ctx.lineTo(X((N - 1) * TM.dt), Y(0)); ctx.closePath();
+    ctx.fillStyle = layers.find((l) => l[0] === key)[1]; ctx.fill(); });
+  M.marks.forEach((m) => { if (m.kind !== "engage") return; const x = X(m.t); ctx.strokeStyle = css("--hostile"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, F.padT - 2); ctx.lineTo(x, F.padT + 6); ctx.stroke(); });
+  const i = Math.min(Math.floor(fidx(state.t)), N - 1);
+  ctx.font = "10.5px 'Space Grotesk', system-ui, sans-serif";
+  stripLegend(ctx, [[css("--muted"), "in transit " + A.f[i]], [css("--ok"), "observing " + A.o[i]], [css("--warn"), "returning or holding " + A.hr[i]], [css("--hostile"), "engaged so far " + A.x[i]]], F.padL + 2, 12);
+  ctx.fillStyle = css("--text"); ctx.fillRect(X(state.t) - 1, F.padT, 2, h - F.padT - F.padB);
+}
+function drawAltitude(ctx, w, h) {
+  const zmax = Math.max(W.rules.z_max * 1.15, 40), F = stripFrame(ctx, w, h, zmax, (v) => v + " m", 50), { X, Y } = F;
+  ctx.fillStyle = css("--warn"); ctx.globalAlpha = 0.09; ctx.fillRect(F.padL, Y(W.rules.z_min), w - F.padL - F.padR, Y(0) - Y(W.rules.z_min)); ctx.fillRect(F.padL, F.padT, w - F.padL - F.padR, Y(W.rules.z_max) - F.padT); ctx.globalAlpha = 1;
+  ctx.strokeStyle = css("--warn"); ctx.setLineDash([4, 4]); ctx.lineWidth = 1; [W.rules.z_min, W.rules.z_max].forEach((z) => { ctx.beginPath(); ctx.moveTo(F.padL, Y(z)); ctx.lineTo(w - F.padR, Y(z)); ctx.stroke(); }); ctx.setLineDash([]);
+  ctx.fillStyle = css("--warn"); ctx.textAlign = "right"; ctx.fillText("ceiling " + W.rules.z_max + " m", w - F.padR - 2, Y(W.rules.z_max) + 11); ctx.fillText("floor " + W.rules.z_min + " m (cruise band between)", w - F.padR - 2, Y(W.rules.z_min) - 3); ctx.textAlign = "left";
+  const hi = new Set(); if (state.sel) hi.add(state.sel); else if (state.selC && OPS && OPS.contacts[state.selC]) { const c = OPS.contacts[state.selC]; c.obs.forEach((o) => hi.add(o.aid)); c.eng.forEach((e) => hi.add(e.aid)); }
+  const to = Math.floor(fidx(T1)), line = (a, wd, al) => { const tr = M.tracks[a.id]; ctx.beginPath(); let go = false;
+    for (let i = 0; i <= to; i++) { const p = tr.p[i]; if (!p) { go = false; continue; } const x = X(i * TM.dt), y = Y(p[2]); if (!go) { ctx.moveTo(x, y); go = true; } else ctx.lineTo(x, y); }
+    ctx.strokeStyle = css("--" + typeKey(a)); ctx.lineWidth = wd; ctx.globalAlpha = al; ctx.stroke(); ctx.globalAlpha = 1; };
+  M.aircraft.forEach((a) => { if (!hi.has(a.id)) line(a, 1, hi.size ? 0.1 : 0.22); });
+  M.aircraft.forEach((a) => { if (hi.has(a.id)) { line(a, 2.6, 1); M.marks.filter((m) => m.aid === a.id).forEach((m) => { const t = m.kind === "engage" ? m.t : m.t1, p = posAt(a.id, t); if (p) { ctx.fillStyle = css(m.kind === "engage" ? "--hostile" : "--ok"); ctx.beginPath(); ctx.arc(X(t), Y(p[2]), 4, 0, 6.2832); ctx.fill(); } }); } });
+  ctx.font = "10.5px 'Space Grotesk', system-ui, sans-serif"; ctx.fillStyle = css("--text");
+  ctx.fillText(hi.size ? "altitude of " + [...hi].join(", ") + " (dots: observation end, engagement)" : "altitude of every drone · click a drone or a contact to isolate it", F.padL + 2, 12);
+  ctx.fillStyle = css("--text"); ctx.fillRect(X(state.t) - 1, F.padT, 2, h - F.padT - F.padB);
+}
 function drawAlt() {
   const { ctx, w, h } = fitCanvas($("alt")); ctx.clearRect(0, 0, w, h);
-  const padL = 34, padR = 8, padT = 6, padB = 16, zmax = Math.max(W.rules.z_max * 1.15, 40);
-  const X = (t) => padL + ((t - T0) / (T1 - T0)) * (w - padL - padR), Y = (z) => h - padB - (z / zmax) * (h - padT - padB);
-  ctx.fillStyle = css("--warn"); ctx.globalAlpha = 0.07; ctx.fillRect(padL, Y(W.rules.z_min), w - padL - padR, Y(0) - Y(W.rules.z_min)); ctx.fillRect(padL, padT, w - padL - padR, Y(W.rules.z_max) - padT); ctx.globalAlpha = 1;
-  ctx.strokeStyle = css("--grid"); ctx.fillStyle = css("--muted"); ctx.font = "10px 'Space Grotesk', system-ui, sans-serif"; ctx.lineWidth = 1;
-  [0, W.rules.z_min, W.rules.z_max].forEach((z) => { ctx.beginPath(); ctx.moveTo(padL, Y(z)); ctx.lineTo(w - padR, Y(z)); ctx.stroke(); ctx.fillText(Math.round(z) + " m", 2, Y(z) + 3); });
-  if (!hasPlan) { ctx.fillText("no plan loaded", padL + 8, h / 2); return; }
-  const to = Math.floor(fidx(T1));
-  M.aircraft.forEach((a) => {
-    const tr = M.tracks[a.id], isSel = state.sel === a.id; ctx.beginPath(); let go = false;
-    for (let i = 0; i <= to; i++) { const p = tr.p[i]; if (!p) { go = false; continue; } const x = X(i * TM.dt), y = Y(p[2]); if (!go) { ctx.moveTo(x, y); go = true; } else ctx.lineTo(x, y); }
-    ctx.strokeStyle = css("--" + typeKey(a)); ctx.lineWidth = isSel ? 2.4 : 1; ctx.globalAlpha = state.sel ? (isSel ? 1 : 0.18) : 0.55; ctx.stroke(); ctx.globalAlpha = 1;
-  });
-  ctx.fillStyle = css("--muted"); ctx.fillText("altitude over time" + (state.sel ? " · " + state.sel + " highlighted" : ""), padL + 4, padT + 9);
-  ctx.fillStyle = css("--text"); ctx.fillRect(X(state.t) - 1, padT, 2, h - padT - padB);
+  if (!hasPlan) { ctx.fillStyle = css("--muted"); ctx.fillText("no plan loaded", 12, h / 2); return; }
+  if (stripMode === "activity") drawActivity(ctx, w, h); else drawAltitude(ctx, w, h);
 }
 
 // ---------- side panel ----------
 const TABS = [["aircraft", "Aircraft"], ["contacts", "Contacts"]];
-if (OPS) TABS.push(["targets", "Why"], ["feed", "Feed"]);
+if (OPS) TABS.push(["targets", "Why"], ["fleet", "Fleet"], ["feed", "Feed"]);
 TABS.push(["issues", "Issues"]);
 if (link) TABS.push(["link", "Link"]);
 TABS.push(["layers", "Layers"]);
@@ -310,8 +358,16 @@ function buildCard() {
 function gaugesHtml() {
   if (!OPS) return "";
   const names = { scout: "Scouts", light: "Light effectors", heavy: "Heavy effectors" };
-  return `<div class="live" id="live"></div><div class="gauges">${["scout", "light", "heavy"].filter((k) => OPS.fleet[k]).map((k) => { const f = OPS.fleet[k]; return `<div class="g"><span>${names[k]}</span><b>${f.used}/${f.total}</b><i><u style="width:${100 * f.used / Math.max(1, f.total)}%;background:var(--${k})"></u></i></div>`; }).join("")}</div>`;
+  return `<div class="live" id="live"></div>${outcomeHtml()}<div class="gauges">${["scout", "light", "heavy"].filter((k) => OPS.fleet[k]).map((k) => { const f = OPS.fleet[k]; return `<div class="g"><span>${names[k]}</span><b>${f.used}/${f.total}</b><i><u style="width:${100 * f.used / Math.max(1, f.total)}%;background:var(--${k})"></u></i></div>`; }).join("")}</div>`;
 }
+function outcomeHtml() {
+  const o = OPS.outcome, good = o.strike + o.spot, n = M.aircraft.length, f = state.filter;
+  const seg = (k, v, lab) => `<button class="oc ${k} ${f === k ? "on" : ""}" data-oc="${k}" title="${esc(lab)}"><i></i><b>${v}</b><span>${k === "good" ? "useful" : k}</span></button>`;
+  return `<div class="outcome"><div class="obar"><u class="u-good" style="width:${100 * good / n}%"></u><u class="u-wasted" style="width:${100 * o.wasted / n}%"></u><u class="u-idle" style="width:${100 * o.idle / n}%"></u></div>
+    <div class="ocs">${seg("good", good, "Drones that engaged or observed a served contact")}${seg("wasted", o.wasted, "Drones tasked without serving a contact")}${seg("idle", o.idle, "Drones with no task")}</div>
+    <div class="sub">${o.strike} strike · ${o.spot} spotter${o.wasted_eff ? ` · <b style="color:var(--bad)">${o.wasted_eff} effector${o.wasted_eff > 1 ? "s" : ""} spent for nothing (−${10 * o.wasted_eff})</b>` : " · no effector wasted"}. Click to highlight on the map.</div></div>`;
+}
+function setFilter(k) { state.filter = state.filter === k ? null : k; dirty = true; buildCard(); updateLive(); }
 function updateLive() {
   const el = $("live"); if (!el || !hasPlan || link) return;
   const s = liveScore(state.t);
@@ -335,6 +391,8 @@ function buildPanels() {
     mk("targets", `<div id="ccard"></div><table class="tt"><thead><tr><th>Contact</th><th>Pts</th><th>Verdict</th></tr></thead><tbody>${rows.map(([id, i]) => `<tr class="row" data-c="${id}"><td><span class="dot" style="background:var(--${i.cls})"></span>${id} <span class="sub">${i.cls}</span></td><td>${i.points || ""}</td><td class="v-${stat(i)}">${statLabel[stat(i)]}</td></tr>`).join("")}</tbody></table>`).onclick = (e) => {
       const act = e.target.closest("[data-act]"); if (act) { if (act.dataset.act === "replay") replay(act.dataset.c); else if (act.dataset.act === "goto") setT(Math.max(0, +act.dataset.t - 3)); else if (act.dataset.act === "air") select(act.dataset.a); return; }
       const r = e.target.closest("tr[data-c]"); if (r) selectContact(r.dataset.c, false); };
+    const order = { strike: 0, spot: 1, wasted: 2, idle: 3 }, dl = Object.entries(OPS.drones).sort((a, b) => order[a[1].cat] - order[b[1].cat] || b[1].pts - a[1].pts || (a[0] < b[0] ? -1 : 1));
+    mk("fleet", `<table class="tt"><thead><tr><th>Drone</th><th>Role</th><th>Pts share</th><th>Targets</th></tr></thead><tbody>${dl.map(([id, d]) => `<tr class="row" data-a="${id}"><td><span class="dot" style="background:var(--${typeKey(acById[id])})"></span>${id}</td><td class="r-${d.cat}"><i class="ob ${d.cat}"></i>${d.cat === "strike" ? "strike" : d.cat === "spot" ? "spotter" : d.cat}</td><td>${d.pts ? d.pts : ""}</td><td class="sub">${d.targets.join(" ")}</td></tr>`).join("")}</tbody></table><div class="sub" style="padding:6px">Points share: each served contact's points split equally among the drones that served it (engaged, or observed validly).</div>`).onclick = (e) => { const r = e.target.closest("tr[data-a]"); if (r) select(r.dataset.a === state.sel ? null : r.dataset.a); };
     mk("feed", `<div class="feed">${OPS.feed.map((f) => `<div class="fev" data-t="${f.t}" data-c="${f.cid}"><span class="ft">${hplus(f.t)}</span><i class="fk ${f.kind}"></i><span>${esc(f.text)}</span></div>`).join("")}</div>`).onclick = (e) => {
       const r = e.target.closest(".fev"); if (!r) return; setT(Math.max(0, +r.dataset.t - 3)); selectContact(r.dataset.c, true); };
   }
@@ -343,7 +401,7 @@ function buildPanels() {
     const r = e.target.closest(".issue"); if (!r) return; const v = issues[+r.dataset.i]; if (v.t !== null && v.t !== undefined) setT(Math.max(0, v.t - 2)); const id = (v.pair && v.pair[0]) || v.aircraft; if (id) select(id); };
   if (link) mk("link", `<div class="sub" style="padding:6px">Cut at t = ${link.t_loss} s. Events (click to seek):</div>${link.events.map((e) => `<div class="issue" data-t="${e.t}"><b style="color:var(--warn)">${e.kind}</b> t = ${e.t}${e.contact ? " · " + e.contact : ""}${e.aircraft ? " · " + e.aircraft : ""}${e.radius_m ? " · r " + e.radius_m + " m" : ""}</div>`).join("")}
     <div class="sub" style="padding:8px 6px 2px">Messages sent up to now (last 12), grey = not delivered to anyone:</div><div class="log" id="msglog"></div>`).onclick = (e) => { const r = e.target.closest(".issue"); if (r) setT(Math.max(0, +r.dataset.t - 3)); };
-  const flags = [["bigdrones", "Large drone icons"], ["zones", "No-fly zones"], ["protect", "Protected areas"], ["ranges", "Observation and collateral ranges"], ["homes", "Home pads"], ["routes", "Trails and routes"], ["marks", "Observation beams and engagement flashes"]];
+  const flags = [["outcome", "Outcome badge on drones (green useful, red wasted, grey idle)"], ["bigdrones", "Large drone icons"], ["zones", "No-fly zones"], ["protect", "Protected areas"], ["ranges", "Observation and collateral ranges"], ["homes", "Home pads"], ["routes", "Trails and routes"], ["marks", "Observation beams and engagement flashes"]];
   if (link) flags.push(["links", "Message links"]);
   const L = mk("layers", `<div class="layers"><h4>Map</h4>${flags.map(([k, n]) => `<label><input type="checkbox" data-f="${k}" ${state.show[k] ? "checked" : ""}> ${n}</label>`).join("")}
     <h4>Trails</h4><label><input type="radio" name="tr" value="all" checked> all aircraft (last 60 s)</label><label><input type="radio" name="tr" value="selected"> selected or hovered only</label><label><input type="radio" name="tr" value="none"> none</label>
@@ -383,6 +441,7 @@ function buildHud() {
   const a = acById[id];
   const tasks = M.marks.filter((m) => m.aid === id).map((m) => `<div class="tk" data-t0="${m.kind === "observe" ? m.t1 : m.t}" data-c="${m.contact}">${m.kind === "observe" ? "observe " + m.contact + " · " + hplus(m.t0) + "–" + hplus(m.t1) : "engage " + m.contact + " · " + hplus(m.t)}</div>`).join("");
   el.innerHTML = `<div class="hh"><b>${id}</b><span class="sub">${typeLabel(a)}</span><button id="fol" title="Follow this aircraft (g)">Follow</button><button id="hx" class="ghost" title="Close (Esc)">×</button></div>
+    <div class="hr">${OPS && OPS.drones[id] ? `<span class="rl ${OPS.drones[id].cat}">${OUTLABEL[OPS.drones[id].cat]}</span>${OPS.drones[id].pts ? ` · <b>${OPS.drones[id].pts}</b> pts share` : ""}` : ""}</div>
     <div class="hr"><span data-hs></span></div><div class="hr">alt <b data-hz></b> · speed <b data-hv></b> · energy <b data-he></b></div>
     <div class="tks">${tasks || '<div class="sub">No task in this plan.</div>'}</div>`;
   el.style.display = "block";
@@ -510,8 +569,10 @@ function init() {
   $("speeds").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; setSpeed(+b.dataset.s); };
   $("play").onclick = togglePlay; $("png").onclick = savePng; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
   $("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").hidden = true; };
-  if (!hasPlan) { $("transport").style.display = "none"; $("alt").style.display = "none"; }
-  buildCard(); buildTabs(); buildPanels(); renderCcard(); legend(); bindMap(); bindScrub($("tl"), 8); bindScrub($("alt"), 0);
+  if (!hasPlan) { $("transport").style.display = "none"; $("altwrap").style.display = "none"; }
+  $("card").onclick = (e) => { const b = e.target.closest("[data-oc]"); if (b) setFilter(b.dataset.oc); };
+  buildCard(); buildTabs(); buildPanels(); renderCcard(); legend(); bindMap(); bindScrub($("tl"), 8); bindScrub($("alt"), 8);
+  $("altmode").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; stripMode = b.dataset.m; document.querySelectorAll("#altmode button").forEach((x) => x.classList.toggle("on", x === b)); dirty = true; };
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT") return; const k = e.key;
     if (k === " ") { e.preventDefault(); togglePlay(); } else if (k === "ArrowRight") setT(state.t + (e.shiftKey ? 10 : 1)); else if (k === "ArrowLeft") setT(state.t - (e.shiftKey ? 10 : 1));

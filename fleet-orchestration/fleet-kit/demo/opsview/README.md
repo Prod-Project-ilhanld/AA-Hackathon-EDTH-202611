@@ -30,6 +30,9 @@ Les calques de `Viewer.layer(...)` marchent à l'identique.
 | Onglet **Feed** | fil d'événements cliquable (observations, engagements, points gagnés) |
 | HUD d'un drone | rôle, statut, altitude, vitesse, batterie, tâches ; bouton **Follow** (touche G) |
 | **Replay engagement** | zoom sur le contact et lecture à 1× depuis 18 s avant le premier engagement |
+| Décompte des drones | utiles (strike ou spotter), gaspillés, inactifs ; clic = surbrillance sur la carte ; pastille verte, rouge ou creuse sur chaque drone |
+| Onglet **Fleet** | rôle de chaque drone, part de points (points d'un contact servi répartis à parts égales entre les drones qui l'ont servi) |
+| Bandeau du bas | **Activity** : drones en transit, en observation, en retour, engagés, à l'instant courant ; **Altitude** : un drone ou un contact isolé, bande 30 à 150 m |
 | Touches | N et P : événement suivant ou précédent ; S : export PNG de la carte |
 
 ## Honnêteté des données

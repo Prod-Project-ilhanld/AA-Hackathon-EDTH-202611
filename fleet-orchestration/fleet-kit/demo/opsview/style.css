@@ -50,7 +50,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 360px}
 #play:hover{filter:brightness(1.08)}
 #clock{min-width:112px;font:12px var(--mono);color:var(--muted)}
 #tl{flex:1;height:36px;min-width:0;cursor:pointer;touch-action:none}
-#alt{height:104px;width:100%;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer}
+#alt{height:128px;width:100%;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer}
 #side{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--border);background:var(--panel)}
 #card{padding:12px 14px;border-bottom:1px solid var(--border)}
 .pill{display:inline-block;padding:1px 9px;border-radius:4px;font-weight:500;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border:1px solid currentColor}
@@ -168,3 +168,16 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:5px 16px;bord
 #card .big{font-size:34px}
 #legend{top:auto;bottom:30px}
 .acts{margin:0 0 8px}
+
+.outcome{margin-top:10px}.obar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--panel2)}
+.obar u{display:block;height:100%}.u-good{background:var(--ok)}.u-wasted{background:var(--bad)}.u-idle{background:var(--muted);opacity:.55}
+.ocs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 4px}
+.oc{display:flex;align-items:baseline;gap:5px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text);cursor:pointer;font:inherit;font-size:11px}
+.oc b{font-size:15px;font-variant-numeric:tabular-nums}.oc span{color:var(--muted)}.oc i{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.oc.good i{background:var(--ok)}.oc.wasted i{background:var(--bad)}.oc.idle i{border:1.5px solid var(--muted)}
+.oc.on{border-color:var(--text);box-shadow:0 0 0 1px var(--text)}
+.ob{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.ob.strike,.ob.spot{background:var(--ok)}.ob.wasted{background:var(--bad)}.ob.idle{border:1.5px solid var(--muted)}
+.r-wasted{color:var(--bad)}.r-idle{color:var(--muted)}.rl.strike,.rl.spot{color:var(--ok)}.rl.wasted{color:var(--bad)}.rl.idle{color:var(--muted)}
+#altwrap{position:relative}#altmode{position:absolute;top:4px;right:8px;display:flex;gap:2px;z-index:2}
+#altmode button{font:inherit;font-size:11px;padding:2px 8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;border-radius:4px}
+#altmode button.on{color:var(--text);border-color:var(--text)}

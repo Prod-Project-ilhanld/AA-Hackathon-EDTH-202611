@@ -88,6 +88,35 @@ def test_a_provided_reason_is_used():
     assert got["reason"]["cat"] == "concurrence" and "resource competition" in got["reason"]["text"]
 
 
+def test_drone_outcomes_cover_the_fleet_and_match_the_effector_count(case):
+    sc, plan = case
+    m = opsview.OpsViewer(sc, plan).model()
+    ops = m["ops"]
+    assert set(ops["drones"]) == {a.id for a in sc.aircraft}
+    o = ops["outcome"]
+    assert o["strike"] + o["spot"] + o["wasted"] + o["idle"] == len(sc.aircraft)
+    engages = [k for k in m["marks"] if k["kind"] == "engage"]
+    assert len(engages) == m["plan"]["effectors"]
+    assert o["wasted_eff"] == sum(1 for k in engages if k["contact"] not in m["served"])
+    total = sum(d["pts"] for d in ops["drones"].values())
+    assert abs(total - sum(c["points"] for c in ops["contacts"].values() if c["served_t"] is not None)) < 0.1 * len(ops["drones"])
+
+
+def test_a_tasked_drone_that_serves_nothing_is_wasted_and_its_effector_counted():
+    class A:
+        def __init__(self, i): self.id = i
+    class C:
+        def __init__(self, i, p): self.id, self.points = i, p
+    sc = type("S", (), {"aircraft": [A("S1"), A("L1"), A("L2"), A("L3")], "contacts": [C("C1", 50), C("C2", 30)]})()
+    model = {"served": {"C1": 100.0}, "marks": [
+        {"aid": "S1", "contact": "C1", "kind": "observe", "t0": 10, "t1": 30, "ok": True},
+        {"aid": "L1", "contact": "C1", "kind": "engage", "t": 100.0},
+        {"aid": "L2", "contact": "C2", "kind": "engage", "t": 120.0}]}
+    drones, o = opsview.drone_outcomes(sc, model)
+    assert [drones[k]["cat"] for k in ("S1", "L1", "L2", "L3")] == ["spot", "strike", "wasted", "idle"]
+    assert o["wasted_eff"] == 1 and drones["S1"]["pts"] == 25.0 and drones["L2"]["pts"] == 0
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="node n'est pas installé")
 def test_the_page_script_is_valid_javascript():
     proc = subprocess.run(["node", "--check", str(OPS / "app.js")], capture_output=True, text=True)
