@@ -39,6 +39,7 @@ import params  # noqa: E402       every tunable number and flag
 import deconflict  # noqa: E402  starter: R8 departure scheduler (off by default)
 import targets  # noqa: E402     starter: which hostiles to try, priorities (off by default)
 import scouts  # noqa: E402      scout tours for the unknowns (off by default)
+import tours  # noqa: E402       tours-first model: which scout observes what, in which order
 
 try:  # routing module of the team (3D minimum-energy routes); the planner works without it
     from fk.baseline import EFFECTOR_LAYERS
@@ -73,6 +74,12 @@ class FastPlanner(_Planner):
     def _check_time(self) -> None:
         if time.monotonic() > self.deadline:
             raise OutOfTime()
+
+    def _scouts_for(self, contact: Contact) -> List[Aircraft]:
+        """Every scout, in the order they are tried for `contact`: nearest home first."""
+        scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
+        scouts.sort(key=lambda s: hdist(s.home, contact.pos))
+        return scouts
 
     def _scout_candidates(self, contact: Contact, limit: int = 0) -> List[Aircraft]:
         scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
@@ -185,14 +192,13 @@ class FastPlanner(_Planner):
                 return False
             pool[sub] = free[:n]
         effectors = [a for sub in sorted(pool) for a in pool[sub]]
-        scouts = [a for a in sc.aircraft if a.type == SCOUT]
-        scouts.sort(key=lambda s: hdist(s.home, contact.pos))
+        scouts = self._scouts_for(contact)
         # tier 1: the nearest scouts with the full set of options; tier 2: the others, plain options only
         tiers = ((scouts[:self.n_scouts], (0.0, 60.0, -60.0), (0.0, 7.0)),
                  (scouts[self.n_scouts:] if self.far else [], (0.0,), (0.0, 7.0)))
         for cands, angles, shifts in tiers:
             for scout in cands:
-                for z in SCOUT_LAYERS:
+                for z in params.SCOUT_LEVELS:
                     for angle in angles:
                         for dep_shift in shifts:
                             built = self._add_observation(scout, contact, z, angle, dep_shift)
@@ -216,11 +222,23 @@ class RoutedPlanner(FastPlanner):
         self.eng = _routing.get_engine(scenario)
         self.layers = (None,) + tuple(EFFECTOR_LAYERS)
 
+    def _latest_ends(self, tasks):
+        """Latest observation end of each task already struck: its first engagement minus the R4 margin."""
+        out = {}
+        margin = self.sc.rules.confirm_margin_s
+        for t in tasks:
+            engages = [r[-1]["t"] for r in self.routes.values()
+                       if r and r[-1].get("action") == "engage" and r[-1].get("target") == t.id]
+            if engages:
+                out[t.id] = min(engages) - margin
+        return out or None
+
     def _add_observation(self, scout, contact, z, angle, dep_shift):
         tasks = self.tasks[scout.id] + [contact]
+        latest = self._latest_ends(tasks[:-1]) if params.LATEST_ENDS else None
         try:
             route = _routing.build_scout_route(scout, tasks, self.sc, z_layer=z, depart_shift=dep_shift,
-                                               engine=self.eng, angle_offset_deg=angle)
+                                               engine=self.eng, angle_offset_deg=angle, latest_ends=latest)
         except Exception:  # noqa: BLE001  a route that cannot be built is simply not tried
             route = None
         return (tasks, route) if route is not None else None
@@ -259,6 +277,50 @@ class RoutedPlanner(FastPlanner):
                         return True
         return False
 
+
+
+class TourPlanner(RoutedPlanner):
+    """RoutedPlanner that tries first the scout a tours-first model planned for each contact (tours.py)."""
+
+    def __init__(self, scenario: Scenario, deadline: float, n_scouts: int, hint: Dict[str, str]):
+        super().__init__(scenario, deadline, n_scouts)
+        self.hint = hint
+
+    def _scouts_for(self, contact: Contact) -> List[Aircraft]:
+        planned = self.hint.get(contact.id)
+        scouts = [a for a in self.sc.aircraft if a.type == SCOUT]
+        scouts.sort(key=lambda s: (s.id != planned, hdist(s.home, contact.pos)))
+        return scouts
+
+    def _scout_candidates(self, contact: Contact, limit: int = 0) -> List[Aircraft]:
+        return self._scouts_for(contact)[:limit or self.n_scouts]
+
+
+def build_guided(scenario: Scenario, model, rng: random.Random, deadline: float):
+    """One construction that follows the tours of `model` (contacts in tour order, planned scout first), then
+    serves the contacts left out in points order; returns the plan built so far (valid by construction)."""
+    tour = model.solve(rng, iters=params.TOURS_ITERS)
+    planner = TourPlanner(scenario, deadline, N_SCOUTS, {c: s for s, seq in tour.items() for c in seq})
+    order = []
+    for k in range(max((len(seq) for seq in tour.values()), default=0)):
+        order.extend(seq[k] for seq in tour.values() if k < len(seq))
+    by_id = scenario.contact_by_id()
+    rest = sorted((c for c in scenario.contacts if c.cls in (HOSTILE, UNKNOWN) and c.id not in order),
+                  key=lambda c: -c.points)
+    try:
+        for c in [by_id[cid] for cid in order] + rest:
+            try:
+                if c.cls == HOSTILE:
+                    planner.serve_hostile(c)
+                else:
+                    planner.serve_unknown(c)
+            except OutOfTime:
+                raise
+            except Exception:  # a contact that breaks the routing is skipped, never fatal
+                continue
+    except OutOfTime:
+        pass
+    return planner._plan({}), planner.score
 
 
 def build(scenario: Scenario, order_key, deadline: float, n_scouts: int, planner_cls=None, far: bool = True):
@@ -320,6 +382,21 @@ def _search(scenario: Scenario, deadline: float, worker: int, n_workers: int):
     builds = 0  # attempt restarts when the router falls back; FLEET_ITERS counts every build
     last_gain = time.monotonic()
     small = len(scenario.aircraft) <= SMALL_FLEET
+    guided = (params.TOURS and _routing is not None
+              and params.TOURS_MIN_AC <= len(scenario.aircraft) <= params.TOURS_MAX_AC
+              and n_workers > 1 and worker % params.TOURS_EVERY == params.TOURS_EVERY - 1)
+    if guided:
+        model = tours.Model(scenario, skip=lambda c: targets.skip(scenario, c))
+        while time.monotonic() < deadline and (params.FLEET_ITERS <= 0 or builds < params.FLEET_ITERS):
+            try:
+                plan, _ = build_guided(scenario, model, rng, deadline)
+                res = evaluate(scenario, plan)
+            except Exception:
+                res = None
+            if res is not None and res.valid and res.score > best[0]:
+                best = (res.score, plan)
+            builds += 1
+        return best
     while time.monotonic() < deadline and (params.FLEET_ITERS <= 0 or builds < params.FLEET_ITERS):
         if (params.FLEET_ITERS <= 0 and small and attempt >= MIN_BUILDS
                 and time.monotonic() - last_gain > STAGNATION_S):
@@ -376,6 +453,109 @@ def _greedy_fallback(scenario: Scenario) -> Optional[dict]:
     return _greedy(scenario)[1]
 
 
+def _load_plan(scenario: Scenario, plan: dict, drop, deadline: float):
+    """A RoutedPlanner holding `plan` without the scouts in `drop` and the strikes they confirmed, or None."""
+    cs = scenario.contact_by_id()
+    ac = scenario.aircraft_by_id()
+    routes = {r["aircraft"]: r["waypoints"] for r in plan["routes"]}
+    tasks = {s.id: [] for s in scenario.aircraft if s.type == SCOUT}
+    for aid, wps in routes.items():
+        if ac[aid].type == SCOUT:
+            tasks[aid] = [cs[w["target"]] for w in wps if w.get("action") == "observe"]
+    gone = set()
+    for sid in drop:
+        gone |= {c.id for c in tasks.get(sid, [])}
+        routes.pop(sid, None)
+        tasks[sid] = []
+    for aid in list(routes):
+        if ac[aid].type != SCOUT and any(w.get("action") == "engage" and w.get("target") in gone for w in routes[aid]):
+            routes.pop(aid)
+    planner = RoutedPlanner(scenario, deadline, N_SCOUTS)
+    planner.routes, planner.tasks = routes, tasks
+    planner.used = {a for a in routes if ac[a].type != SCOUT}
+    result = evaluate(scenario, planner._plan({}))
+    if not result.valid:
+        return None, set()
+    planner.score = result.score
+    return planner, set(result.served)
+
+
+def _repair(scenario: Scenario, start: Tuple[float, dict], deadline: float, worker: int) -> Tuple[float, dict]:
+    """Ruin and recreate around `start` until the deadline; returns the best valid (score, plan) found."""
+    rng = random.Random(7000 + worker)
+    best = start
+    scouts = [a.id for a in scenario.aircraft if a.type == SCOUT]
+    contacts = [c for c in scenario.contacts if c.cls in (HOSTILE, UNKNOWN)]
+    done = 0
+    fixed = params.FLEET_ITERS > 0  # reproducible: a fixed number of repairs, the clock plays no part
+    while ((done < params.LNS_ITERS and time.monotonic() - T0 < ALARM_S - 10.0) if fixed
+           else time.monotonic() < deadline):
+        done += 1
+        drop = rng.sample(scouts, min(len(scouts), rng.choice((1, 1, 2))))
+        try:
+            planner, served = _load_plan(scenario, best[1], drop, time.monotonic() + 600.0 if fixed else deadline)
+            if planner is None:
+                continue
+            todo = [c for c in contacts if c.id not in served]
+            todo.sort(key=lambda c: -c.points * rng.uniform(0.6, 1.4))
+            for c in todo:
+                try:
+                    if c.cls == HOSTILE:
+                        planner.serve_hostile(c)
+                    else:
+                        planner.serve_unknown(c)
+                except OutOfTime:
+                    raise
+                except Exception:  # a contact that breaks the routing is skipped
+                    continue
+        except OutOfTime:
+            if params.FLEET_ITERS > 0:
+                continue
+            break
+        except Exception:
+            continue
+        plan = planner._plan({})
+        try:
+            result = evaluate(scenario, plan)
+        except Exception:
+            continue
+        if result.valid and result.score > best[0] + 1e-6:
+            best = (result.score, plan)
+    return best
+
+
+def _repair_worker(args):
+    scenario_dict, start, deadline, worker = args
+    try:
+        return _repair(Scenario.from_dict(scenario_dict), start, deadline, worker)
+    except Exception:
+        return start
+
+
+def _repair_phase(scenario: Scenario, scenario_dict: dict, best: Tuple[float, dict], deadline: float,
+                  n_workers: int) -> Tuple[float, dict]:
+    """Runs _repair in every worker from the best plan; returns the best valid result (the input when nothing beats it)."""
+    pool = None
+    try:
+        ctx = multiprocessing.get_context("fork")
+        pool = ctx.Pool(n_workers)
+        jobs = [pool.apply_async(_repair_worker, ((scenario_dict, best, deadline, w),)) for w in range(n_workers)]
+        for job in jobs:
+            try:
+                wait = None if params.FLEET_ITERS > 0 else max(0.5, deadline + params.POOL_GRACE_S - time.monotonic())
+                score, plan = job.get(timeout=wait)
+                if plan is not None and score > best[0]:
+                    best = (score, plan)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    finally:
+        if pool is not None:
+            pool.terminate()
+    return best
+
+
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
     # beyond the official L4 (100 aircraft) route building and validation overshoot the deadline more and more
     # (measured: +1 s at 100, +9 s at 300, +11 s at 400 aircraft): shrink the budget so the 60 s limit holds
@@ -384,6 +564,10 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
     budget_s = max(min(budget_s, params.BUDGET_FLOOR_S),
                    budget_s - params.BUDGET_SHRINK_PER_AC * max(0, len(scenario.aircraft) - params.BUDGET_SHRINK_FROM))
     deadline = time.monotonic() + budget_s
+    lns = params.LNS and _routing is not None and len(scenario.aircraft) >= params.LNS_MIN_AC
+    final_deadline = deadline
+    if lns and params.FLEET_ITERS <= 0:
+        deadline = time.monotonic() + budget_s * (1.0 - params.LNS_SHARE)  # the search ends early, repair takes the rest
     empty = {"seed": scenario.seed, "routes": []}
     best = (0.0, empty)
     n_workers = max(1, min(MAX_WORKERS, os.cpu_count() or 1))
@@ -418,6 +602,13 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
     for score, plan in results:  # worker-index order, strict >: ties go to the lowest worker
         if plan is not None and score > best[0]:
             best = (score, plan)
+    if lns and best[0] > 0.0 and n_workers > 1:
+        if helper.is_alive():  # no thread may run while the repair pool forks: wait for the greedy plan, or skip
+            helper.join(None if params.FLEET_ITERS > 0 else max(0.0, final_deadline - time.monotonic() - 4.0))
+        if not helper.is_alive():
+            if _checkpoint is not None:
+                _checkpoint(best[1])  # the alarm writes the search's best plan, never the empty one, during the repair
+            best = _repair_phase(scenario, scenario_dict, best, final_deadline, n_workers)
     if best[0] <= 0.0:  # every build failed or found nothing positive: the kit's greedy plan beats an empty one
         return _greedy_fallback(scenario) or empty
     # last guard: the plan we write was validated by the kit's own scorer
@@ -435,6 +626,7 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
 
 
 _OUT = sys.argv[2] if len(sys.argv) > 2 else "plan.json"
+_checkpoint = None  # set by main(): writes a validated plan to disk before the repair phase
 _best_text = None  # pre-serialised last validated plan, written by the alarm handler
 
 
@@ -483,6 +675,8 @@ def main() -> None:
         signal.signal(signal.SIGALRM, _alarm)
         signal.setitimer(signal.ITIMER_REAL, max(0.1, ALARM_S - (time.monotonic() - T0)))
     scenario = Scenario.from_dict(data)
+    global _checkpoint
+    _checkpoint = _keep
     try:
         plan = solve(scenario, data, max(0.5, BUDGET_S - (time.monotonic() - T0)))
     except Exception:  # solve crashed: the kit's greedy plan beats the empty one that is already on disk
