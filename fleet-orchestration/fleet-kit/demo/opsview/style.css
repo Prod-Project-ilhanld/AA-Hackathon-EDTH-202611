@@ -113,3 +113,58 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:5px 16px;bord
 .classif{flex:none;text-align:center;font:600 10px/16px var(--mono);letter-spacing:.22em;color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,var(--bg));border-block:1px solid color-mix(in srgb,var(--warn) 35%,transparent);text-transform:uppercase;user-select:none}
 :root[data-theme=night] .classif{color:var(--text)}
 #clock{min-width:150px}
+
+.gauges{display:grid;gap:5px;margin-top:10px}
+.gauges .g{display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.gauges .g b{color:var(--text);font-variant-numeric:tabular-nums}
+.gauges .g i{grid-column:1/3;display:block;height:4px;border-radius:2px;background:var(--panel2);overflow:hidden}
+.gauges .g u{display:block;height:100%;text-decoration:none}
+.live{margin-top:6px;font-size:13px}
+.live b{font:600 15px var(--mono)}
+.lk{font:600 10px var(--mono);letter-spacing:.14em;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:0 5px;margin-right:4px}
+.cc{border:1px solid var(--border);border-radius:6px;padding:10px;margin:6px 0 10px;background:var(--panel2)}
+.ch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chain{display:grid;gap:6px}
+.st{border-left:3px solid var(--border);padding:2px 0 2px 9px;font-size:12px;color:var(--muted)}
+.st b{display:block;color:var(--text);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.st.ok{border-left-color:var(--ok)}.st.bad{border-left-color:var(--bad)}
+.rules{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.rk{font-size:11px;padding:1px 7px;border-radius:3px;border:1px solid var(--border);color:var(--muted)}
+.rk.ok{border-color:var(--ok);color:var(--ok)}.rk.bad{border-color:var(--bad);color:var(--bad)}
+.why{padding:8px 10px;border-radius:4px;border:1px solid var(--border);font-size:12.5px}
+.why.r7{border-color:var(--bad)}.why.a_gagner{border-color:var(--warn)}
+.acts{display:flex;gap:6px;margin-top:8px}
+.acts button{font-size:12px}
+.chip2{display:inline-block;padding:0 6px;border-radius:3px;border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:11px}
+.chip2:hover{border-color:var(--accent)}
+.tt td{font-size:12px}
+.v-served{color:var(--ok)}.v-r7{color:var(--bad)}.v-a_gagner{color:var(--warn)}.v-concurrence,.v-hors_de_portee,.v-unknown{color:var(--muted)}
+.feed{font-size:12px}
+.fev{display:grid;grid-template-columns:68px 10px 1fr;gap:6px;align-items:center;padding:4px 6px;border-radius:4px;cursor:pointer;color:var(--muted)}
+.fev:hover{background:var(--panel2)}
+.fev.done{color:var(--text)}
+.fev .ft{font:11px var(--mono)}
+.fk{width:8px;height:8px;border-radius:50%;background:var(--scout)}
+.fk.engage{background:var(--hostile);border-radius:1px;transform:rotate(45deg)}
+#hud{position:absolute;right:10px;top:10px;width:250px;display:none;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--border);font-size:12px;z-index:2}
+#hud .hh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+#hud .hh b{font-size:14px}
+#hud .hh button{padding:1px 8px;font-size:11px}
+#hud .hh #fol{margin-left:auto}
+#hud #fol.on{background:var(--accent);border-color:var(--accent);color:#111}
+#hud .hr{color:var(--muted)}#hud .hr b{color:var(--text);font-weight:500}
+#hud .tks{margin-top:6px;max-height:120px;overflow:auto}
+#hud .tk{padding:2px 4px;border-radius:3px;cursor:pointer;color:var(--muted)}
+#hud .tk:hover{background:var(--panel2)}#hud .tk.done{color:var(--ok)}
+
+#readout{position:absolute;left:10px;bottom:8px;font:11px var(--mono);color:var(--muted);pointer-events:none}
+#ccard{position:sticky;top:0;z-index:3;background:var(--panel);max-height:62%;overflow:auto;padding-bottom:2px}
+.gauges{grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.gauges .g{display:block;font-size:11px;line-height:1.3}
+.gauges .g span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gauges .g b{font-size:13px}
+.gauges .g i{margin-top:3px}
+.live{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#card .big{font-size:34px}
+#legend{top:auto;bottom:30px}
+.acts{margin:0 0 8px}

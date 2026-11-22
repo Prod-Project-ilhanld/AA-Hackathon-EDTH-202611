@@ -4,18 +4,20 @@ const M = JSON.parse(document.getElementById("data").textContent);
 const $ = (id) => document.getElementById(id);
 const W = M.world, TM = M.time, link = M.link, plan = M.plan;
 const hasPlan = !!plan;
+const OPS = M.ops || null;
 const acById = {}; M.aircraft.forEach((a) => { acById[a.id] = a; });
 const coById = {}; W.contacts.forEach((c) => { coById[c.id] = c; });
 const N = hasPlan ? M.tracks[M.aircraft[0].id].p.length : 1;
 const THEMES = ["light", "dark", "night"];
-const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light",
-  show: { zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
+const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light", selC: null, follow: null, script: null,
+  show: { bigdrones: true, zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
 (M.layers || []).forEach((l, i) => { state.layers[i] = l.visible !== false; });
 let view = { cx: 0, cy: 0, k: 1 };
 let dirty = true;
 const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
 // ---------- data access ----------
+const hplus = (s) => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "H+" + String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0") + ":" + String(r).padStart(2, "0"); };
 function fidx(t) { return Math.min(Math.max(t / TM.dt, 0), N - 1); }
 function posAt(id, t) {
   const tr = M.tracks[id]; if (!tr) return null;
@@ -29,6 +31,19 @@ const STATUS = { g: "on the ground", f: "flying", o: "observing", x: "engaged (c
 const typeKey = (a) => (a.type === "scout" ? "scout" : a.sub === "heavy" ? "heavy" : "light");
 const typeLabel = (a) => (a.type === "scout" ? "scout" : a.sub + " effector");
 const reclassAt = (cid, t) => !!(link && link.events.some((e) => e.kind === "reclassify" && e.contact === cid && e.t <= t));
+
+const takeoff = {};
+if (hasPlan) M.aircraft.forEach((a) => { const tr = M.tracks[a.id]; let k = -1; for (let i = 0; i < tr.s.length; i++) { if (tr.s[i] !== "g") { k = i; break; } } takeoff[a.id] = k < 0 ? Infinity : k * TM.dt; });
+function liveScore(t) {
+  let pts = 0; for (const cid in M.served) { if (M.served[cid] <= t && coById[cid]) pts += coById[cid].points || 0; }
+  let wh = 0, eff = 0; M.aircraft.forEach((a) => { wh += Math.max(0, a.wh - energyAt(a.id, t)); });
+  M.marks.forEach((m) => { if (m.kind === "engage" && m.t <= t) eff++; });
+  const R = OPS ? OPS.rules : { c_eff: 10, lambda: 0.5 };
+  // the sampled energy differs slightly from the kit's exact total: scale it so that the live score ends on the official one
+  if (liveScore.k === undefined) { let end = 0; M.aircraft.forEach((a) => { end += Math.max(0, a.wh - energyAt(a.id, M.time.t1)); }); liveScore.k = plan && plan.valid && plan.score_parts && end > 0 ? plan.score_parts.energy_cost / (R.lambda * end) : 1; }
+  const cost = R.lambda * wh * liveScore.k;
+  return { pts, wh, eff, cost, score: pts - cost - R.c_eff * eff };
+}
 
 // ---------- canvas plumbing ----------
 function fitCanvas(cv) {
@@ -51,6 +66,8 @@ const sy = (y, h) => h / 2 - (y - view.cy) * view.k;
 function shape(ctx, kind, x, y, r) {
   ctx.beginPath();
   if (kind === "diamond") { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); }
+  else if (kind === "rect") ctx.rect(x - r * 1.2, y - r * 0.82, r * 2.4, r * 1.64);
+  else if (kind === "clover") { const o = r * 0.52, q = r * 0.58; [[0, -o], [o, 0], [0, o], [-o, 0]].forEach(([dx, dy]) => { ctx.moveTo(x + dx + q, y + dy); ctx.arc(x + dx, y + dy, q, 0, Math.PI * 2); }); }
   else if (kind === "square") ctx.rect(x - r * 0.85, y - r * 0.85, r * 1.7, r * 1.7);
   else ctx.arc(x, y, r, 0, Math.PI * 2);
 }
@@ -79,6 +96,7 @@ function drawMap() {
   ctx.stroke();
   for (let x = Math.ceil(x0 / step) * step; x < x1; x += step) ctx.fillText(Math.round(x) + " m", sx(x, w) + 3, h - 5);
   for (let y = Math.ceil(y0 / step) * step; y < y1; y += step) ctx.fillText(Math.round(y) + " m", 4, sy(y, h) - 3);
+  gridRefs(ctx, w, h, x0, x1, y0, y1);
   const R = W.rules;
   // zones
   const pat = ctx.createPattern(hatch(), "repeat");
@@ -105,6 +123,8 @@ function drawMap() {
   });
   // homes
   if (state.show.homes) M.aircraft.forEach((a) => { const X = sx(a.home[0], w), Y = sy(a.home[1], h); ctx.strokeStyle = css("--muted"); ctx.globalAlpha = 0.5; ctx.lineWidth = 1; ctx.strokeRect(X - 3, Y - 3, 6, 6); ctx.globalAlpha = 1; });
+  if (state.show.homes && hasPlan) { const pads = {}; M.aircraft.forEach((a) => { if (statusAt(a.id, t) !== "g") return; const k = Math.round(a.home[0]) + ":" + Math.round(a.home[1]); (pads[k] = pads[k] || { x: a.home[0], y: a.home[1], n: 0 }).n++; });
+    ctx.fillStyle = css("--text"); ctx.font = "600 11px 'Space Mono', ui-monospace, monospace"; Object.values(pads).forEach((p) => { if (p.n >= 2) ctx.fillText("×" + p.n + " on pad", sx(p.x, w) + 10, sy(p.y, h) + 16); }); }
   // user layers
   (M.layers || []).forEach((l, i) => { if (state.layers[i]) drawLayer(ctx, w, h, l, t); });
   // routes and trails
@@ -130,16 +150,24 @@ function drawMap() {
   // contacts
   W.contacts.forEach((c) => {
     const X = sx(c.x, w), Y = sy(c.y, h), re = reclassAt(c.id, t), cls = re ? "friendly" : c.cls, col = css("--" + cls);
-    const kind = cls === "hostile" ? "diamond" : cls === "friendly" ? "square" : "circle";
-    shape(ctx, kind, X, Y, cls === "hostile" ? 8 : 6.5);
+    const kind = cls === "hostile" ? "diamond" : cls === "friendly" ? "rect" : cls === "civilian" ? "square" : "clover";
+    shape(ctx, kind, X, Y, cls === "hostile" ? 8 : cls === "unknown" ? 7 : 6.5);
     ctx.fillStyle = cls === "unknown" ? "transparent" : col; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
     ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
-    if (cls === "unknown") { ctx.fillStyle = col; ctx.font = "700 10px 'Space Grotesk', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillText("?", X, Y + 3.5); ctx.textAlign = "left"; }
+    if (cls === "unknown") { ctx.beginPath(); ctx.arc(X, Y, 4.2, 0, 6.2832); ctx.fillStyle = css("--map"); ctx.fill(); ctx.fillStyle = col; ctx.font = "700 10px 'Space Grotesk', system-ui, sans-serif"; ctx.textAlign = "center"; ctx.fillText("?", X, Y + 3.5); ctx.textAlign = "left"; }
     if (re) { ctx.strokeStyle = css("--bad"); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X, Y, 12, 0, 6.2832); ctx.stroke(); }
     const sv = M.served[c.id];
     if (sv !== undefined && sv <= t) { ctx.strokeStyle = css("--ok"); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, 12.5, 0, 6.2832); ctx.stroke(); }
     if (state.labels && view.k * 400 > 40) { ctx.fillStyle = css("--text"); ctx.font = "11px 'Space Grotesk', system-ui, sans-serif"; ctx.fillText(c.id + (c.points ? " · " + c.points : "") + (re ? " (reclassified)" : ""), X + 11, Y + 4); }
   });
+  // selected contact: pulse and links to the aircraft that observe and engage it
+  if (state.selC && coById[state.selC]) {
+    const c = coById[state.selC], inf = OPS && OPS.contacts[state.selC], X = sx(c.x, w), Y = sy(c.y, h);
+    ctx.beginPath(); ctx.arc(X, Y, 17 + 3 * Math.sin(performance.now() / 260), 0, 6.2832); ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2.5; ctx.stroke();
+    if (inf && hasPlan) inf.obs.map((o) => [o.aid, "--scout"]).concat(inf.eng.map((e) => [e.aid, "--hostile"])).forEach(([aid, v]) => {
+      const p = posAt(aid, t); if (!p || statusAt(aid, t) === "x") return;
+      ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(sx(p[0], w), sy(p[1], h)); ctx.strokeStyle = css(v); ctx.setLineDash([4, 4]); ctx.lineWidth = 1.3; ctx.globalAlpha = 0.8; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; });
+  }
   // marks: observation beams, engagement flashes
   if (state.show.marks) M.marks.forEach((m) => {
     const c = coById[m.contact]; if (!c) return;
@@ -177,9 +205,9 @@ function drawMap() {
     const q = posAt(a.id, t + 1.5), q0 = posAt(a.id, t - 1.5);
     let ang = -Math.PI / 2;
     if (q && q0 && (Math.abs(q[0] - q0[0]) + Math.abs(q[1] - q0[1])) > 0.5) ang = Math.atan2(-(q[1] - q0[1]), q[0] - q0[0]);
-    const size = a.type === "scout" ? 7 : a.sub === "heavy" ? 8.5 : 6.5;
+    const size = (a.type === "scout" ? 7 : a.sub === "heavy" ? 8.5 : 6.5) * (state.show.bigdrones ? 1.5 : 1);
     if (st === "g" || st === "l") { ctx.globalAlpha = 0.55; }
-    chevron(ctx, X, Y, size, ang); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = css("--map"); ctx.lineWidth = 1.2; ctx.stroke(); ctx.globalAlpha = 1;
+    chevron(ctx, X, Y, size, ang); ctx.lineJoin = "round"; ctx.strokeStyle = css("--map"); ctx.lineWidth = 3.6; ctx.stroke(); ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1;
     if (st === "o") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke(); }
     if (st === "h") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = css("--warn"); ctx.lineWidth = 2.2; ctx.stroke(); ctx.fillStyle = css("--warn"); ctx.fillRect(X - 3, Y - size - 11, 2, 7); ctx.fillRect(X + 1, Y - size - 11, 2, 7); }
     if (st === "r") { ctx.beginPath(); ctx.arc(X, Y, size + 5, 0, 6.2832); ctx.strokeStyle = css("--civilian"); ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]); }
@@ -191,6 +219,17 @@ function drawMap() {
   const sb = niceStep(120 / view.k), len = sb * view.k;
   ctx.strokeStyle = css("--text"); ctx.fillStyle = css("--text"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(w - 16 - len, h - 16); ctx.lineTo(w - 16, h - 16); ctx.stroke();
   ctx.font = "11px 'Space Grotesk', system-ui, sans-serif"; ctx.textAlign = "right"; ctx.fillText(sb >= 1000 ? sb / 1000 + " km" : sb + " m", w - 16, h - 22); ctx.textAlign = "left";
+}
+const GRID = 1000, GX0 = Math.floor(W.bounds[0] / GRID) * GRID, GY0 = Math.floor(W.bounds[2] / GRID) * GRID;
+function colName(i) { return i < 0 ? "·" : i < 26 ? String.fromCharCode(65 + i) : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26)); }
+function gridName(x, y) { return colName(Math.floor((x - GX0) / GRID)) + (Math.floor((y - GY0) / GRID) + 1); }
+function gridRefs(ctx, w, h, x0, x1, y0, y1) {
+  if (GRID * view.k < 30) return;
+  ctx.save(); ctx.fillStyle = css("--muted"); ctx.font = "600 11px 'Space Mono', ui-monospace, monospace"; ctx.textAlign = "center";
+  for (let i = Math.floor((x0 - GX0) / GRID); i <= Math.ceil((x1 - GX0) / GRID); i++) { if (i < 0) continue; const X = sx(GX0 + (i + 0.5) * GRID, w); if (X > 14 && X < w - 14) ctx.fillText(colName(i), X, 13); }
+  ctx.textAlign = "right";
+  for (let j = Math.floor((y0 - GY0) / GRID); j <= Math.ceil((y1 - GY0) / GRID); j++) { if (j < 0) continue; const Y = sy(GY0 + (j + 0.5) * GRID, h); if (Y > 24 && Y < h - 24) ctx.fillText(String(j + 1), w - 8, Y + 4); }
+  ctx.restore();
 }
 function drawLayer(ctx, w, h, l, t) {
   if (l.t0 !== null && l.t0 !== undefined && t < l.t0) return; if (l.t1 !== null && l.t1 !== undefined && t > l.t1) return;
@@ -240,7 +279,9 @@ function drawAlt() {
 }
 
 // ---------- side panel ----------
-const TABS = [["aircraft", "Aircraft"], ["contacts", "Contacts"], ["issues", "Issues"]];
+const TABS = [["aircraft", "Aircraft"], ["contacts", "Contacts"]];
+if (OPS) TABS.push(["targets", "Why"], ["feed", "Feed"]);
+TABS.push(["issues", "Issues"]);
 if (link) TABS.push(["link", "Link"]);
 TABS.push(["layers", "Layers"]);
 let curTab = hasPlan ? (plan.violations.length ? "issues" : "aircraft") : "contacts";
@@ -264,7 +305,17 @@ function buildCard() {
   } else {
     h = `<span class="pill bad">INVALID</span><div class="big" style="margin-top:6px">0</div><div class="sub">${plan.violations.length} violation${plan.violations.length === 1 ? "" : "s"}: an invalid plan scores 0. See Issues.</div>`;
   }
-  c.innerHTML = h;
+  c.innerHTML = h + (hasPlan && !link ? gaugesHtml() : "");
+}
+function gaugesHtml() {
+  if (!OPS) return "";
+  const names = { scout: "Scouts", light: "Light effectors", heavy: "Heavy effectors" };
+  return `<div class="live" id="live"></div><div class="gauges">${["scout", "light", "heavy"].filter((k) => OPS.fleet[k]).map((k) => { const f = OPS.fleet[k]; return `<div class="g"><span>${names[k]}</span><b>${f.used}/${f.total}</b><i><u style="width:${100 * f.used / Math.max(1, f.total)}%;background:var(--${k})"></u></i></div>`; }).join("")}</div>`;
+}
+function updateLive() {
+  const el = $("live"); if (!el || !hasPlan || link) return;
+  const s = liveScore(state.t);
+  el.innerHTML = `<span class="lk">LIVE</span> <b>${s.score.toFixed(1)}</b> <span class="sub">points ${s.pts} − energy ${s.cost.toFixed(1)} − effectors ${10 * s.eff}</span>`;
 }
 function buildTabs() {
   $("tabs").innerHTML = TABS.map(([k, n]) => `<button role="tab" data-t="${k}" class="${k === curTab ? "on" : ""}">${n}${k === "issues" && hasPlan ? " (" + plan.violations.length + ")" : ""}</button>`).join("");
@@ -277,12 +328,22 @@ function buildPanels() {
   // aircraft
   mk("aircraft", `<table><thead><tr><th>Aircraft</th><th>Status</th><th>Alt</th><th>Energy</th></tr></thead><tbody>${M.aircraft.map((a) => `<tr class="row" data-a="${a.id}"><td><span class="dot" style="background:var(--${typeKey(a)})"></span>${a.id}</td><td data-s></td><td data-z></td><td><span class="ebar"><i data-e></i></span></td></tr>`).join("")}</tbody></table>`).onclick = (e) => { const r = e.target.closest("tr[data-a]"); if (r) select(r.dataset.a === state.sel ? null : r.dataset.a); };
   mk("contacts", `<table><thead><tr><th>Contact</th><th>Points</th><th>Needs</th><th>Window</th><th>Served</th></tr></thead><tbody>${W.contacts.map((c) => `<tr class="row" data-c="${c.id}"><td><span class="dot" style="background:var(--${c.cls})"></span>${c.id} <span class="sub">${c.cls}</span></td><td>${c.points || ""}</td><td>${Object.entries(c.needs || {}).filter((x) => x[1] > 0).map((x) => x[1] + " " + x[0][0].toUpperCase()).join(" ")}</td><td>${c.window ? Math.round(c.window[0]) + "–" + Math.round(c.window[1]) + " s" : ""}</td><td data-sv></td></tr>`).join("")}</tbody></table>`).onclick = (e) => { const r = e.target.closest("tr[data-c]"); if (r) { const sv = M.served[r.dataset.c]; if (sv !== undefined) setT(sv); } };
+  if (OPS) {
+    const rows = Object.entries(OPS.contacts).sort((a, b) => b[1].points - a[1].points);
+    const stat = (i) => (i.served_t !== null && i.served_t !== undefined ? "served" : i.reason ? i.reason.cat : "–");
+    const statLabel = { served: "served", r7: "R7", a_gagner: "to gain", concurrence: "resources", hors_de_portee: "range", unknown: "not served", "–": "–" };
+    mk("targets", `<div id="ccard"></div><table class="tt"><thead><tr><th>Contact</th><th>Pts</th><th>Verdict</th></tr></thead><tbody>${rows.map(([id, i]) => `<tr class="row" data-c="${id}"><td><span class="dot" style="background:var(--${i.cls})"></span>${id} <span class="sub">${i.cls}</span></td><td>${i.points || ""}</td><td class="v-${stat(i)}">${statLabel[stat(i)]}</td></tr>`).join("")}</tbody></table>`).onclick = (e) => {
+      const act = e.target.closest("[data-act]"); if (act) { if (act.dataset.act === "replay") replay(act.dataset.c); else if (act.dataset.act === "goto") setT(Math.max(0, +act.dataset.t - 3)); else if (act.dataset.act === "air") select(act.dataset.a); return; }
+      const r = e.target.closest("tr[data-c]"); if (r) selectContact(r.dataset.c, false); };
+    mk("feed", `<div class="feed">${OPS.feed.map((f) => `<div class="fev" data-t="${f.t}" data-c="${f.cid}"><span class="ft">${hplus(f.t)}</span><i class="fk ${f.kind}"></i><span>${esc(f.text)}</span></div>`).join("")}</div>`).onclick = (e) => {
+      const r = e.target.closest(".fev"); if (!r) return; setT(Math.max(0, +r.dataset.t - 3)); selectContact(r.dataset.c, true); };
+  }
   const issues = hasPlan ? plan.violations : [];
   mk("issues", issues.length ? issues.map((v, i) => `<div class="issue" data-i="${i}"><b>${esc(v.rule)}</b> ${esc(v.msg.replace(/^R\d+ \([^)]*\)\s*/, ""))}${v.t !== null && v.t !== undefined ? ` <span class="sub">· t = ${Math.round(v.t)} s</span>` : ""}</div>`).join("") : `<div class="empty">${hasPlan ? (link ? "No rule broken in this run." : "No violation: the plan is valid.") : "Load a plan to see its verdict."}</div>`).onclick = (e) => {
     const r = e.target.closest(".issue"); if (!r) return; const v = issues[+r.dataset.i]; if (v.t !== null && v.t !== undefined) setT(Math.max(0, v.t - 2)); const id = (v.pair && v.pair[0]) || v.aircraft; if (id) select(id); };
   if (link) mk("link", `<div class="sub" style="padding:6px">Cut at t = ${link.t_loss} s. Events (click to seek):</div>${link.events.map((e) => `<div class="issue" data-t="${e.t}"><b style="color:var(--warn)">${e.kind}</b> t = ${e.t}${e.contact ? " · " + e.contact : ""}${e.aircraft ? " · " + e.aircraft : ""}${e.radius_m ? " · r " + e.radius_m + " m" : ""}</div>`).join("")}
     <div class="sub" style="padding:8px 6px 2px">Messages sent up to now (last 12), grey = not delivered to anyone:</div><div class="log" id="msglog"></div>`).onclick = (e) => { const r = e.target.closest(".issue"); if (r) setT(Math.max(0, +r.dataset.t - 3)); };
-  const flags = [["zones", "No-fly zones"], ["protect", "Protected areas"], ["ranges", "Observation and collateral ranges"], ["homes", "Home pads"], ["routes", "Trails and routes"], ["marks", "Observation beams and engagement flashes"]];
+  const flags = [["bigdrones", "Large drone icons"], ["zones", "No-fly zones"], ["protect", "Protected areas"], ["ranges", "Observation and collateral ranges"], ["homes", "Home pads"], ["routes", "Trails and routes"], ["marks", "Observation beams and engagement flashes"]];
   if (link) flags.push(["links", "Message links"]);
   const L = mk("layers", `<div class="layers"><h4>Map</h4>${flags.map(([k, n]) => `<label><input type="checkbox" data-f="${k}" ${state.show[k] ? "checked" : ""}> ${n}</label>`).join("")}
     <h4>Trails</h4><label><input type="radio" name="tr" value="all" checked> all aircraft (last 60 s)</label><label><input type="radio" name="tr" value="selected"> selected or hovered only</label><label><input type="radio" name="tr" value="none"> none</label>
@@ -304,6 +365,8 @@ function updatePanels() {
     const sv = M.served[r.dataset.c]; const td = r.querySelector("[data-sv]");
     td.textContent = sv === undefined ? (hasPlan ? "–" : "") : (sv <= t ? "✓ " : "· ") + Math.round(sv) + " s"; td.style.color = sv !== undefined && sv <= t ? "var(--ok)" : "var(--muted)";
   });
+  if (OPS) { let lastDone = null; document.querySelectorAll("#p-feed .fev").forEach((r) => { const done = +r.dataset.t <= t; r.classList.toggle("done", done); if (done) lastDone = r; });
+    if (state.playing && curTab === "feed" && lastDone) lastDone.scrollIntoView({ block: "nearest" }); }
   if (link) { const el = $("msglog"); if (el) el.innerHTML = link.sent.filter((s) => s[0] <= t).slice(-12).map((s) => `<div class="${linkDelivered[s[0] + ":" + s[1]] ? "" : "lost"}">${s[0]} ${s[1]} ${esc(s[2])}</div>`).join(""); }
 }
 
@@ -312,16 +375,98 @@ const linkBySec = {}, linkDelivered = {};
 if (link) link.links.forEach((l) => { const s = Math.floor(l[0]) + 1; (linkBySec[s] = linkBySec[s] || []).push(l); if (l[3]) linkDelivered[l[0] + ":" + l[1]] = true; });
 
 // ---------- controls ----------
-function select(id) { state.sel = id; dirty = true; updatePanels(); }
-function setT(v) { state.t = Math.min(Math.max(v, T0), T1); dirty = true; updateClock(); updatePanels(); }
-const hplus = (s) => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return "H+" + String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0") + ":" + String(r).padStart(2, "0"); };
-function updateClock() { $("clock").textContent = `${hplus(state.t)} / ${hplus(T1)}`; $("clock").title = `t = ${state.t.toFixed(1)} s`; if (link) { const cut = state.t >= link.t_loss; const b = $("banner"); b.textContent = cut ? "LINK CUT · policy in command" : "link up · following the plan"; b.className = cut ? "cut" : ""; } else $("banner").style.display = "none"; }
+function select(id) { state.sel = id; if (state.follow && state.follow !== id) state.follow = null; dirty = true; buildHud(); updatePanels(); }
+// ---------- aircraft HUD, follow camera, engagement replay ----------
+function buildHud() {
+  const el = $("hud"), id = state.sel;
+  if (!id || !hasPlan) { el.style.display = "none"; el.innerHTML = ""; return; }
+  const a = acById[id];
+  const tasks = M.marks.filter((m) => m.aid === id).map((m) => `<div class="tk" data-t0="${m.kind === "observe" ? m.t1 : m.t}" data-c="${m.contact}">${m.kind === "observe" ? "observe " + m.contact + " · " + hplus(m.t0) + "–" + hplus(m.t1) : "engage " + m.contact + " · " + hplus(m.t)}</div>`).join("");
+  el.innerHTML = `<div class="hh"><b>${id}</b><span class="sub">${typeLabel(a)}</span><button id="fol" title="Follow this aircraft (g)">Follow</button><button id="hx" class="ghost" title="Close (Esc)">×</button></div>
+    <div class="hr"><span data-hs></span></div><div class="hr">alt <b data-hz></b> · speed <b data-hv></b> · energy <b data-he></b></div>
+    <div class="tks">${tasks || '<div class="sub">No task in this plan.</div>'}</div>`;
+  el.style.display = "block";
+  $("fol").onclick = () => setFollow(state.follow === id ? null : id);
+  $("hx").onclick = () => select(null);
+  el.querySelectorAll(".tk").forEach((n) => { n.onclick = () => { setT(Math.max(0, +n.dataset.t0 - 6)); selectContact(n.dataset.c, true); }; });
+  updateHud();
+}
+function updateHud() {
+  const el = $("hud"), id = state.sel; if (!id || !hasPlan || el.style.display === "none") return;
+  const t = state.t, st = statusAt(id, t), p = posAt(id, t), q = posAt(id, t + 1), q0 = posAt(id, t - 1), a = acById[id];
+  const sp = p && q && q0 ? Math.hypot(q[0] - q0[0], q[1] - q0[1], q[2] - q0[2]) / 2 : 0;
+  el.querySelector("[data-hs]").textContent = STATUS[st] || st;
+  el.querySelector("[data-hz]").textContent = p && st !== "x" ? Math.round(p[2]) + " m" : "–";
+  el.querySelector("[data-hv]").textContent = sp.toFixed(1) + " m/s";
+  el.querySelector("[data-he]").textContent = Math.round(energyAt(id, t)) + " / " + Math.round(a.wh) + " Wh";
+  $("fol").textContent = state.follow === id ? "Following" : "Follow"; $("fol").classList.toggle("on", state.follow === id);
+  el.querySelectorAll(".tk").forEach((n) => n.classList.toggle("done", +n.dataset.t0 <= t));
+}
+function setFollow(id) {
+  state.follow = id; state.script = null;
+  if (id) { const r = $("mapwrap").getBoundingClientRect(); view.k = Math.max(view.k, r.width / 2600); const p = posAt(id, state.t); if (p) { view.cx = p[0]; view.cy = p[1]; } }
+  dirty = true; updateHud();
+}
+function setSpeed(s) { state.speed = s; document.querySelectorAll("#speeds button").forEach((x) => x.classList.toggle("on", +x.dataset.s === s)); }
+function replay(cid) {
+  const inf = OPS && OPS.contacts[cid]; if (!inf || !inf.eng.length) return;
+  const t1 = Math.min(...inf.eng.map((e) => e.t)), t2 = Math.max(...inf.eng.map((e) => e.t)), c = coById[cid];
+  state.follow = null; select(null); const r = $("mapwrap").getBoundingClientRect();
+  view.k = r.width / 1800; view.cx = c.x; view.cy = c.y;
+  setSpeed(1); setT(Math.max(T0, t1 - 18)); state.script = { until: Math.min(T1, t2 + 5) };
+  state.playing = true; $("play").textContent = "❚❚"; last = performance.now(); dirty = true;
+}
+function jumpEvent(dir) {
+  if (!OPS) return; const t = state.t; let f = null;
+  if (dir > 0) f = OPS.feed.find((x) => x.t > t + 3.5); else for (let i = OPS.feed.length - 1; i >= 0; i--) { if (OPS.feed[i].t < t + 2.5) { f = OPS.feed[i]; break; } }
+  if (f) { setT(Math.max(0, f.t - 3)); selectContact(f.cid, true); }
+}
+function savePng() { $("map").toBlob((b) => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ops_" + M.meta.level + "_seed" + M.meta.seed + "_" + hplus(state.t).replace(/[^0-9]/g, "") + ".png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }); }
+function selectContact(cid, openTab) {
+  if (!OPS || !OPS.contacts[cid]) return;
+  state.selC = cid; dirty = true;
+  if (openTab !== false || curTab !== "targets") { if (curTab !== "targets") { curTab = "targets"; buildTabs(); showPanel(); } }
+  renderCcard();
+  document.querySelectorAll("#p-targets tr[data-c]").forEach((r) => { r.classList.toggle("sel", r.dataset.c === cid); });
+}
+function renderCcard() {
+  const el = $("ccard"); if (!el) return;
+  const cid = state.selC, inf = cid && OPS.contacts[cid];
+  if (!inf) { el.innerHTML = '<div class="empty">Click a contact on the map, in the list or in the feed: the card explains why the plan serves it, or why not.</div>'; return; }
+  const served = inf.served_t !== null && inf.served_t !== undefined, R = OPS.rules;
+  const air = (aid) => `<a class="chip2" data-act="air" data-a="${aid}">${aid}</a>`;
+  let h = `<div class="cc"><div class="ch"><span class="dot" style="background:var(--${inf.cls})"></span><b>${cid}</b> <span class="sub">${inf.cls} · ${inf.points} pts${inf.needs && Object.keys(inf.needs).length ? " · needs " + Object.entries(inf.needs).map((x) => x[1] + " " + x[0]).join(", ") : ""}</span>
+    <span class="pill ${served ? "ok" : "bad"}" style="margin-left:auto">${served ? "served " + hplus(inf.served_t) : "not served"}</span></div>`;
+  if (served) h += `<div class="acts">${inf.eng.length ? `<button data-act="replay" data-c="${cid}">Replay engagement</button>` : ""}<button data-act="goto" data-t="${inf.eng.length ? Math.min(...inf.eng.map((e) => e.t)) : (inf.obs[0] ? inf.obs[0].t1 : 0)}">Go to time</button></div>`;
+  if (served) {
+    const win = inf.window, tEng = inf.eng.length ? Math.min(...inf.eng.map((e) => e.t)) : null;
+    const winOk = !win || tEng === null || (tEng >= win[0] && tEng <= win[1]);
+    h += `<div class="chain"><div class="st ok"><b>Observe</b>${inf.obs.map((o) => `${air(o.aid)} ${hplus(o.t0)}–${hplus(o.t1)}`).join("<br>") || "–"}</div>`;
+    if (inf.cls === "hostile") h += `<div class="st ${inf.r4_margin !== null && inf.r4_margin >= R.confirm ? "ok" : "bad"}"><b>Confirm</b>${inf.r4_margin === null ? "–" : "+" + inf.r4_margin + " s after observation (min " + R.confirm + " s)"}</div>
+      <div class="st ok"><b>Engage</b>${inf.eng.map((e) => `${air(e.aid)} ${hplus(e.t)}${e.km !== null ? " · " + e.km + " km" : ""}`).join("<br>")}</div>`;
+    h += `</div><div class="rules">`;
+    if (inf.cls === "hostile") h += `<span class="rk ok">R4 observe then confirm</span>`;
+    if (inf.r7) h += `<span class="rk ${inf.r7.blocked ? "bad" : "ok"}">R7 ${inf.r7.id} (${inf.r7.cls}) at ${inf.r7.dist} m, min ${R.collateral} m</span>`;
+    if (win) h += `<span class="rk ${winOk ? "ok" : "bad"}">R9 window ${hplus(win[0])}–${hplus(win[1])}</span>`;
+    h += `</div>`;
+    if (inf.pts_per_eff !== null) h += `<div class="sub">${inf.pts_per_eff} points per effector used.</div>`;
+  } else {
+    h += `<div class="why ${inf.reason.cat}">${esc(inf.reason.text)}</div>`;
+    if (inf.window) h += `<div class="sub">Window ${hplus(inf.window[0])}–${hplus(inf.window[1])}</div>`;
+  }
+  el.innerHTML = h + "</div>";
+}
+function setT(v) { state.t = Math.min(Math.max(v, T0), T1); dirty = true; updateClock(); updatePanels(); updateHud(); }
+function updateClock() { updateLive(); $("clock").textContent = `${hplus(state.t)} / ${hplus(T1)}`; $("clock").title = `t = ${state.t.toFixed(1)} s`; if (link) { const cut = state.t >= link.t_loss; const b = $("banner"); b.textContent = cut ? "LINK CUT · policy in command" : "link up · following the plan"; b.className = cut ? "cut" : ""; } else $("banner").style.display = "none"; }
 function togglePlay() { if (!hasPlan) return; if (state.t >= T1 - 0.01) state.t = T0; state.playing = !state.playing; $("play").textContent = state.playing ? "❚❚" : "▶"; last = performance.now(); }
 let last = performance.now();
 function frame(now) {
   const dtm = Math.min((now - last) / 1000, 0.1); last = now;
-  if (state.playing) { state.t += dtm * state.speed; if (state.t >= T1) { state.t = T1; state.playing = false; $("play").textContent = "▶"; } dirty = true; updateClock(); }
-  if (dirty) { dirty = false; drawMap(); drawTimeline(); drawAlt(); if (!state.playing || Math.floor(now / 100) !== frame.lastPanel) { frame.lastPanel = Math.floor(now / 100); updatePanels(); } }
+  if (state.playing) { state.t += dtm * state.speed; if (state.t >= T1) { state.t = T1; state.playing = false; $("play").textContent = "▶"; } dirty = true; updateClock();
+    if (state.script && state.t >= state.script.until) { state.playing = false; state.script = null; $("play").textContent = "▶"; } }
+  if (state.follow) { const p = posAt(state.follow, state.t); if (p) { view.cx += (p[0] - view.cx) * 0.3; view.cy += (p[1] - view.cy) * 0.3; dirty = true; } }
+  if (state.selC) dirty = true;
+  if (dirty) { dirty = false; drawMap(); drawTimeline(); drawAlt(); if (!state.playing || Math.floor(now / 100) !== frame.lastPanel) { frame.lastPanel = Math.floor(now / 100); updatePanels(); updateHud(); } }
   requestAnimationFrame(frame);
 }
 function seekFromEvent(cv, e, pad) { const r = cv.getBoundingClientRect(); const u = (e.clientX - r.left - pad) / (r.width - 2 * pad); setT(T0 + Math.min(Math.max(u, 0), 1) * (T1 - T0)); }
@@ -333,13 +478,14 @@ function bindMap() {
   cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, moved: false }; cv.setPointerCapture(e.pointerId); cv.classList.add("drag"); });
   cv.addEventListener("pointermove", (e) => {
     const r = cv.getBoundingClientRect();
-    if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true; view.cx = drag.cx - dx / view.k; view.cy = drag.cy + dy / view.k; dirty = true; }
+    if (drag) { const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 3) { drag.moved = true; if (state.follow) { state.follow = null; updateHud(); } } view.cx = drag.cx - dx / view.k; view.cy = drag.cy + dy / view.k; dirty = true; }
     const h = nearest(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
     if (!drag) { if (h && h.id !== state.hover) { state.hover = h.kind === "a" ? h.id : null; dirty = true; } if (!h && state.hover) { state.hover = null; dirty = true; } }
+    { const wx = (e.clientX - r.left - r.width / 2) / view.k + view.cx, wy = (r.height / 2 - (e.clientY - r.top)) / view.k + view.cy; $("readout").textContent = "GRID " + gridName(wx, wy) + " · x " + Math.round(wx) + " m · y " + Math.round(wy) + " m"; }
     const tip = $("tip"); if (h && !drag) { tip.style.display = "block"; tip.innerHTML = h.html; const tw = tip.offsetWidth; tip.style.left = Math.min(e.clientX - r.left + 14, r.width - tw - 6) + "px"; tip.style.top = Math.max(e.clientY - r.top - tip.offsetHeight - 8, 4) + "px"; } else tip.style.display = "none";
   });
-  cv.addEventListener("pointerup", (e) => { cv.classList.remove("drag"); if (drag && !drag.moved) { const r = cv.getBoundingClientRect(); const h = nearest(e.clientX - r.left, e.clientY - r.top, r.width, r.height); select(h && h.kind === "a" ? (h.id === state.sel ? null : h.id) : null); } drag = null; });
-  cv.addEventListener("pointerleave", () => { $("tip").style.display = "none"; if (state.hover) { state.hover = null; dirty = true; } });
+  cv.addEventListener("pointerup", (e) => { cv.classList.remove("drag"); if (drag && !drag.moved) { const r = cv.getBoundingClientRect(); const h = nearest(e.clientX - r.left, e.clientY - r.top, r.width, r.height); if (h && h.kind === "c" && OPS && OPS.contacts[h.id]) selectContact(h.id, true); else { select(h && h.kind === "a" ? (h.id === state.sel ? null : h.id) : null); if (!h) { state.selC = null; renderCcard(); document.querySelectorAll("#p-targets tr.sel").forEach((x) => x.classList.remove("sel")); } } } drag = null; });
+  cv.addEventListener("pointerleave", () => { $("readout").textContent = ""; $("tip").style.display = "none"; if (state.hover) { state.hover = null; dirty = true; } });
 }
 function nearest(mx, my, w, h) {
   let best = null, bd = 14;
@@ -348,7 +494,7 @@ function nearest(mx, my, w, h) {
   return best;
 }
 function legend() {
-  const sw = (cls, txt) => `<span><i style="background:var(--${cls});border-radius:${cls === "civilian" || cls === "scout" ? "50%" : "2px"}"></i>${txt}</span>`;
+  const sw = (cls, txt) => `<span><i style="background:var(--${cls});${cls === "hostile" ? "transform:rotate(45deg) scale(.8);" : ""}${cls === "friendly" ? "width:14px;height:9px;" : ""}border-radius:${cls === "scout" ? "50%" : cls === "unknown" ? "50%" : "1px"}"></i>${txt}</span>`;
   $("legend").innerHTML = hasPlan ? `${sw("scout", "scout")}${sw("light", "light effector")}${sw("heavy", "heavy effector")}${sw("hostile", "hostile")}${sw("unknown", "unknown")}${sw("friendly", "friendly")}${sw("civilian", "civilian")}<span style="color:var(--warn)">○ hold</span>` : `${sw("hostile", "hostile")}${sw("unknown", "unknown")}${sw("friendly", "friendly")}${sw("civilian", "civilian")}`;
 }
 function theme(name) { if (!THEMES.includes(name)) name = "light"; state.theme = name; state.dark = name !== "light"; document.documentElement.setAttribute("data-theme", name); try { localStorage.setItem("opsview-theme", name); } catch (e) { /* no storage */ } dirty = true; }
@@ -361,22 +507,22 @@ function init() {
   $("chips").innerHTML = [M.meta.level, "seed " + M.meta.seed, M.aircraft.length + " aircraft", W.contacts.length + " contacts"].map((c) => `<span class="chip">${c}</span>`).join("");
   $("foot-info").textContent = link ? "link-loss replay" : hasPlan ? "plan replay" : "scenario";
   $("speeds").innerHTML = [1, 2, 4, 8, 16, 32].map((s) => `<button data-s="${s}" class="${s === state.speed ? "on" : ""}">${s}×</button>`).join("");
-  $("speeds").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; state.speed = +b.dataset.s; document.querySelectorAll("#speeds button").forEach((x) => x.classList.toggle("on", x === b)); };
-  $("play").onclick = togglePlay; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
+  $("speeds").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; setSpeed(+b.dataset.s); };
+  $("play").onclick = togglePlay; $("png").onclick = savePng; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
   $("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").hidden = true; };
   if (!hasPlan) { $("transport").style.display = "none"; $("alt").style.display = "none"; }
-  buildCard(); buildTabs(); buildPanels(); legend(); bindMap(); bindScrub($("tl"), 8); bindScrub($("alt"), 0);
+  buildCard(); buildTabs(); buildPanels(); renderCcard(); legend(); bindMap(); bindScrub($("tl"), 8); bindScrub($("alt"), 0);
   document.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT") return; const k = e.key;
     if (k === " ") { e.preventDefault(); togglePlay(); } else if (k === "ArrowRight") setT(state.t + (e.shiftKey ? 10 : 1)); else if (k === "ArrowLeft") setT(state.t - (e.shiftKey ? 10 : 1));
     else if (k === "Home") setT(T0); else if (k === "End") setT(T1); else if (k === "f" || k === "F") fitView(); else if (k === "l" || k === "L") { state.labels = !state.labels; dirty = true; }
-    else if (k === "t" || k === "T") theme(nextTheme()); else if (k === "Escape") { select(null); $("modal").hidden = true; } else if (k === "?") $("modal").hidden = false;
+    else if (k === "t" || k === "T") theme(nextTheme()); else if (k === "Escape") { state.follow = null; state.selC = null; select(null); renderCcard(); $("modal").hidden = true; } else if (k === "g" || k === "G") { if (state.sel) setFollow(state.follow === state.sel ? null : state.sel); } else if (k === "n" || k === "N") jumpEvent(1); else if (k === "p" || k === "P") jumpEvent(-1); else if (k === "s" || k === "S") savePng(); else if (k === "?") $("modal").hidden = false;
   });
   window.addEventListener("resize", () => { dirty = true; });
   new ResizeObserver(() => { dirty = true; }).observe($("mapwrap"));
   fitView(); updateClock(); updatePanels();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { dirty = true; });
-  window.__viewer = { setT, select, state, view, M, fitView, togglePlay, draw: () => { drawMap(); drawTimeline(); drawAlt(); updatePanels(); } };
+  window.__viewer = { setT, select, selectContact, replay, setFollow, jumpEvent, liveScore, state, view, M, fitView, togglePlay, draw: () => { drawMap(); drawTimeline(); drawAlt(); updatePanels(); } };
   requestAnimationFrame(frame);
 }
 init();

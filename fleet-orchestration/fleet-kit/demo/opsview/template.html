@@ -17,6 +17,7 @@
     <div class="brand"><img class="logo" alt="" src="__LOGO__"><span class="wordmark">ALTA ARES</span><span class="slash" aria-hidden="true">/</span><span id="title"></span></div>
     <div id="chips"></div>
     <div class="spacer"></div>
+    <button id="png" class="ghost" title="Save the map as PNG (s)">PNG</button>
     <button id="help" class="ghost" title="Keyboard shortcuts (?)">?</button>
     <button id="theme" class="ghost" title="Light, dark or night (t)">◐</button>
   </header>
@@ -25,7 +26,9 @@
       <div id="mapwrap">
         <canvas id="map"></canvas>
         <div id="banner"></div>
+        <div id="hud"></div>
         <div id="legend"></div>
+        <div id="readout"></div>
         <div id="tip" role="tooltip"></div>
       </div>
       <div id="transport">
@@ -47,7 +50,7 @@
   <div id="modal" hidden><div class="sheet"><h3>Keyboard</h3><dl>
     <dt>Space</dt><dd>play or pause</dd><dt>← →</dt><dd>1 s back or forward (Shift: 10 s)</dd>
     <dt>Home End</dt><dd>start or end</dd><dt>F</dt><dd>fit the map</dd><dt>L</dt><dd>labels</dd><dt>T</dt><dd>light, dark or night</dd>
-    <dt>Esc</dt><dd>clear the selection</dd><dt>Wheel, drag</dt><dd>zoom and pan the map</dd><dt>Click</dt><dd>select an aircraft, or seek on the timeline</dd>
+    <dt>G</dt><dd>follow the selected aircraft</dd><dt>N P</dt><dd>next or previous event</dd><dt>S</dt><dd>save the map as PNG</dd><dt>Esc</dt><dd>clear the selection</dd><dt>Wheel, drag</dt><dd>zoom and pan the map</dd><dt>Click</dt><dd>select an aircraft, or seek on the timeline</dd>
     </dl><button id="close" class="ghost">Close</button></div></div>
 </div>
 <script id="data" type="application/json">__DATA__</script>
