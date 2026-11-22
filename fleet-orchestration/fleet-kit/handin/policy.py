@@ -16,7 +16,6 @@ from fleetkit.model import EFFECTOR, HOSTILE, SCOUT, parse_plan
 
 MAX_MSG_BYTES = 64
 SEP_PAD_M = 6.0
-HOME_S = 15.0          # an aircraft aborting this soon after take-off flies home and lands (departure phase)
 OB_WAIT_MAX_S = 40.0   # longest an effector waits short of its target for a late observation
 
 
@@ -142,6 +141,8 @@ class Policy:
         self._ae_idx: int = 0
         self._tgt_ob_t: Optional[float] = None   # when we first knew our target's observation was complete
         self._ob_wait_t: Optional[float] = None   # when we started waiting short of the target for it
+        self._yield_to: Optional[str] = None      # lower-id peer we backed off for, and since when
+        self._yield_t: float = -100.0
 
     def _init_pre_cut(self, t_loss: float) -> None:
         self.pre_cut_init = True
@@ -245,18 +246,6 @@ class Policy:
         return any(segment_enters_cylinder(a, b, (cx, cy), r + 1.0, top)
                    for cx, cy, r, top in self.zones for a, b in zip(pts, pts[1:]))
 
-    def _home_clear(self, t: float, tau: float) -> bool:
-        """True if no peer is predicted within 2 x (d_sep + pad) of our way home at any second of the trip."""
-        d_lim = 2.0 * (self.rules.d_sep_m + SEP_PAD_M)
-        for k in range(int(tau - self.clock.start) + 2):
-            me = self.clock.position(max(self.clock.start, tau - k))
-            for aid in self.clocks:
-                if aid != self.aircraft_id:
-                    q = self._peer_pos_at(aid, t + k, t)
-                    if q is not None and dist3(me, q) < d_lim:
-                        return False
-        return True
-
     def _peer_pos_at(self, aid: str, t: float, now_t: float) -> Optional[Tuple[float, float, float]]:
         clk = self.clocks[aid]
         if aid in self.peer_state:
@@ -354,9 +343,9 @@ class Policy:
                     break
         return False
 
-    def _blocking(self, t: float, tau: float, horizon: int = 6, below: Optional[str] = None) -> bool:
-        """True if an on-plan peer, or a non-aborted peer waiting in a hold, is predicted to pass within separation
-        of our position in the next seconds. `below`: only peers with a lower id."""
+    def _blocking(self, t: float, tau: float, horizon: int = 6, below: Optional[str] = None) -> Optional[str]:
+        """The id of an on-plan peer, or of a non-aborted peer waiting in a hold, predicted to pass within separation
+        of our position in the next seconds, else None. `below`: only peers with a lower id."""
         me = self.clock.position(tau)
         d_lim = self.rules.d_sep_m + SEP_PAD_M
         for aid, clk in self.clocks.items():
@@ -367,15 +356,15 @@ class Policy:
                 # It waits, maybe for us: where it would fly if it resumed now.
                 for k in range(horizon + 1):
                     if tau_ref + k <= clk.end and dist3(me, clk.position(tau_ref + k)) < d_lim:
-                        return True
+                        return aid
                 continue
             if mode != "route":
                 continue
             for k in range(horizon + 1):
                 q = self._peer_pos_at(aid, t + k, t)
                 if q is not None and dist3(me, q) < d_lim:
-                    return True
-        return False
+                    return aid
+        return None
 
     def _peer_near(self, t: float, tau: float, radius: float = 500.0) -> bool:
         """True if any live peer is predicted within `radius` of our held position (it must hear we hover)."""
@@ -532,11 +521,7 @@ class Policy:
 
         if abort:
             # Hover instead of retracing the route against later traffic; back off only when in an on-plan peer's way.
-            # Right after take-off, fly home and land, but only on a way home nobody else is near: a departing
-            # peer does not yield to a returning aircraft.
-            home = tau - self.clock.start <= HOME_S and self._home_clear(t, tau)
-            if (home or self._blocking(t, tau)) \
-                    and not self._r8_conflict(t, tau, -1.0) and not self._back_hits_known_zone(tau):
+            if self._blocking(t, tau) and not self._r8_conflict(t, tau, -1.0) and not self._back_hits_known_zone(tau):
                 if self._hold_streak > 0:
                     self._rt_ttl = 3
                 self._hold_streak = 0
@@ -546,13 +531,20 @@ class Policy:
         rate = 1.0
         action: dict = {"kind": "continue"}
 
+        # After backing off for a lower-id peer, hold until it moves (or 20 s): resuming at once flip-flops, and a
+        # lost hold after our resume makes it believe we fly on.
+        if self._yield_to is not None:
+            ys = self.peer_state.get(self._yield_to)
+            if t - self._yield_t > 20.0 or ys is None or ys[2] != "hold" or t - ys[0] > 15.0:
+                self._yield_to = None
         # R8 separation check.
-        if wait or self._r8_conflict(t, tau, rate):
+        if wait or self._yield_to is not None or self._r8_conflict(t, tau, rate):
             # Deadlock breaker: held > 10 s and in the way of a lower-id peer -> back off along the route if clear.
-            # Peers hear a plain hold at our current tau (we only move away from it).
-            if self._hold_streak >= 10 and self._blocking(t, tau, below=self.aircraft_id) \
-                    and not self._r8_conflict(t, tau, -1.0) and not self._back_hits_known_zone(tau):
-                return {"kind": "return"}, self._build_message(t, tau, mode, "hold")
+            # Peers hear a plain hold at the tau we back off to (we only move away from it).
+            blocked = self._blocking(t, tau, below=self.aircraft_id) if self._hold_streak >= 10 else None
+            if blocked and not self._r8_conflict(t, tau, -1.0) and not self._back_hits_known_zone(tau):
+                self._yield_to, self._yield_t = blocked, t
+                return {"kind": "return"}, self._build_message(t, max(self.clock.start, tau - 1.0), mode, "hold")
             action = {"kind": "hold"}
             self._hold_streak += 1
         else:

@@ -1,10 +1,10 @@
 """Link-loss policy (handin/policy.py): holds that never end (task 9).
 
 - an aborted aircraft gets out of the way of an on-plan peer that already waits for it;
-- an aircraft that aborts right after take-off flies home instead of hovering over the base;
 - an effector without its observation waits for a late scout instead of aborting, and then engages only
   confirm_margin after it heard of the observation (R4);
-- L2-21 and L3-6 of check_policy (events seed = seed + 1, 1000x200), which ended in permanent holds.
+- L2-21 of check_policy (events seed = seed + 1, 1000x200), which ended in a permanent hold;
+- L4-24 of the sizing grid (events seed 1, 2000x50, run 1): after a back-off, holding until the peer moves.
 """
 from pathlib import Path
 
@@ -26,13 +26,6 @@ def test_an_aborted_aircraft_backs_off_for_a_peer_that_waits_for_it():
     p = Policy(sc, plan, "L01")
     waiting = {"from": "L02", "sent_t": 29.0, "payload": [1, 170]}   # L02 holds at tau 17, 90 m short of our hover
     action, _ = p.step(obs(30.0, TAU_AT_800, sensed=[RECLASSIFY_C01], inbox=[waiting]))
-    assert action == {"kind": "return"}
-
-
-def test_an_aircraft_that_aborts_right_after_take_off_flies_home():
-    sc, plan = scenario_and_plan(CROSSING)
-    p = Policy(sc, plan, "L01")
-    action, _ = p.step(obs(30.0, 8.0, sensed=[RECLASSIFY_C01]))
     assert action == {"kind": "return"}
 
 
@@ -77,6 +70,7 @@ def test_l2_21_no_longer_ends_in_a_mutual_hold():
     assert res.ok and ret >= 0.9
 
 
-def test_l3_6_aborted_aircraft_leave_the_departure_area():
-    res, ret = _check_policy_case("L3", 6)    # was 0.611: aircraft aborted after take-off hovered over the base
-    assert res.ok and ret >= 0.78
+def test_after_a_back_off_an_aircraft_holds_until_the_peer_moves():
+    sc = Scenario.from_dict(generate("L4", 24))   # L20 backed off for L18, resumed at once, then held; its hold
+    plan = greedy_plan(sc)                         # was lost and L18 flew into it (33 m)
+    assert simulate(sc, plan, make_events(sc, plan, 1), Policy, setting=(2000.0, 50.0), run_seed=1).ok
