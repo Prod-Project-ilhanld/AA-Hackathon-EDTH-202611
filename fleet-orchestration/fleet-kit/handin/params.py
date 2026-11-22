@@ -39,3 +39,7 @@ LNS = os.environ.get("PLANNER_LNS", "1") != "0"
 LNS_SHARE = float(os.environ.get("PLANNER_LNS_SHARE", "0.35"))
 LNS_MIN_AC = 21
 LNS_ITERS = 6          # with FLEET_ITERS > 0: exactly this many repairs per worker, reproducible plan
+
+# Extending a scout tour keeps the observations of the contacts already struck early enough for R4 (latest_ends
+# of the team router): without it the rebuilt tour drifts later, breaks R4 and the contact goes to a new scout.
+LATEST_ENDS = os.environ.get("PLANNER_LATEST_ENDS", "1") != "0"

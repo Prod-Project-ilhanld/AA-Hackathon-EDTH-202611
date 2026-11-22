@@ -216,11 +216,23 @@ class RoutedPlanner(FastPlanner):
         self.eng = _routing.get_engine(scenario)
         self.layers = (None,) + tuple(EFFECTOR_LAYERS)
 
+    def _latest_ends(self, tasks):
+        """Latest observation end of each task already struck: its first engagement minus the R4 margin."""
+        out = {}
+        margin = self.sc.rules.confirm_margin_s
+        for t in tasks:
+            engages = [r[-1]["t"] for r in self.routes.values()
+                       if r and r[-1].get("action") == "engage" and r[-1].get("target") == t.id]
+            if engages:
+                out[t.id] = min(engages) - margin
+        return out or None
+
     def _add_observation(self, scout, contact, z, angle, dep_shift):
         tasks = self.tasks[scout.id] + [contact]
+        latest = self._latest_ends(tasks[:-1]) if params.LATEST_ENDS else None
         try:
             route = _routing.build_scout_route(scout, tasks, self.sc, z_layer=z, depart_shift=dep_shift,
-                                               engine=self.eng, angle_offset_deg=angle)
+                                               engine=self.eng, angle_offset_deg=angle, latest_ends=latest)
         except Exception:  # noqa: BLE001  a route that cannot be built is simply not tried
             route = None
         return (tasks, route) if route is not None else None
