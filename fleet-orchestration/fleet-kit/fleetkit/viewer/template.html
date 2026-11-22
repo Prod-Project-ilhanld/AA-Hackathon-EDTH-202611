@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,15 +16,20 @@
     <div class="brand"><img class="logo" alt="" src="__LOGO__"><span class="wordmark">ALTA ARES</span><span class="slash" aria-hidden="true">/</span><span id="title"></span></div>
     <div id="chips"></div>
     <div class="spacer"></div>
-    <button id="help" class="ghost" title="Keyboard shortcuts (?)">?</button>
-    <button id="theme" class="ghost" title="Light or dark (t)">◐</button>
+    <button id="demo" title="Lancer le scenario de demo guide">Scenario</button>
+    <button id="help" class="ghost" title="Raccourcis clavier (?)">?</button>
+    <button id="theme" class="ghost" title="Clair ou sombre (t)">◐</button>
   </header>
   <main>
     <section id="stage">
+      <div id="hud"></div>
       <div id="mapwrap">
         <canvas id="map"></canvas>
+        <div id="sweep"></div>
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
         <div id="banner"></div>
         <div id="legend"></div>
+        <div id="narration"></div>
         <div id="tip" role="tooltip"></div>
       </div>
       <div id="transport">
@@ -37,18 +42,22 @@
     </section>
     <aside id="side">
       <div id="card"></div>
+      <div id="alerts"></div>
       <nav id="tabs" role="tablist"></nav>
       <div id="panels"></div>
     </aside>
   </main>
-  <footer><span>Alta Ares · EDTH Paris 2026</span><span id="foot-info"></span><span>fleetkit viewer: read-only, every verdict comes from the kit</span></footer>
-  <div id="modal" hidden><div class="sheet"><h3>Keyboard</h3><dl>
-    <dt>Space</dt><dd>play or pause</dd><dt>← →</dt><dd>1 s back or forward (Shift: 10 s)</dd>
-    <dt>Home End</dt><dd>start or end</dd><dt>F</dt><dd>fit the map</dd><dt>L</dt><dd>labels</dd><dt>T</dt><dd>light or dark</dd>
-    <dt>Esc</dt><dd>clear the selection</dd><dt>Wheel, drag</dt><dd>zoom and pan the map</dd><dt>Click</dt><dd>select an aircraft, or seek on the timeline</dd>
-    </dl><button id="close" class="ghost">Close</button></div></div>
+  <footer><span>Alta Ares · EDTH Paris 2026</span><span id="foot-info"></span><span>donnees simulees : chaque verdict vient du kit</span></footer>
+  <div id="modal" hidden><div class="sheet"><h3>Clavier</h3><dl>
+    <dt>Espace</dt><dd>lecture ou pause</dd><dt>Fleches</dt><dd>1 s avant ou arriere (Maj : 10 s)</dd>
+    <dt>Debut Fin</dt><dd>debut ou fin</dd><dt>F</dt><dd>ajuster la carte</dd><dt>L</dt><dd>etiquettes</dd><dt>T</dt><dd>clair ou sombre</dd>
+    <dt>Echap</dt><dd>effacer la selection</dd><dt>Glisser</dt><dd>orbiter la camera 3D</dd><dt>Molette</dt><dd>zoom</dd><dt>Maj + glisser ou clic droit</dt><dd>deplacer la camera</dd><dt>Clic</dt><dd>selectionner un appareil, ou chercher sur la ligne de temps</dd>
+    </dl><button id="close" class="ghost">Fermer</button></div></div>
 </div>
 <script id="data" type="application/json">__DATA__</script>
+<script>
+/*__THREE__*/
+</script>
 <script>
 /*__JS__*/
 </script>
