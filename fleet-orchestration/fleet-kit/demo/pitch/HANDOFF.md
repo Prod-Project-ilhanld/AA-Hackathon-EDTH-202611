@@ -5,8 +5,11 @@
 The pitch is now built around **link loss and safety** (branch `feature/pitch-linkloss`):
 
 - `../SCRIPT_JURY.md` rewritten in this order: hook, the link-cut problem, live link-loss demo, official sizing grid,
-  five on-board rules, the rejected variant, planner safety nets, close. 312 words, about 2:25 with clicks; 2:00 cut
-  240 words, about 1:55. Two tabs only: the deck and `view_linkloss.html`. Facts table updated.
+  five on-board rules, the rejected variant, planner safety nets, close. 308 words, about 2:26 with clicks; 2:00 cut
+  243 words, about 1:58. Two tabs only: the deck and `view_linkloss.html`. Facts table updated.
+- **Plain-language pass** (the jury is mostly not technical: officers, investors, military customers): no kit jargon
+  on the slides or in the spoken lines (no S_loss, retention, seeds, bytes, B/s, validator, R4/R8, file paths). The
+  exact figures moved to the speaker notes ("If asked"), the Q&A table and "Facts behind the lines".
 - New deck: 8 pitch slides + 3 Q&A slides (Why cards, known limit, score if asked). Claude Slides artifact
   https://claude.ai/artifact/Sa6b5ogCyT77EG7GL9apLi (**private** until its owner shares it). Sources in
   `deck-linkloss/` (same layout as `deck/`, speaker notes = the spoken lines), offline backup

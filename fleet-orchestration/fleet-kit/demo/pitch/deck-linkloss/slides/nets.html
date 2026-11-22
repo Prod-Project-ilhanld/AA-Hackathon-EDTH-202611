@@ -1,24 +1,24 @@
 <section id="nets" class="light">
-<p class="eyebrow">Before take-off · the planner</p>
-<h2>The same idea, in the planner</h2>
+<p class="eyebrow">Before take-off · the mission plan</p>
+<h2>A safe plan is always ready, and always explained</h2>
 <div class="split">
 <div class="nets">
-<div class="net in"><p class="n">01</p><p class="d">A valid plan file is written before the search starts.</p></div>
-<div class="net in" style="--i:1"><p class="n">02</p><p class="d">The search stops at 38 s; a 52 s alarm writes the best valid plan.</p></div>
-<div class="net in" style="--i:2"><p class="n">03</p><p class="d">Any error falls back to the kit’s greedy plan.</p></div>
-<div class="net in" style="--i:3"><p class="n">04</p><p class="d">It keeps the kit’s plan if that scores better: 0 of 200 seeds below baseline.</p></div>
-<div class="net in" style="--i:4"><p class="n">05</p><p class="d">Every plan passes the kit validator: 0 invalid in 333 runs, slowest 39.5 s of 60 s.</p></div>
-<div class="net in" style="--i:5"><p class="n">06</p><p class="d">Never strikes within 200 m of a civilian or a friendly.</p></div>
+<div class="net in"><p class="n">01</p><p class="d">A safe plan is saved before the computer even starts thinking.</p></div>
+<div class="net in" style="--i:1"><p class="n">02</p><p class="d">If time runs out or something crashes, the best safe plan goes out automatically.</p></div>
+<div class="net in" style="--i:2"><p class="n">03</p><p class="d">Never worse than the organisers’ standard plan, on 200 test missions.</p></div>
+<div class="net in" style="--i:3"><p class="n">04</p><p class="d">Every plan checked against the official rules: none rejected in 333 runs.</p></div>
+<div class="net in" style="--i:4"><p class="n">05</p><p class="d">Never strikes within 200 metres of a civilian or a friend.</p></div>
+<div class="net in" style="--i:5"><p class="n">06</p><p class="d">Runs on an ordinary laptop, in under a minute.</p></div>
 </div>
 <div style="display:flex;flex-direction:column;gap:16px">
-<img class="shot in" style="--i:2;width:660px;height:311px" src="/_blob/b0ed446511947f43e26527337810fb01" alt="Why card for contact C27 in the operator view: not served, 140 m from a civilian, inside the 200 m collateral radius">
-<p class="cap soft">Every decision is explained. C27 refused: 140 m from a civilian. Python standard library, no GPU, a laptop.</p>
+<img class="shot in" style="--i:2;width:660px;height:311px" src="/_blob/b0ed446511947f43e26527337810fb01" alt="Explanation card in the operator view: this target was refused because it is 140 metres from a civilian">
+<p class="cap soft">What the operator sees: this target was refused, a civilian is 140 metres away.</p>
 </div>
 </div>
-<p class="foot">Source: handin/planner.py, handin/params.py; final set (200), shift suite (125), 8 public scenarios; view_ops.html.</p>
-<aside>“Same for the planner. A valid plan is saved before the search starts, an alarm writes the best plan, and every plan passes the official validator: zero invalid in three hundred and thirty-three runs. Every refusal is explained: this target sits a hundred and forty metres from a civilian. All on a laptop.”
+<p class="foot">Source: the planning software of our final submission, tested on 333 missions.</p>
+<aside>“Before take-off, the same idea. A safe plan is ready before the computer even starts, and if anything crashes, the best safe plan goes out automatically. Every choice is explained to the operator: this target was refused because a civilian is too close. All on an ordinary laptop.”
 
-2:00 cut: drop “an alarm writes the best plan” and the C27 sentence.
+2:00 cut: drop “Every choice is explained to the operator: this target was refused because a civilian is too close.”
 
-333 runs = 200 final set + 125 shift suite + 8 public scenarios.</aside>
+If asked (handin/planner.py, params.py): an empty valid plan is written before solving; the search stops at 38 s and a 52 s alarm writes the best valid plan (limit 60 s); any exception falls back to the kit’s greedy plan; it keeps the greedy plan if that scores better (0 of 200 seeds below it); 0 invalid in 333 runs (200 final set + 125 shift suite + 8 public scenarios), slowest 39.5 s; collateral radius 200 m (R7). Python standard library, no GPU.</aside>
 </section>

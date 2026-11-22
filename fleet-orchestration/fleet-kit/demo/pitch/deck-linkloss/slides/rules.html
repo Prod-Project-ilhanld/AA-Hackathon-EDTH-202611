@@ -1,15 +1,17 @@
 <section id="rules" class="dark">
 <p class="eyebrow">On board, every drone</p>
-<h2>Five rules the policy never breaks</h2>
+<h2>Five rules every drone follows on its own</h2>
 <div class="rules">
-<div class="rule in"><p class="n">01</p><div><p class="what">Never fire without a confirmed observation</p><p class="how">R4 guard: a striker waits short of its target, up to 40 s, for a late scout observation.</p></div></div>
-<div class="rule in" style="--i:1"><p class="n">02</p><div><p class="what">A strike group aborts together</p><p class="how">If one co-striker aborts, the others abort too: never half-flown.</p></div></div>
-<div class="rule in" style="--i:2"><p class="n">03</p><div><p class="what">Hold when a known zone crosses the route</p><p class="how">Sensed within 300 m, or heard from a peer one step later.</p></div></div>
-<div class="rule in" style="--i:3"><p class="n">04</p><div><p class="what">Keep 40 m separation</p><p class="how">Hold or back off when a peer is predicted to pass too close (R8).</p></div></div>
-<div class="rule in" style="--i:4"><p class="n">05</p><div><p class="what">Stop 30 s before a target that turned friendly</p><p class="how">Engaging a reclassified target is a failed run.</p></div></div>
+<div class="rule in"><p class="n">01</p><div><p class="what">No strike without confirmation</p><p class="how">A drone fires only once a scout has confirmed the target. If the confirmation is late, it waits.</p></div></div>
+<div class="rule in" style="--i:1"><p class="n">02</p><div><p class="what">Attack together, or not at all</p><p class="how">If one drone of an attack group pulls out, the others pull out too. Never a half-done attack.</p></div></div>
+<div class="rule in" style="--i:2"><p class="n">03</p><div><p class="what">Stop before a no-fly zone</p><p class="how">As soon as a drone spots one on its path, or hears about it from a teammate.</p></div></div>
+<div class="rule in" style="--i:3"><p class="n">04</p><div><p class="what">Keep your distance</p><p class="how">Never closer than 40 metres to another drone.</p></div></div>
+<div class="rule in" style="--i:4"><p class="n">05</p><div><p class="what">Never hit a friend</p><p class="how">If a target turns out to be friendly, the drone stops well before it.</p></div></div>
 </div>
-<p class="foot">Source: handin/policy.py at handin-final (R4 guard, group abort, known-zone check, separation hold, STOP_S = 30 s).</p>
-<aside>“Five rules fly on every drone. Never fire without a confirmed observation. A strike group aborts together. Hold when a known zone crosses your route. Keep forty metres apart. Stop short of a target that turned friendly.”
+<p class="foot">Source: the on-board software of our final submission.</p>
+<aside>“That works because every drone follows five simple rules on its own. No strike without confirmation. Attack together, or not at all. Stop before a no-fly zone. Keep your distance. Never hit a friend.”
 
-2:00 cut: say only “Five rules fly on every drone; they are on the slide.”</aside>
+2:00 cut: say only “Every drone follows five simple rules on its own; they are on the slide.”
+
+If asked (handin/policy.py): rule 1 is the R4 guard, a striker waits short of its target up to 40 s for a late scout observation; rule 2 is the group abort; rule 3 holds when a known zone crosses the route, sensed within 300 m or heard one step later; rule 4 keeps 40 m (d_sep) plus a 6 m margin, the R8 rule; rule 5 stops 30 s before a reclassified target.</aside>
 </section>

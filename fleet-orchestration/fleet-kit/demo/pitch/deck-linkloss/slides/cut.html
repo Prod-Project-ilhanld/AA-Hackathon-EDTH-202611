@@ -1,23 +1,19 @@
 <section id="cut" class="light">
 <p class="eyebrow">The problem</p>
-<h2>After the cut, each drone is alone</h2>
+<h2>When the radio dies, each drone is on its own</h2>
 <div class="stats">
-<div class="stat in"><p class="big">¼ to ½</p><p class="label">of the way through the plan, the ground goes silent</p></div>
-<div class="stat in" style="--i:1"><p class="big">1 s</p><p class="label">each drone decides alone, once per second</p></div>
-<div class="stat in" style="--i:2"><p class="big">300 m</p><p class="label">all it can sense around it</p></div>
-<div class="stat in" style="--i:3"><p class="big">64 B</p><p class="label">per message, arriving one step later</p></div>
+<div class="stat in"><x-icon class="ico" name="Link"></x-icon><p class="head">No ground control</p><p class="label">Mid-mission, the link to the operators is cut.</p></div>
+<div class="stat in" style="--i:1"><x-icon class="ico" name="Search"></x-icon><p class="head">Short sight</p><p class="label">Each drone only sees what is close by.</p></div>
+<div class="stat in" style="--i:2"><x-icon class="ico" name="Chat"></x-icon><p class="head">Few words</p><p class="label">Drones pass each other tiny messages, and they arrive late.</p></div>
+<div class="stat in" style="--i:3"><x-icon class="ico" name="Warning"></x-icon><p class="head">Surprises</p><p class="label">A no-fly zone appears, a target turns friendly, a drone goes down.</p></div>
 </div>
-<div class="pills in" style="--i:4">
-<p class="soft" style="font-size:28px">Then, unannounced:</p>
-<p class="pill">Pop-up no-fly zone</p>
-<p class="pill">Target turns friendly</p>
-<p class="pill">Drone failure</p>
-</div>
-<p class="verdict in" style="--i:5">One violation = failed run = <span class="hot">score 0</span></p>
-<p class="foot">Source: the kit’s link-loss rules, LINKLOSS.md (cut timing, 1 Hz policy, 300 m sensing, 64-byte messages, events, failure).</p>
-<aside>“Between a quarter and half of the mission, the ground goes silent. Each drone decides alone, once a second. It sees three hundred metres. Its messages are sixty-four bytes, and they arrive a second late. Then, without warning, a no-fly zone pops up, a target turns friendly, a drone fails. One violation, and the run scores zero.”
+<p class="verdict in" style="--i:4">One mistake, and the whole mission <span class="hot">counts for nothing</span>.</p>
+<p class="foot">Source: the organisers’ challenge rules for losing the radio link.</p>
+<aside>“Mid-mission, the radio link to the operators is cut. From then on, each drone is on its own. It only sees what is close by. It can only pass tiny messages to the others, and they arrive late. Then come the surprises: a no-fly zone appears, a target turns out to be friendly, a drone goes down. One mistake, and the whole mission counts for nothing.”
 
-2:00 cut: drop “It sees three hundred metres. Its messages are sixty-four bytes, and they arrive a second late.” The slide still shows them.
+2:00 cut: drop “It only sees what is close by. It can only pass tiny messages to the others, and they arrive late.” The slide still shows it.
 
-Then press the right arrow once (slide 3 ready for later) and switch to the viewer with Cmd+2.</aside>
+Then press the right arrow once (slide 3 ready for later) and switch to the viewer with Cmd+2.
+
+If asked for the exact rules (LINKLOSS.md): the cut falls a quarter to half of the way through the plan; each drone decides once per second; it senses 300 m around it; messages are at most 64 bytes and arrive one second later; a run with any violation scores zero.</aside>
 </section>
