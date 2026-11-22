@@ -157,7 +157,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:5px 16px;bord
 #hud .tk{padding:2px 4px;border-radius:3px;cursor:pointer;color:var(--muted)}
 #hud .tk:hover{background:var(--panel2)}#hud .tk.done{color:var(--ok)}
 
-#readout{position:absolute;left:10px;bottom:8px;font:11px var(--mono);color:var(--muted);pointer-events:none}
+#readout{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;font:11px var(--mono);color:var(--muted);pointer-events:none;text-shadow:0 0 4px var(--map)}
 #ccard{position:sticky;top:0;z-index:3;background:var(--panel);max-height:62%;overflow:auto;padding-bottom:2px}
 .gauges{grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .gauges .g{display:block;font-size:11px;line-height:1.3}
