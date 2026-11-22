@@ -8,7 +8,7 @@ What it pins down (measured on main, L1 to L3, popup-only events and combined ev
 - a zone that appears on the way forward is avoided: green regression guard;
 - a zone that appears BEHIND an aircraft that has already turned back: the policy used to retrace its route into
   it. Since #19 an aborted aircraft hovers, and every back-off checks known zones on the way back, so the
-  hand-built case passes (its xfail marker is removed). check_policy's L1-6 still fails (also with `broadcast`).
+  hand-built case passes (its xfail marker is removed), and so does check_policy's L1-6.
 
 `POLICY_UNDER_TEST=path/to/policy.py python3 -m pytest tests/test_policy_popup.py` runs the same tests on
 another copy of the policy (e.g. a patch under review). Standard library only, Python 3.9.
@@ -127,10 +127,9 @@ def test_the_popup_draw_finds_cases(team):
     assert found >= 2
 
 
-@pytest.mark.xfail(strict=False, reason="check_policy.py L1-6 (events: failure, reclassify, popup_zone): same cause as "
-                                        "the hand-built case. Not strict: this case depends on the generator and on "
-                                        "greedy_plan, so it may legitimately stop failing for other reasons.")
 def test_l1_seed_6_of_check_policy_does_not_fail(team):
+    """check_policy L1-6 (failure, reclassify, popup_zone) failed on main, as with `broadcast`; it passes since a
+    reclassified effector keeps to its plan until just short of its target."""
     sc = Scenario.from_dict(generate("L1", 6))
     plan = greedy_plan(sc)
     events = make_events(sc, plan, 7)                           # check_policy.py uses seed + 1
