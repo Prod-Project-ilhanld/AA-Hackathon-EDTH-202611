@@ -1,5 +1,8 @@
 # Script de démo (2 minutes) — Fleet Orchestration
 
+Pour le jury (anglais, 2 min 30, chiffres finaux) : voir `SCRIPT_JURY.md`. Ce fichier reste le script français
+d'origine.
+
 À adapter au scénario choisi avec l'équipe avant le pitch. Chiffres générés par
 `python demo/gen_script_demo.py` sur {level} seed {seed} — ne pas les recopier à la main,
 relancer le générateur à chaque nouveau plan.
@@ -36,10 +39,11 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 
 ## Limites à assumer si on nous les demande
 
-- Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- {gain_pct} % mesuré sur un seul scénario ({level} seed {seed}). Le chiffre solide est le banc
-  final de Louis (planner v7, fusionné dans `main`) : 50 graines par niveau, 94 578,6 pts contre
-  61 695,9 pour le glouton (x1,53 global, x2,0 sur L4), 0 plan invalide, 39,6 s au maximum.
+- Perte de liaison : politique `handin/policy.py`, score de dimensionnement 1,00 / 1,00, 0 run en échec
+  (`handin/LINKLOSS_FRONTIER.md`). Limite connue : L3-6, rétention 0,611.
+- {gain_pct} % mesuré sur un seul scénario ({level} seed {seed}). Le chiffre solide est le jeu
+  final (graines 9000 à 9049, jamais utilisées pour le réglage, 200 runs) : 99 580 pts contre 62 029 pour
+  le glouton (x1,605 global, x2,22 sur L4), 0 plan invalide, 0 graine sous le glouton.
 - Sur notre propre plan, le diagnostic de routage réel trouve encore ~{open_pts_ours} pts
   librement gagnables (sans toucher au plan actuel) et {contested_pts_ours} pts en concurrence
   avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a

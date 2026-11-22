@@ -7,6 +7,10 @@ slide). Avant le pitch, relire le cadre « À revérifier » en fin de fichier :
 
 Public visé : le jury. Durée cible : 5 slides pour le pitch, 3 de réserve pour les questions.
 
+**Pitch du jury (anglais, 2 min 30) : `SCRIPT_JURY.md`**, avec la diapositive de chiffres finaux. Les chiffres de la
+slide 4 ci-dessous ont été remplacés par ceux du jeu final ; les pourcentages de la borne (`main` ec5c41e) ne sont plus
+à jour et ne sont plus cités.
+
 ---
 
 ## Slide 1 : Le problème (pitch)
@@ -15,7 +19,7 @@ Public visé : le jury. Durée cible : 5 slides pour le pitch, 3 de réserve pou
 
 - Dix règles (R1 à R10) : collatéral, séparation 40 m, fenêtres de temps, engagement synchronisé.
 - Score = points servis, moins 0,5 par Wh, moins 10 par effecteur utilisé. Un plan invalide vaut zéro.
-- Au niveau L4 (100 drones, 70 contacts), le glouton atteint **34 % de la borne** (voir slide 4).
+- Au niveau L4 (100 drones, 70 contacts), le glouton atteint **34 % de la borne** (banc d'entraînement, graines 0 à 49).
 
 Notes : le jury regarde la somme des scores sur des scénarios cachés. Un seul plan invalide ou en retard
 vaut zéro, donc la prudence compte autant que le gain.
@@ -60,25 +64,23 @@ non servis sur ce scénario.
 
 ## Slide 4 : Où on en est, mesuré (pitch)
 
-**Planificateur : 79 % de la borne. Glouton : 51 %.**
+**Sur des graines jamais vues : x1,6 au total, x2,2 sur L4. Jamais sous le glouton.**
 
-| Niveau | Borne moyenne | Notre plan | % de la borne | Glouton | % de la borne |
-|---|---:|---:|---:|---:|---:|
-| L1 | 108,7 | 101,7 | 93,5 % | 95,1 | 87,5 % |
-| L2 | 265,9 | 250,9 | 94,4 % | 227,7 | 85,6 % |
-| L3 | 530,3 | 490,4 | 92,5 % | 387,9 | 73,2 % |
-| L4 | 1534,5 | 1081,3 | 70,5 % | 523,2 | 34,1 % |
+| Niveau | Notre plan contre le glouton du kit |
+|---|---:|
+| L1 | x1,088 |
+| L2 | x1,073 |
+| L3 | x1,265 |
+| L4 | **x2,22** |
+| Total | **x1,605** (99 580 contre 62 029) |
 
-Données : graines d'entraînement 0 à 49 par niveau, `main` au commit ec5c41e (200 runs, 0 invalide,
-38,6 s au maximum, total 96 214,6 contre 61 695,6 pour le glouton, x1,56). Sur graines cachées
-simulées (holdout 5000 à 5049, 200 runs) : **x1,51 global, x1,95 sur L4, 0 échec, 41,1 s au maximum**.
+Données : jeu final, graines 9000 à 9049, jamais utilisées pour le réglage, 200 runs, Python 3.9.6, 2 cœurs par run
+(prudent). 0 plan invalide, 0 graine sous le glouton sur 200 : le planificateur rend le meilleur de son plan et de
+celui du glouton, il ne peut donc pas faire moins par construction. Les 8 scénarios publics : 8/8 valides, 4252,9
+contre 2748,6, 39,5 s au maximum sur 60 s.
 
-Notes : la borne est une borne supérieure, pas un score atteignable. Elle ignore la séparation R8, la
-synchronisation R10 et le temps des éclaireurs. Un plan réel ne l'atteint donc jamais. Sur L1 à L3 on est
-à plus de 92 % : il reste peu à gagner. Sur L4, le reste (30 %) vient probablement de R8 (le principal mur du glouton,
-selon nos mesures de rejets), sans que ce soit prouvé pour notre plan. La borne ne fait jamais moins qu'un plan valide : 0 violation sur 200 plans réels.
-
-Rejouer : `python3 tools/bound.py --bench bench.json` (sortie de `python3 tools/bench.py --json bench.json`).
+Notes : le gain vient de L4, où drones et effecteurs sont disputés (les 50 effecteurs légers sont tous utilisés sur
+L4 graine 3). Sur L1 et L2, le glouton prend déjà l'essentiel du possible.
 
 ---
 
@@ -127,9 +129,9 @@ passage sous 30 m : gain d'au plus 0,5 point par effecteur, risque de faille. É
 
 ## Réserve C : Limites assumées
 
-- Perte de liaison : traitée à part (`linkloss/`), isolée du plan remis, pas de politique publiée au moment
-  de la remise.
-- L4 est à 70 % de la borne ; la borne est lâche (R8 ignorée), l'écart réel atteignable est inconnu.
+- Perte de liaison : politique `handin/policy.py`, score de dimensionnement 1,00 / 1,00, 0 run en échec
+  (`handin/LINKLOSS_FRONTIER.md`). Limite connue : L3-6, rétention 0,611 (deux drones abandonnent au-dessus de la base).
+- L4 : x2,22 sur graines jamais vues ; la borne supérieure est lâche (R8 ignorée), l'écart réel atteignable est inconnu.
 - Les chiffres de la slide 4 portent sur des scénarios produits par le générateur du kit (le même que celui
   du jury), pas sur les scénarios cachés eux-mêmes.
 - L'alarme de secours repose sur `SIGALRM`, qui n'existe pas sous Windows. La CI tourne sous Linux (Python 3.9).
@@ -138,13 +140,13 @@ passage sous 30 m : gain d'au plus 0,5 point par effecteur, risque de faille. É
 
 ## À revérifier avant le pitch
 
-1. **Commit de référence.** Les chiffres de la slide 4 portent sur `main` ec5c41e (banc final du 21/11, graines
-   d'entraînement). Les chiffres holdout (x1,51, x1,95) datent de `main` 55327de. Si `main` change, relancer :
+1. **Commit de référence.** Les chiffres de la slide 4 portent sur le tag `handin-final` (c33b1ef), jeu final
+   9000 à 9049. Le code est gelé : ne plus les changer. Pour rejouer la borne sur l'entraînement :
    ```
    python3 tools/bench.py --levels L1 L2 L3 L4 --seeds 0-49 --json bench.json
    python3 tools/bound.py --bench bench.json
    ```
-   (plusieurs dizaines de minutes sur une machine inactive) et remplacer le tableau.
+   (plusieurs dizaines de minutes sur une machine inactive).
 2. **Repli glouton.** La ligne « repli » de la slide 5 décrit la PR 7 : à garder seulement si elle est fusionnée.
 3. **Budget.** Le budget est de 38 s dans `handin/params.py` : si l'équipe le change, mettre la slide à jour.
-4. **Limite de durée du pitch.** Non connue de moi : les 5 slides de pitch visent environ 3 minutes.
+4. **Limite de durée du pitch.** 2 min 30 (fenêtre de 2 à 3 minutes), en anglais : voir `SCRIPT_JURY.md`.

@@ -71,6 +71,8 @@ rapport l'indique explicitement dans chaque ligne concernée.
 
 ## Pitch : slides, vidéo de secours, répétition (CP3.5)
 
+- `SCRIPT_JURY.md` : **script du jury en anglais** (2 min 30, coupe à 2 min), diapositive des chiffres finaux,
+  questions-réponses, plan de secours, liste de vérification avant le pitch.
 - `SLIDES_METHODE_ROBUSTESSE.md` : slides de méthode et de robustesse, notes orales, chiffres rejouables, cadre
   « À revérifier avant le pitch ».
 - `VIDEO_SECOURS.md` : préparation vérifiée, découpage de 2 minutes, règles de tournage (la vidéo n'est pas dans le dépôt).

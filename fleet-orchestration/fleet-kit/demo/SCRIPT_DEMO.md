@@ -1,5 +1,8 @@
 # Script de démo (2 minutes) — Fleet Orchestration
 
+Pour le jury (anglais, 2 min 30, chiffres finaux) : voir `SCRIPT_JURY.md`. Ce fichier reste le script français
+d'origine.
+
 À adapter au scénario choisi avec l'équipe avant le pitch. Chiffres générés par
 `python demo/gen_script_demo.py` sur L4 seed 3 — ne pas les recopier à la main,
 relancer le générateur à chaque nouveau plan.
@@ -25,8 +28,8 @@ la table rien qu'en rejouant le vrai routage sur chacun des contacts qu'il manqu
 
 ## Preuve chiffrée (30 s)
 
-« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 1076,7 points,
-**+102 %**, plan valide sur les 10 règles, 37 contacts servis contre
+« Résultat mesuré, pas estimé : glouton 532,9 → notre plan 1064,6 points,
+**+100 %**, plan valide sur les 10 règles, 39 contacts servis contre
 18. » (Afficher le tableau de score en haut de `explication.md`.)
 
 ## Clôture (10 s)
@@ -36,12 +39,13 @@ peut le rejouer en direct si le jury veut changer de scénario. »
 
 ## Limites à assumer si on nous les demande
 
-- Pas de politique de perte de liaison : non publiée par les organisateurs au moment du rendu.
-- 102 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le banc
-  final de Louis (planner v7, fusionné dans `main`) : 50 graines par niveau, 94 578,6 pts contre
-  61 695,9 pour le glouton (x1,53 global, x2,0 sur L4), 0 plan invalide, 39,6 s au maximum.
-- Sur notre propre plan, le diagnostic de routage réel trouve encore ~167 pts
-  librement gagnables (sans toucher au plan actuel) et 84 pts en concurrence
+- Perte de liaison : politique `handin/policy.py`, score de dimensionnement 1,00 / 1,00, 0 run en échec
+  (`handin/LINKLOSS_FRONTIER.md`). Limite connue : L3-6, rétention 0,611.
+- 100 % mesuré sur un seul scénario (L4 seed 3). Le chiffre solide est le jeu
+  final (graines 9000 à 9049, jamais utilisées pour le réglage, 200 runs) : 99 580 pts contre 62 029 pour
+  le glouton (x1,605 global, x2,22 sur L4), 0 plan invalide, 0 graine sous le glouton.
+- Sur notre propre plan, le diagnostic de routage réel trouve encore ~39 pts
+  librement gagnables (sans toucher au plan actuel) et 208 pts en concurrence
   avec un contact déjà servi pour les mêmes drones. Chiffre approximatif : le test par contact a
   un budget de temps (8 s par défaut, `DIAG_BUDGET_S`) ; sous forte charge machine, quelques
   contacts limites basculent sur l'estimation en ligne directe, ce qui fait varier ce total de
