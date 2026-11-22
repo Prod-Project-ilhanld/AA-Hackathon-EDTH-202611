@@ -25,3 +25,17 @@ POOL_GRACE_S = 8.0     # how long past the deadline the pool waits for a worker
 BUDGET_FLOOR_S = 10.0         # large fleets: the budget never shrinks below this
 BUDGET_SHRINK_FROM = 100      # ... shrinks above this many aircraft
 BUDGET_SHRINK_PER_AC = 0.04   # ... by this many seconds per extra aircraft
+
+# Scout cruise levels tried, in order. PLANNER_LOW_SCOUT=1 tries 35 m first (less climb, wider ground reach of an
+# observation); OFF by default: paired L3 0-11 -3.7 +- 3.7 per seed (6/12 worse), L4 +12.9 +- 11.4 (4/12 worse).
+LOW_SCOUT = os.environ.get("PLANNER_LOW_SCOUT", "0") == "1"
+SCOUT_LEVELS = (35.0, 70.0, 110.0) if LOW_SCOUT else (70.0, 110.0)
+
+# Repair phase (ruin and recreate around the best plan, as in a large neighbourhood search), ON by default (paired,
+# FLEET_ITERS=3, seeds 0-11: L3 +2.4 +- 1.3 per seed, L4 +19.0 +- 5.0, 0/24 worse, 0 invalid). The last LNS_SHARE of
+# the budget drops 1 or 2 scouts with the strikes they confirm and re-serves every unserved contact, keeping the
+# result only when the kit scorer says it is valid and strictly better. Fleets above LNS_MIN_AC only (L3, L4).
+LNS = os.environ.get("PLANNER_LNS", "1") != "0"
+LNS_SHARE = float(os.environ.get("PLANNER_LNS_SHARE", "0.35"))
+LNS_MIN_AC = 21
+LNS_ITERS = 6          # with FLEET_ITERS > 0: exactly this many repairs per worker, reproducible plan
