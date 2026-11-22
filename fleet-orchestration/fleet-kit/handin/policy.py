@@ -485,8 +485,9 @@ class Policy:
             self._last_mode = "return"
 
         if abort:
-            # Hover instead of retracing the route against later traffic; back off only when in an on-plan peer's way.
-            if self._blocking(t, tau) and not self._r8_conflict(t, tau, -1.0):
+            # Hover instead of retracing the route against later traffic; back off when in an on-plan peer's way
+            # or after 15s so aborted craft don't park permanently in a target area.
+            if (self._blocking(t, tau, horizon=10) or self._hold_streak >= 15) and not self._r8_conflict(t, tau, -1.0):
                 if self._hold_streak > 0:
                     self._rt_ttl = 3
                 self._hold_streak = 0
