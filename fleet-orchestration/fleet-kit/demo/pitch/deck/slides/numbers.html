@@ -1,0 +1,26 @@
+<section id="numbers" class="dark">
+<div class="head">
+<p class="eyebrow">Backup · if asked about scores</p>
+<h2>Measured on seeds we never tuned on</h2>
+</div>
+<div class="row grow">
+<div class="col" style="width:760px">
+<table>
+<tr><th style="width:50%">Level</th><th style="width:50%;text-align:right">Ours vs kit greedy</th></tr>
+<tr><td>L1</td><td style="text-align:right">×1.088</td></tr>
+<tr><td>L2</td><td style="text-align:right">×1.073</td></tr>
+<tr><td>L3</td><td style="text-align:right">×1.265</td></tr>
+<tr><td>L4 · 100 aircraft</td><td style="text-align:right;color:#F2A63B">×2.22</td></tr>
+<tr><td>Total</td><td style="text-align:right">×1.605</td></tr>
+</table>
+<p class="cap">99,580 points against 62,029 for the kit greedy plan.</p>
+</div>
+<div class="col grow" style="gap:32px">
+<div class="step in"><p class="stat">200 runs</p><p class="muted">Seeds 9000–9049 on all four levels, never used for tuning.</p></div>
+<div class="step in" style="--i:1"><p class="stat">0 invalid plans</p><p class="muted">Every plan passes the kit’s validator.</p></div>
+<div class="step in" style="--i:2"><p class="stat">0 seeds below baseline</p><p class="muted">By construction: we hand in the better of our plan and the kit’s.</p></div>
+</div>
+</div>
+<p class="foot">Python 3.9.6, 2 cores per run · SUB-15 Fleet Orchestration · EDTH Paris 2026</p>
+<aside>Only if asked. First: “Some teams score more points, and we say so. We put our effort where a front line needs it: zero invalid plans, a fallback that always hands in a valid plan, zero failed runs when the link drops, every decision explained.” Then, against the simple plan: 200 runs on seeds never used for tuning; 1.6 times its score overall, 2.2 times on the 100-drone level; never below it on any seed.</aside>
+</section>

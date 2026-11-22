@@ -1,0 +1,16 @@
+<section id="limits" class="dark">
+<div class="head">
+<p class="eyebrow">Backup · questions</p>
+<h2>Known limits and hard questions</h2>
+</div>
+<table class="tsmall">
+<tr><th style="width:24%">Question</th><th style="width:76%">Answer</th></tr>
+<tr><td>How many cores?</td><td>Measured with 2 cores per run. Up to 8 worker processes. On one core it stays valid and never below baseline: the kit greedy plan is the floor.</td></tr>
+<tr><td>500 aircraft?</td><td>The search budget shrinks to 22 s and the safety net always writes a valid plan. The final version was not re-timed at 500, so we claim no ratio there.</td></tr>
+<tr><td>Why not ML?</td><td>Learned solvers need a GPU, ignore synchronised strikes and the 40 m separation, and can’t say why they chose a target.</td></tr>
+<tr><td>Link-loss weak spot?</td><td>Scenario L3-6: retention 0.611. Two aircraft abort just after take-off and hover over the base. The fix broke three other scenarios, so it is not in.</td></tr>
+<tr><td>Not modelled</td><td>Sensor uncertainty, real radios, the legal framework, real C2 data formats.</td></tr>
+</table>
+<p class="foot">SUB-15 Fleet Orchestration · EDTH Paris 2026</p>
+<aside>Answer in one or two sentences, then stop. The full Q&amp;A table is in demo/SCRIPT_JURY.md.</aside>
+</section>

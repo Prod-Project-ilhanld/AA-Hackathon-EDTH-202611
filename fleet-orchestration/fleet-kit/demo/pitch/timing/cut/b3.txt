@@ -1,0 +1,1 @@
+We built the planner that solves it. Same scenario: every green ring is a target the simple plan leaves behind, and we serve it, without breaking a single rule. When the link is cut, our policy flies on board: a no-fly zone pops up across a strike, and the whole group holds.

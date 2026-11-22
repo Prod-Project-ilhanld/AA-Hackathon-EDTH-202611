@@ -1,0 +1,26 @@
+<section id="frontier" class="light">
+<div class="head">
+<p class="eyebrow">Link loss, measured</p>
+<h2>Zero failed runs on the official grid</h2>
+</div>
+<div class="row grow">
+<div class="col" style="width:940px">
+<table class="tsmall">
+<tr><th style="width:22%">Seeds</th><th style="width:22%">Sizing score</th><th style="width:34%">Lowest bandwidth that meets the bar, at 250 / 500 / 1000 / 2000 m</th><th style="width:22%">Failed runs</th></tr>
+<tr><td>5–14</td><td>1.00</td><td>50 / 50 / 50 / 50 B/s</td><td>0</td></tr>
+<tr><td>15–24 (fresh)</td><td>1.00</td><td>50 / 50 / 50 / 50 B/s</td><td>0</td></tr>
+</table>
+<p class="muted">50 B/s is the lowest bandwidth on the grid: the policy meets the bar at every range and bandwidth tested. Retention on the kit’s check: 0.990 and 0.995.</p>
+</div>
+<div class="col grow">
+<h3>On-board rules</h3>
+<div class="step in"><p class="small">Never fire without a confirmed observation.</p></div>
+<div class="step in" style="--i:1"><p class="small">A strike group aborts together, never half-flown.</p></div>
+<div class="step in" style="--i:2"><p class="small">Hold when a new zone crosses the route.</p></div>
+<div class="step in" style="--i:3"><p class="small">Hold or back off to keep 40 m from other aircraft.</p></div>
+<div class="step in" style="--i:4"><p class="small">Messages of 64 bytes at most.</p></div>
+</div>
+</div>
+<p class="foot">Source: handin/LINKLOSS_FRONTIER.md · SUB-15 Fleet Orchestration · EDTH Paris 2026</p>
+<aside>“On the official grid: zero failed runs, down to 50 bytes per second.” If asked about traffic: a lower-traffic variant scored better on paper (0.967 against 0.949) but had one failed run at 250 m, and a failed run scores zero, so we kept the safer policy.</aside>
+</section>
