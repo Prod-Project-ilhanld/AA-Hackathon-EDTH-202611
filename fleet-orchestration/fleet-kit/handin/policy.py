@@ -245,6 +245,18 @@ class Policy:
         return any(segment_enters_cylinder(a, b, (cx, cy), r + 1.0, top)
                    for cx, cy, r, top in self.zones for a, b in zip(pts, pts[1:]))
 
+    def _home_clear(self, t: float, tau: float) -> bool:
+        """True if no peer is predicted within 2 x (d_sep + pad) of our way home at any second of the trip."""
+        d_lim = 2.0 * (self.rules.d_sep_m + SEP_PAD_M)
+        for k in range(int(tau - self.clock.start) + 2):
+            me = self.clock.position(max(self.clock.start, tau - k))
+            for aid in self.clocks:
+                if aid != self.aircraft_id:
+                    q = self._peer_pos_at(aid, t + k, t)
+                    if q is not None and dist3(me, q) < d_lim:
+                        return False
+        return True
+
     def _peer_pos_at(self, aid: str, t: float, now_t: float) -> Optional[Tuple[float, float, float]]:
         clk = self.clocks[aid]
         if aid in self.peer_state:
@@ -520,7 +532,10 @@ class Policy:
 
         if abort:
             # Hover instead of retracing the route against later traffic; back off only when in an on-plan peer's way.
-            if (tau - self.clock.start <= HOME_S or self._blocking(t, tau)) \
+            # Right after take-off, fly home and land, but only on a way home nobody else is near: a departing
+            # peer does not yield to a returning aircraft.
+            home = tau - self.clock.start <= HOME_S and self._home_clear(t, tau)
+            if (home or self._blocking(t, tau)) \
                     and not self._r8_conflict(t, tau, -1.0) and not self._back_hits_known_zone(tau):
                 if self._hold_streak > 0:
                     self._rt_ttl = 3
