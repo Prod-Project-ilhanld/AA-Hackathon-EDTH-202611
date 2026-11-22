@@ -1,8 +1,8 @@
 # Jury script: 2:30, English
 
 SUB-15 Fleet Orchestration. Slot **2:30** (hard window 2:00 to 3:00), with a **2:00 cut** below. Jury: army officers and
-investors. Presenters: **A = Louis** (beats 1 to 3), **B = Swann** (beats 4 to 6). Whoever isn't speaking drives the
-laptop. Demo scenario: **L4 seed 3** (100 aircraft, 90 contacts), every page built from the tag `handin-final`
+investors. **One presenter**, who also drives the laptop: switch tabs with Cmd+1 to Cmd+5, play and pause with Space,
+and click only where the table says "click". Demo scenario: **L4 seed 3** (100 aircraft, 90 contacts), every page built from the tag `handin-final`
 (`c33b1ef`). Every number below is measured; the numbers slide says where each one comes from.
 
 What we want the jury to remember:
@@ -13,51 +13,49 @@ What we want the jury to remember:
 
 ## Script (2:30)
 
-Times are targets. The spoken text runs 2:13 at 140 words per minute; the rest is clicks and the handover (see
+Times are targets. The spoken text runs 2:13 at 140 words per minute; the rest is clicks (see
 "How it was timed").
 
-### Beat 1: why we're different (0:00 to 0:20), A
+### Beat 1: why we're different (0:00 to 0:20)
 
 | Time | On screen / click | Say |
 |---|---|---|
 | 0:00 | Tab 1 `view_greedy.html`, at t = 0. | "Every team got the same kit. Two things set us apart. On the largest scenarios, a hundred aircraft, we score 2.2 times the kit baseline, on seeds we never saw. And when the radio link drops, our aircraft carry on safely: zero failed runs on the official grid." |
 
-### Beat 2: ours against the kit greedy plan (0:20 to 0:52), A
+### Beat 2: ours against the kit greedy plan (0:20 to 0:52)
 
 | Time | On screen / click | Say |
 |---|---|---|
 | 0:20 | Still tab 1: score panel **532.9**. | "Same scenario for both. Kit greedy: 533 points." |
-| 0:24 | **Tab 2** `view_ours.html` (Layers tab open, **Won vs greedy** ticked, 32× selected). Score **1064.6**, **VALID**. Press ▶. | "Ours: 1065, valid on all ten rules." |
+| 0:24 | **Tab 2** `view_ours.html` (Layers tab open, **Won vs greedy** ticked, 32× selected). Score **1064.6**, **VALID**. Press Space to play. | "Ours: 1065, valid on all ten rules." |
 | 0:28 | Point at the green rings (`+88 pts`, `+91 pts`, ...). Playback runs the whole mission in 28 s. | "Each green ring is a contact we serve and greedy misses: 21 of them, and we lose none. How: a fast builder, then a search over target order on every core, inside the time limit." |
 | 0:42 | Leave it playing. | "Aircraft stay 40 metres apart, take-offs are staggered on the shared pad, and hostiles that can never be legally struck are skipped." |
 
-### Beat 3: proof on unseen seeds (0:52 to 1:17), A
+### Beat 3: proof on unseen seeds (0:52 to 1:17)
 
 | Time | On screen / click | Say |
 |---|---|---|
 | 0:52 | **Tab 3**: numbers slide (text below). | "One scenario proves nothing. Final test: 200 runs on fresh seeds, never used for tuning. 1.6 times the baseline overall, 2.2 on the largest level." |
 | 1:03 | Point at the "0 of 200" line. | "Zero invalid plans, and zero seeds below baseline, by construction: we hand in the better of our plan and the kit's. Five shifted generators, like low battery: 1.98 times." |
 
-Handover to B (1:17).
-
-### Beat 4: the link drops (1:17 to 1:52), B
+### Beat 4: the link drops (1:17 to 1:52)
 
 | Time | On screen / click | Say |
 |---|---|---|
 | 1:17 | **Tab 4** `view_linkloss.html`, at t = 0, **Link** tab open. Banner: `LINK UP · FOLLOWING THE PLAN`. | "Now the link is cut, at 434 seconds." |
 | 1:20 | Click **`popup_zone t = 618 · r 82 m`** in the Link tab. The page jumps to t = 615 s; banner turns to `LINK CUT · POLICY IN COMMAND`. | "Each aircraft decides alone, with our policy on board. At 618 seconds a no-fly zone pops up across a four-aircraft strike." |
-| 1:30 | Press ▶ (8×). Count three seconds, pause at about **t = 645 s**. | "Watch:" |
+| 1:30 | Press Space (8×). Count **four** seconds, press Space again: about **t = 645 s**. Three seconds stops at 639 s, before the hold. | "Watch:" |
 | 1:34 | Point at the **four orange hold rings** next to the zone labelled `NEW`, just right of `Z02`. They are H02, L02, L10, L27, all due to strike C47; they hold from t = 640 s. | "all four stop and hold, in orange. The strike is dropped as a group, and nobody fires without a confirmed observation." |
 | 1:43 | Point at the top right: `RUN COMPLETED WITHOUT FAILURE`, **100 % retention**, points 2086 of 2086. | "Every reachable point kept. On the official grid: zero failed runs, down to 50 bytes per second." |
 
-### Beat 5: every decision explained (1:52 to 2:12), B
+### Beat 5: every decision explained (1:52 to 2:12)
 
 | Time | On screen / click | Say |
 |---|---|---|
 | 1:52 | **Tab 5** `view_ops.html`, **Why** tab, card **C35** already open (`SERVED H+00:05:34`). | "Every decision is explained. Contact C35: seen by scout S01, confirmed 41 seconds later, struck by three aircraft. Nearest friendly: 1.2 kilometres; we never strike within 200 metres." |
 | 2:04 | Click **C27** in the Why list (verdict `R7`). Card: "Forbidden by R7: 140 m from C84 (civilian), limit 200 m. No valid plan can serve it." | "Refused targets show the rule, like C27, 140 metres from a civilian." |
 
-### Beat 6: close (2:12 to 2:25), B
+### Beat 6: close (2:12 to 2:25)
 
 | Time | On screen / click | Say |
 |---|---|---|
@@ -152,11 +150,12 @@ within 41 m at H+00:06:48 (limit 40 m); the tightest confirmation is C04, engage
   3. The numbers slide.
   4. `view_linkloss.html`: **Link** tab open, at t = 0, speed **8×** (default), banner `LINK UP`.
   5. `view_ops.html`: **Why** tab, click **C35** so its card is open.
-- [ ] Dry-run tab 4 once: `popup_zone`, ▶, pause at ~645 s, see the four orange rings. Then click `popup_zone` again so
+- [ ] Dry-run tab 4 once: `popup_zone`, Space, four seconds, Space (~645 s), see the four orange rings. Then click `popup_zone` again so
       it sits at 615 s, or reload the tab.
 - [ ] Browser full screen; zoom until the score panel reads from the back of the room.
 - [ ] Do Not Disturb on, sound off, charger in.
-- [ ] Stopwatch where B can see it; agree on a signal for "switch to the 2:00 cut".
+- [ ] Stopwatch or phone timer where you can see it. Rule: if it shows more than 0:55 when you open tab 3, switch to
+      the 2:00 cut.
 - [ ] Numbers slide printed, and this Q&A table on paper or a phone.
 
 ## Demo assets
@@ -195,10 +194,10 @@ English.
 
 - Each beat's spoken text was read by macOS `say` (voice Samantha, default rate, about 155 words per minute with
   pauses) and measured with `afinfo`, then checked against a slower human pace of 140 words per minute.
-- 2:30 version: 311 words, 2:05 by `say`, 2:13 at 140 wpm. Add about 12 s for five tab switches, the three-second
-  playback in beat 4 and the handover: **about 2:25**.
+- 2:30 version: 311 words, 2:05 by `say`, 2:13 at 140 wpm. Add about 12 s for four tab switches, three clicks and
+  the four-second playback in beat 4: **about 2:25**.
 - 2:00 cut: 257 words, 1:43 by `say`, 1:50 at 140 wpm, **about 2:00** with clicks.
 - Playback speeds were measured in the browser: 8× moves 16 s of mission per 2 s, so t = 615 to 645 s takes about 4 s;
   32× plays the whole 900 s mission in 28 s.
-- Still to do: one rehearsal by Louis and Swann with a stopwatch. People presenting in a second language often speak
-  slower than 140 wpm; if the run goes over 2:30, use the 2:00 cut.
+- Still to do: one rehearsal out loud, clicking for real, with a stopwatch. People presenting in a second language
+  often speak slower than 140 wpm; if the run goes over 2:30, use the 2:00 cut.
