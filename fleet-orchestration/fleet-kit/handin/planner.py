@@ -29,7 +29,7 @@ from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # vendored kit helpers live in handin/fk
 
-from fk.baseline import SCOUT_LAYERS, _Planner  # noqa: E402
+from fk.baseline import SCOUT_LAYERS, SPEED_FACTOR, _Planner, _scout_route, best_range_speed  # noqa: E402
 from fk.geometry import hdist  # noqa: E402
 from fk.model import HOSTILE, SCOUT, UNKNOWN, Aircraft, Contact, Scenario, load_json, parse_plan, save_json  # noqa: E402
 from fk.energy import route_energy_wh  # noqa: E402
@@ -159,10 +159,44 @@ class FastPlanner(_Planner):
         gain = self._cur.points if self._cur is not None else 0.0
         return self.score + gain - rules.lambda_e * (energy_new - energy_old) - rules.c_eff * new_eff
 
+    def _positions(self, scout) -> list:
+        """Where a new observation may go in the scout's tour: the end first (the hand-in), then every other slot."""
+        n = len(self.tasks.get(scout.id, ()))
+        return [None] + list(range(n)) if params.INSERT_ANYWHERE else [None]
+
+    def _add_observation(self, scout, contact, z, angle, dep_shift, pos=None):
+        if pos is None:
+            return super()._add_observation(scout, contact, z, angle, dep_shift)
+        task = {"cid": contact.id, "point": self._obs_point(scout, contact, angle), "window": contact.window}
+        tasks = list(self.tasks[scout.id])
+        tasks.insert(pos, task)
+        first_lo = tasks[0]["window"][0]
+        speed = min(SPEED_FACTOR * scout.v_h_mps, best_range_speed(scout.power))
+        travel = hdist(scout.home, tasks[0]["point"]) / speed + z / scout.v_up_mps + 3.0
+        route = _scout_route(scout, tasks, max(0.0, first_lo - travel) + dep_shift, z, self.sc)
+        return (tasks, route) if route is not None else None
+
     def serve_unknown(self, contact: Contact) -> bool:
         self._cur = contact
         try:
-            return super().serve_unknown(contact)
+            if not params.INSERT_ANYWHERE:
+                return super().serve_unknown(contact)
+            for scout in self._scout_candidates(contact):
+                for pos in self._positions(scout):
+                    for z in SCOUT_LAYERS:
+                        for angle in (0.0, 60.0, -60.0):
+                            for dep_shift in (0.0, 7.0):
+                                built = self._add_observation(scout, contact, z, angle, dep_shift, pos)
+                                if built is None:
+                                    continue
+                                tasks, route = built
+                                new = self._try({scout.id: route})
+                                if new is not None and new > self.score:
+                                    self.routes[scout.id] = route
+                                    self.tasks[scout.id] = tasks
+                                    self.score = new
+                                    return True
+            return False
         finally:
             self._cur = None
 
@@ -192,19 +226,20 @@ class FastPlanner(_Planner):
                  (scouts[self.n_scouts:] if self.far else [], (0.0,), (0.0, 7.0)))
         for cands, angles, shifts in tiers:
             for scout in cands:
-                for z in SCOUT_LAYERS:
-                    for angle in angles:
-                        for dep_shift in shifts:
-                            built = self._add_observation(scout, contact, z, angle, dep_shift)
-                            if built is None:
-                                continue
-                            tasks, route = built
-                            if not self._prefilter({scout.id: route}):
-                                continue
-                            obs_end = max(w["t"] + w.get("dwell_s", 0.0) for w in route
-                                          if w.get("target") == contact.id and w.get("action") == "observe")
-                            if self._place_effectors(contact, effectors, obs_end, scout, tasks, route):
-                                return True
+                for pos in self._positions(scout):
+                    for z in SCOUT_LAYERS:
+                        for angle in angles:
+                            for dep_shift in shifts:
+                                built = self._add_observation(scout, contact, z, angle, dep_shift, pos)
+                                if built is None:
+                                    continue
+                                tasks, route = built
+                                if not self._prefilter({scout.id: route}):
+                                    continue
+                                obs_end = max(w["t"] + w.get("dwell_s", 0.0) for w in route
+                                              if w.get("target") == contact.id and w.get("action") == "observe")
+                                if self._place_effectors(contact, effectors, obs_end, scout, tasks, route):
+                                    return True
         return False
 
 
@@ -216,8 +251,9 @@ class RoutedPlanner(FastPlanner):
         self.eng = _routing.get_engine(scenario)
         self.layers = (None,) + tuple(EFFECTOR_LAYERS)
 
-    def _add_observation(self, scout, contact, z, angle, dep_shift):
-        tasks = self.tasks[scout.id] + [contact]
+    def _add_observation(self, scout, contact, z, angle, dep_shift, pos=None):
+        tasks = list(self.tasks[scout.id])
+        tasks.insert(len(tasks) if pos is None else pos, contact)
         try:
             route = _routing.build_scout_route(scout, tasks, self.sc, z_layer=z, depart_shift=dep_shift,
                                                engine=self.eng, angle_offset_deg=angle)
