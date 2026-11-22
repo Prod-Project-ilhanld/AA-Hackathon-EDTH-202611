@@ -181,3 +181,17 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:5px 16px;bord
 #altwrap{position:relative}#altmode{position:absolute;top:4px;right:8px;display:flex;gap:2px;z-index:2}
 #altmode button{font:inherit;font-size:11px;padding:2px 8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);cursor:pointer;border-radius:4px}
 #altmode button.on{color:var(--text);border-color:var(--text)}
+.ah{margin:10px 6px 4px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.al{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:start;padding:6px;border-radius:6px;cursor:pointer;font-size:12px}
+.al:hover{background:var(--panel2)}.al i{width:8px;height:8px;border-radius:50%;margin-top:4px;border:1.5px solid var(--muted)}.al.watch i{background:var(--warn);border-color:var(--warn)}
+.al em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+#brief{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);overflow:auto;padding:30px 16px}
+.bsheet{max-width:780px;margin:0 auto;background:#fff;color:#111;border-radius:8px;padding:22px 28px;font-size:13px;line-height:1.5}
+.bbar{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}.bbar button{font:inherit;font-size:12px;padding:5px 12px;border:1px solid #bbb;border-radius:6px;background:#f4f3ef;color:#111;cursor:pointer}
+.bsheet h2{margin:8px 0 2px;font-size:20px}.bsheet h3{margin:16px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #ccc;padding-bottom:2px}
+.bsheet .bm{color:#555;font-size:12px}.bsheet .bx{text-align:center;font:600 11px 'Space Mono',monospace;letter-spacing:.12em;color:#7a5a00;background:#fff3cd;padding:4px;border-radius:3px;margin:4px 0}
+.bsheet table{width:100%;border-collapse:collapse}.bsheet th,.bsheet td{text-align:left;padding:3px 6px;border-bottom:1px solid #ddd;font-size:12px}
+@media print{body>*:not(#brief){display:none!important}#brief{position:static;background:none;padding:0;overflow:visible}.bsheet{max-width:none;padding:0;border-radius:0}.bbar{display:none}}
+#brief[hidden]{display:none}
+#tabs button{padding:8px 7px;letter-spacing:.03em;font-size:10.5px}
+.bsheet th{background:#eee;color:#111;text-transform:none;letter-spacing:0}

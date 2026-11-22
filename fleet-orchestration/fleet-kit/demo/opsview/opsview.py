@@ -24,9 +24,11 @@ KIT = HERE.parent.parent
 if str(KIT) not in sys.path:
     sys.path.insert(0, str(KIT))
 
+from fleetkit.energy import route_energy_wh  # noqa: E402
 from fleetkit.geometry import hdist  # noqa: E402
 from fleetkit.model import CIVILIAN, FRIENDLY, HOSTILE, SCOUT, UNKNOWN, Scenario, load_json, parse_plan  # noqa: E402
 from fleetkit.scorer import evaluate  # noqa: E402
+from fleetkit.validator import route_pieces, separation_item  # noqa: E402
 from fleetkit.viewer import Viewer  # noqa: E402
 from fleetkit.viewer.brand import font_face_css, logo_data_uri  # noqa: E402
 
@@ -67,7 +69,7 @@ def build_ops(scenario: Any, plan: Optional[dict], model: Dict[str, Any], reason
     rules = scenario.rules
     ops: Dict[str, Any] = {"fleet": {}, "contacts": {}, "feed": [],
                            "rules": {"confirm": rules.confirm_margin_s, "dwell": rules.obs_dwell_s,
-                                     "collateral": rules.collateral_radius_m, "c_eff": rules.c_eff, "lambda": rules.lambda_e}}
+                                     "collateral": rules.collateral_radius_m, "c_eff": rules.c_eff, "lambda": rules.lambda_e, "d_sep": rules.d_sep_m}}
     routes: Dict[str, Any] = {}
     if plan is not None:
         routes = parse_plan(plan)[0] or {}
@@ -125,6 +127,7 @@ def build_ops(scenario: Any, plan: Optional[dict], model: Dict[str, Any], reason
                                 "text": "%s engages %s%s" % (e["aid"], cid, (" · %s served +%g pts" % (cid, info["points"])) if last else "")})
     ops["feed"].sort(key=lambda x: (x["t"], x["kind"], x["aid"]))
     ops["drones"], ops["outcome"] = drone_outcomes(scenario, model)
+    ops["alerts"] = build_alerts(scenario, routes, model, ops)
     return ops
 
 
@@ -163,6 +166,88 @@ def drone_outcomes(scenario: Any, model: Dict[str, Any]):
         share = sum(pts.get(m["contact"], 0) / len(contrib[m["contact"]]) for m in {(x["contact"]): x for x in good}.values())
         drones[a.id] = {"cat": cat, "pts": round(share, 1), "targets": sorted({m["contact"] for m in ms})}
     return drones, summary
+
+
+DEPART_S = 3.0  # les départs depuis un même emplacement sont cadencés par le planificateur : exclus du classement en vol
+
+
+def _min_sep(pa, pb, t_from=0.0):
+    """Distance minimale (m) et instant entre deux trajectoires affines par morceaux, à partir de `t_from` ; None si jamais en vol ensemble."""
+    best = None
+    i = j = 0
+    while i < len(pa) and j < len(pb):
+        a, b = pa[i], pb[j]
+        lo, hi = max(a[0], b[0], t_from), min(a[1], b[1])
+        if hi - lo > 1e-9:
+            def at(pc, t):
+                u = 0.0 if pc[1] - pc[0] < 1e-12 else (t - pc[0]) / (pc[1] - pc[0])
+                return [pc[2][k] + (pc[3][k] - pc[2][k]) * u for k in range(3)]
+            r0 = [x - y for x, y in zip(at(a, lo), at(b, lo))]
+            r1 = [x - y for x, y in zip(at(a, hi), at(b, hi))]
+            w = [(r1[k] - r0[k]) / (hi - lo) for k in range(3)]
+            qa = sum(x * x for x in w)
+            u = 0.0 if qa < 1e-12 else min(max(-sum(r0[k] * w[k] for k in range(3)) / qa, 0.0), hi - lo)
+            d = sum((r0[k] + u * w[k]) ** 2 for k in range(3)) ** 0.5
+            if best is None or d < best[0]:
+                best = (d, lo + u)
+        if a[1] < b[1]:
+            i += 1
+        else:
+            j += 1
+    return best
+
+
+def build_alerts(scenario: Any, routes: Dict[str, Any], model: Dict[str, Any], ops: Dict[str, Any], top: int = 5) -> list:
+    """Points faibles d'un plan valide : marges les plus serrées, classées. Exact, tiré du plan ; ce ne sont pas des violations.
+
+    sep : plus petite distance entre deux drones (R8, limite d_sep_m ; les paires qui frappent le même contact
+    sont exemptées près de lui par la règle, donc exclues ici). r4 : confirmation après l'observation. batt : énergie
+    restante (modèle du kit) à la fin du vol. r7 : distance d'un hostile servi au civil ou à l'ami le plus proche.
+    """
+    rules = scenario.rules
+    out: list = []
+    by = scenario.aircraft_by_id()
+    items = {}
+    for aid, r in routes.items():
+        if aid in by:
+            it = separation_item(aid, r, by[aid])
+            if it:
+                items[aid] = it
+    pairs = []
+    ids = sorted(items)
+    for x in range(len(ids)):
+        a = items[ids[x]]
+        for y in range(x + 1, len(ids)):
+            b = items[ids[y]]
+            if min(a[3], b[3]) - max(a[2], b[2]) <= 1e-9 or (a[4] is not None and a[4] == b[4]):
+                continue
+            m = _min_sep(a[1], b[1], max(a[2], b[2]) + DEPART_S)
+            if m:
+                pairs.append((m[0], m[1], ids[x], ids[y]))
+    for d, t, a, b in sorted(pairs)[:top]:
+        out.append({"kind": "sep", "level": "watch" if d < 1.5 * rules.d_sep_m else "ok", "t": round(t, 1), "aids": [a, b], "cid": None,
+                    "value": round(d, 1), "text": "%s and %s come within %.0f m (limit %g m)" % (a, b, d, rules.d_sep_m)})
+    r4 = sorted((i["r4_margin"] - rules.confirm_margin_s, cid) for cid, i in ops["contacts"].items() if i["r4_margin"] is not None)
+    for slack, cid in r4[:top]:
+        i = ops["contacts"][cid]
+        first = min(i["eng"], key=lambda e: e["t"])
+        out.append({"kind": "r4", "level": "watch" if slack < 5 else "ok", "t": first["t"], "aids": [first["aid"]], "cid": cid, "value": round(slack, 1),
+                    "text": "%s engaged %.1f s after the observation ended, minimum %g s (spare %.1f s)" % (cid, i["r4_margin"], rules.confirm_margin_s, slack)})
+    batt = []
+    for aid, r in routes.items():
+        a = by.get(aid)
+        if a is None or not a.usable_wh or not r.waypoints:
+            continue
+        batt.append(((a.usable_wh - route_energy_wh(r.waypoints, a)) / a.usable_wh, r.waypoints[-1].t, aid))
+    for frac, t, aid in sorted(batt)[:top]:
+        out.append({"kind": "batt", "level": "watch" if frac < 0.10 else "ok", "t": round(t, 1), "aids": [aid], "cid": None, "value": round(100 * frac, 1),
+                    "text": "%s has %.0f%% battery left at the end of its flight" % (aid, 100 * frac)})
+    r7 = sorted((i["r7"]["dist"], cid) for cid, i in ops["contacts"].items() if i["served_t"] is not None and i["r7"])
+    for dist, cid in r7[:top]:
+        i = ops["contacts"][cid]
+        out.append({"kind": "r7", "level": "watch" if dist < 1.25 * rules.collateral_radius_m else "ok", "t": i["served_t"], "aids": [], "cid": cid, "value": dist,
+                    "text": "%s served %d m from %s (%s), limit %g m" % (cid, dist, i["r7"]["id"], i["r7"]["cls"], rules.collateral_radius_m)})
+    return out
 
 
 class OpsViewer(Viewer):

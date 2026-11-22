@@ -9,7 +9,7 @@ const acById = {}; M.aircraft.forEach((a) => { acById[a.id] = a; });
 const coById = {}; W.contacts.forEach((c) => { coById[c.id] = c; });
 const N = hasPlan ? M.tracks[M.aircraft[0].id].p.length : 1;
 const THEMES = ["light", "dark", "night"];
-const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light", selC: null, follow: null, script: null, filter: null,
+const state = { t: 0, playing: false, speed: 8, sel: null, hover: null, labels: true, trails: "all", dark: false, theme: "light", selC: null, follow: null, script: null, filter: null, alertPair: null,
   show: { outcome: true, bigdrones: true, zones: true, protect: true, ranges: false, homes: true, routes: true, links: true, marks: true }, layers: {} };
 (M.layers || []).forEach((l, i) => { state.layers[i] = l.visible !== false; });
 let view = { cx: 0, cy: 0, k: 1 };
@@ -225,6 +225,9 @@ function drawMap() {
     if (state.sel === a.id || state.hover === a.id) { ctx.beginPath(); ctx.arc(X, Y, size + 9, 0, 6.2832); ctx.strokeStyle = css("--text"); ctx.lineWidth = 1.5; ctx.stroke(); }
     if (state.labels && (state.sel === a.id || view.k * 400 > 120)) { ctx.fillStyle = css("--text"); ctx.font = "10.5px 'Space Grotesk', system-ui, sans-serif"; ctx.fillText(a.id, X + 9, Y - 8); }
   });
+  if (state.alertPair) { const ps = state.alertPair.map((id) => posAt(id, t)); if (ps[0] && ps[1]) { const A = [sx(ps[0][0], w), sy(ps[0][1], h)], B = [sx(ps[1][0], w), sy(ps[1][1], h)];
+    ctx.strokeStyle = css("--bad"); ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]);
+    [A, B].forEach((q) => { ctx.beginPath(); ctx.arc(q[0], q[1], 16, 0, 6.2832); ctx.stroke(); }); ctx.fillStyle = css("--bad"); ctx.font = "600 11px 'Space Mono', monospace"; ctx.fillText(Math.round(Math.hypot(ps[0][0] - ps[1][0], ps[0][1] - ps[1][1], ps[0][2] - ps[1][2])) + " m", (A[0] + B[0]) / 2 + 8, (A[1] + B[1]) / 2 - 6); } }
   // scale bar
   const sb = niceStep(120 / view.k), len = sb * view.k;
   ctx.strokeStyle = css("--text"); ctx.fillStyle = css("--text"); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(w - 16 - len, h - 16); ctx.lineTo(w - 16, h - 16); ctx.stroke();
@@ -328,7 +331,7 @@ function drawAlt() {
 
 // ---------- side panel ----------
 const TABS = [["aircraft", "Aircraft"], ["contacts", "Contacts"]];
-if (OPS) TABS.push(["targets", "Why"], ["fleet", "Fleet"], ["feed", "Feed"]);
+if (OPS) TABS.push(["targets", "Why"], ["fleet", "Fleet"], ["alerts", "Alerts"], ["feed", "Feed"]);
 TABS.push(["issues", "Issues"]);
 if (link) TABS.push(["link", "Link"]);
 TABS.push(["layers", "Layers"]);
@@ -374,7 +377,7 @@ function updateLive() {
   el.innerHTML = `<span class="lk">LIVE</span> <b>${s.score.toFixed(1)}</b> <span class="sub">points ${s.pts} − energy ${s.cost.toFixed(1)} − effectors ${10 * s.eff}</span>`;
 }
 function buildTabs() {
-  $("tabs").innerHTML = TABS.map(([k, n]) => `<button role="tab" data-t="${k}" class="${k === curTab ? "on" : ""}">${n}${k === "issues" && hasPlan ? " (" + plan.violations.length + ")" : ""}</button>`).join("");
+  $("tabs").innerHTML = TABS.map(([k, n]) => `<button role="tab" data-t="${k}" class="${k === curTab ? "on" : ""}">${n}${k === "issues" && hasPlan ? " (" + plan.violations.length + ")" : ""}${k === "alerts" && OPS ? " (" + OPS.alerts.filter((a) => a.level === "watch").length + ")" : ""}</button>`).join("");
   $("tabs").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; curTab = b.dataset.t; buildTabs(); showPanel(); };
 }
 function showPanel() { document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("on", p.id === "p-" + curTab)); }
@@ -393,6 +396,12 @@ function buildPanels() {
       const r = e.target.closest("tr[data-c]"); if (r) selectContact(r.dataset.c, false); };
     const order = { strike: 0, spot: 1, wasted: 2, idle: 3 }, dl = Object.entries(OPS.drones).sort((a, b) => order[a[1].cat] - order[b[1].cat] || b[1].pts - a[1].pts || (a[0] < b[0] ? -1 : 1));
     mk("fleet", `<table class="tt"><thead><tr><th>Drone</th><th>Role</th><th>Pts share</th><th>Targets</th></tr></thead><tbody>${dl.map(([id, d]) => `<tr class="row" data-a="${id}"><td><span class="dot" style="background:var(--${typeKey(acById[id])})"></span>${id}</td><td class="r-${d.cat}"><i class="ob ${d.cat}"></i>${d.cat === "strike" ? "strike" : d.cat === "spot" ? "spotter" : d.cat}</td><td>${d.pts ? d.pts : ""}</td><td class="sub">${d.targets.join(" ")}</td></tr>`).join("")}</tbody></table><div class="sub" style="padding:6px">Points share: each served contact's points split equally among the drones that served it (engaged, or observed validly).</div>`).onclick = (e) => { const r = e.target.closest("tr[data-a]"); if (r) select(r.dataset.a === state.sel ? null : r.dataset.a); };
+    const AK = { sep: ["Closest drone pairs in flight (R8)", "limit " + OPS.rules.d_sep + " m, first 3 s after a departure excluded"], r4: ["Tightest confirmations (R4)", "min " + OPS.rules.confirm + " s after observation"], batt: ["Lowest battery at end of flight", "kit energy model"], r7: ["Closest to protected contacts (R7)", "limit " + OPS.rules.collateral + " m"] };
+    const watch = OPS.alerts.filter((a) => a.level === "watch").length;
+    mk("alerts", `<div class="sub" style="padding:6px">${watch ? `<b style="color:var(--warn)">${watch} margin${watch > 1 ? "s" : ""} under the watch threshold.</b>` : "No margin under the watch threshold."} These are not violations (the plan is checked by the kit): they show where it is closest to the limits. Click a line to go to the moment.</div>${["sep", "r4", "batt", "r7"].map((k) => { const L = OPS.alerts.map((a, i) => [a, i]).filter(([a]) => a.kind === k); return L.length ? `<h4 class="ah">${AK[k][0]} <span class="sub">· ${AK[k][1]}</span></h4>${L.map(([a, i]) => `<div class="al ${a.level}" data-i="${i}"><i></i><span>${esc(a.text)}</span><em>${hplus(a.t)}</em></div>`).join("")}` : ""; }).join("")}`).onclick = (e) => {
+      const r = e.target.closest(".al"); if (!r) return; const a = OPS.alerts[+r.dataset.i]; setT(Math.max(0, a.t - 4));
+      if (a.cid) selectContact(a.cid, true); else select(a.aids[0]);
+      if (a.aids.length === 2) state.alertPair = a.aids; dirty = true; };
     mk("feed", `<div class="feed">${OPS.feed.map((f) => `<div class="fev" data-t="${f.t}" data-c="${f.cid}"><span class="ft">${hplus(f.t)}</span><i class="fk ${f.kind}"></i><span>${esc(f.text)}</span></div>`).join("")}</div>`).onclick = (e) => {
       const r = e.target.closest(".fev"); if (!r) return; setT(Math.max(0, +r.dataset.t - 3)); selectContact(r.dataset.c, true); };
   }
@@ -433,7 +442,7 @@ const linkBySec = {}, linkDelivered = {};
 if (link) link.links.forEach((l) => { const s = Math.floor(l[0]) + 1; (linkBySec[s] = linkBySec[s] || []).push(l); if (l[3]) linkDelivered[l[0] + ":" + l[1]] = true; });
 
 // ---------- controls ----------
-function select(id) { state.sel = id; if (state.follow && state.follow !== id) state.follow = null; dirty = true; buildHud(); updatePanels(); }
+function select(id) { state.alertPair = null; state.sel = id; if (state.follow && state.follow !== id) state.follow = null; dirty = true; buildHud(); updatePanels(); }
 // ---------- aircraft HUD, follow camera, engagement replay ----------
 function buildHud() {
   const el = $("hud"), id = state.sel;
@@ -479,6 +488,26 @@ function jumpEvent(dir) {
   if (!OPS) return; const t = state.t; let f = null;
   if (dir > 0) f = OPS.feed.find((x) => x.t > t + 3.5); else for (let i = OPS.feed.length - 1; i >= 0; i--) { if (OPS.feed[i].t < t + 2.5) { f = OPS.feed[i]; break; } }
   if (f) { setT(Math.max(0, f.t - 3)); selectContact(f.cid, true); }
+}
+function toggleBrief() { const b = $("brief"); if (b.hidden) { buildBrief(); b.hidden = false; } else b.hidden = true; }
+function buildBrief() {
+  if (!OPS || !hasPlan) { $("bbody").innerHTML = "<p>Load a plan to produce a briefing.</p>"; return; }
+  const cl = Object.entries(OPS.contacts).filter(([, c]) => c.cls === "hostile"), sv = cl.filter(([, c]) => c.served_t !== null), un = cl.filter(([, c]) => c.served_t === null);
+  const names = { r7: "Forbidden by R7 (protected contact within " + OPS.rules.collateral + " m)", hors_de_portee: "Out of range or energy (no routing found)", a_gagner: "Routable, left on the table", concurrence: "Resource competition with another contact", unknown: "Cause not computed (run with --diagnose)" };
+  const by = {}; un.forEach(([id, c]) => { const k = c.reason ? c.reason.cat : "unknown"; (by[k] = by[k] || []).push([id, c]); });
+  const pts = (l) => l.reduce((a, [, c]) => a + c.points, 0), o = OPS.outcome, f = OPS.fleet, tot = (k) => (f[k] ? f[k].used + "/" + f[k].total : "–"), p = plan.score_parts || {};
+  const watch = OPS.alerts.filter((a) => a.level === "watch");
+  const unk = Object.values(OPS.contacts).filter((c) => c.cls === "unknown"), unkObs = unk.filter((c) => c.obs.some((x) => x.ok)).length;
+  $("bbody").innerHTML = `<div class="bx">EXERCISE · SIMULATED DATA · NOT FOR OPERATIONAL USE</div>
+    <h2>Mission briefing · ${esc(M.meta.title || "")}</h2><div class="bm">${esc(M.meta.level)} · seed ${esc(M.meta.seed)} · duration ${hplus(T1)} · generated from the plan and the scenario</div>
+    <h3>1. Verdict</h3><p>Plan <b>${plan.valid ? "valid" : "INVALID (scores 0)"}</b> · score <b>${plan.score}</b> = points ${p.points} − energy ${p.energy_cost} (${plan.energy} Wh) − effectors ${p.effector_cost} (${plan.effectors}).</p>
+    <h3>2. Hostile contacts</h3><p><b>${sv.length}</b> of ${cl.length} served (${pts(sv)} of ${pts(cl)} points). ${un.length} not served.</p>
+    <table><thead><tr><th>Cause of non-service</th><th>Contacts</th><th>Points</th><th>Largest</th></tr></thead><tbody>${Object.entries(by).sort((a, b) => pts(b[1]) - pts(a[1])).map(([k, l]) => `<tr><td>${esc(names[k] || k)}</td><td>${l.length}</td><td>${pts(l)}</td><td>${l.slice().sort((a, b) => b[1].points - a[1].points).slice(0, 3).map(([id, c]) => id + " (" + c.points + ")").join(", ")}</td></tr>`).join("") || '<tr><td colspan="4">None: every hostile contact is served.</td></tr>'}</tbody></table>
+    <p>Unknown contacts observed: ${unkObs} of ${unk.length}.</p>
+    <h3>3. Fleet</h3><p>Scouts ${tot("scout")} · light effectors ${tot("light")} · heavy effectors ${tot("heavy")}. Drones: ${o.strike} strike, ${o.spot} spotter, ${o.wasted} wasted, ${o.idle} idle${o.wasted_eff ? `; <b>${o.wasted_eff} effector(s) spent for nothing</b>` : "; no effector wasted"}.</p>
+    <h3>4. Margins to watch</h3>${watch.length ? "<ul>" + watch.slice(0, 8).map((a) => `<li>${hplus(a.t)} · ${esc(a.text)}</li>`).join("") + "</ul>" : "<p>No margin under the watch thresholds (pair under 1.5× separation, confirmation spare under 5 s, battery under 10 %, protected contact under 1.25× the collateral radius).</p>"}
+    <h3>5. Limits of this document</h3><p>Simulated data. Local metres and relative time (H+), not MGRS or Zulu. Causes other than R7 appear only when the diagnosis was run. Sensor uncertainty, communications and legal framework are not modelled. Decision aid: it commands nothing.</p>
+    <div class="bx">EXERCISE · SIMULATED DATA · NOT FOR OPERATIONAL USE</div>`;
 }
 function savePng() { $("map").toBlob((b) => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ops_" + M.meta.level + "_seed" + M.meta.seed + "_" + hplus(state.t).replace(/[^0-9]/g, "") + ".png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }); }
 function selectContact(cid, openTab) {
@@ -567,7 +596,7 @@ function init() {
   $("foot-info").textContent = link ? "link-loss replay" : hasPlan ? "plan replay" : "scenario";
   $("speeds").innerHTML = [1, 2, 4, 8, 16, 32].map((s) => `<button data-s="${s}" class="${s === state.speed ? "on" : ""}">${s}×</button>`).join("");
   $("speeds").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; setSpeed(+b.dataset.s); };
-  $("play").onclick = togglePlay; $("png").onclick = savePng; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
+  $("play").onclick = togglePlay; $("png").onclick = savePng; $("bbtn").onclick = toggleBrief; $("bprint").onclick = () => window.print(); $("bclose").onclick = () => { $("brief").hidden = true; }; $("theme").onclick = () => theme(nextTheme()); $("help").onclick = () => { $("modal").hidden = false; }; $("close").onclick = () => { $("modal").hidden = true; };
   $("modal").onclick = (e) => { if (e.target === $("modal")) $("modal").hidden = true; };
   if (!hasPlan) { $("transport").style.display = "none"; $("altwrap").style.display = "none"; }
   $("card").onclick = (e) => { const b = e.target.closest("[data-oc]"); if (b) setFilter(b.dataset.oc); };
@@ -577,7 +606,7 @@ function init() {
     if (e.target.tagName === "INPUT") return; const k = e.key;
     if (k === " ") { e.preventDefault(); togglePlay(); } else if (k === "ArrowRight") setT(state.t + (e.shiftKey ? 10 : 1)); else if (k === "ArrowLeft") setT(state.t - (e.shiftKey ? 10 : 1));
     else if (k === "Home") setT(T0); else if (k === "End") setT(T1); else if (k === "f" || k === "F") fitView(); else if (k === "l" || k === "L") { state.labels = !state.labels; dirty = true; }
-    else if (k === "t" || k === "T") theme(nextTheme()); else if (k === "Escape") { state.follow = null; state.selC = null; select(null); renderCcard(); $("modal").hidden = true; } else if (k === "g" || k === "G") { if (state.sel) setFollow(state.follow === state.sel ? null : state.sel); } else if (k === "n" || k === "N") jumpEvent(1); else if (k === "p" || k === "P") jumpEvent(-1); else if (k === "s" || k === "S") savePng(); else if (k === "?") $("modal").hidden = false;
+    else if (k === "t" || k === "T") theme(nextTheme()); else if (k === "b" || k === "B") toggleBrief(); else if (k === "Escape") { $("brief").hidden = true; state.follow = null; state.selC = null; select(null); renderCcard(); $("modal").hidden = true; } else if (k === "g" || k === "G") { if (state.sel) setFollow(state.follow === state.sel ? null : state.sel); } else if (k === "n" || k === "N") jumpEvent(1); else if (k === "p" || k === "P") jumpEvent(-1); else if (k === "s" || k === "S") savePng(); else if (k === "?") $("modal").hidden = false;
   });
   window.addEventListener("resize", () => { dirty = true; });
   new ResizeObserver(() => { dirty = true; }).observe($("mapwrap"));

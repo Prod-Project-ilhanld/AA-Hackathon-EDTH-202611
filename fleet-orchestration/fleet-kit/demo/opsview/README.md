@@ -33,9 +33,13 @@ Les calques de `Viewer.layer(...)` marchent à l'identique.
 | Décompte des drones | utiles (strike ou spotter), gaspillés, inactifs ; clic = surbrillance sur la carte ; pastille verte, rouge ou creuse sur chaque drone |
 | Onglet **Fleet** | rôle de chaque drone, part de points (points d'un contact servi répartis à parts égales entre les drones qui l'ont servi) |
 | Bandeau du bas | **Activity** : drones en transit, en observation, en retour, engagés, à l'instant courant ; **Altitude** : un drone ou un contact isolé, bande 30 à 150 m |
+| Onglet **Alerts** | les marges les plus serrées du plan, classées : paires de drones les plus proches en vol (R8), confirmations R4, batterie en fin de vol (modèle d'énergie du kit), hostiles servis près d'un civil ou d'un ami (R7) ; clic = on va à l'instant avec la paire reliée. Ce ne sont pas des violations |
+| **Brief** (touche B) | briefing d'une page imprimable ou exportable en PDF : verdict, contacts servis et non servis par cause, flotte, marges à surveiller, limites du document |
 | Touches | N et P : événement suivant ou précédent ; S : export PNG de la carte |
 
 ## Honnêteté des données
+
+- **Alertes** : calculées sur les trajectoires du plan avec les fonctions du kit. Pour R8, les paires qui frappent le même contact sont exemptées par la règle près de lui et exclues ici ; les 3 premières secondes après un départ sont exclues (départs cadencés depuis un même emplacement).
 
 - Tout ce qui est affiché vient du plan et du scénario : fleet, observations, engagements, marge R4, distance R7.
 - **Raison d'un contact non servi** : R7 est calculée exactement. Les autres causes (concurrence, portée, à gagner) ne

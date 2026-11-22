@@ -117,6 +117,36 @@ def test_a_tasked_drone_that_serves_nothing_is_wasted_and_its_effector_counted()
     assert o["wasted_eff"] == 1 and drones["S1"]["pts"] == 25.0 and drones["L2"]["pts"] == 0
 
 
+def test_min_separation_finds_a_close_pass_and_ignores_pieces_apart_in_time():
+    a = [(0.0, 10.0, (0.0, 0.0, 50.0), (100.0, 0.0, 50.0))]
+    b = [(0.0, 10.0, (50.0, 10.0, 50.0), (50.0, 10.0, 50.0))]
+    d, t = opsview._min_sep(a, b)
+    assert abs(d - 10.0) < 1e-9 and abs(t - 5.0) < 1e-9
+    assert opsview._min_sep(a, b, t_from=8.0)[0] > 10.0
+    assert opsview._min_sep(a, [(20.0, 30.0, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0))]) is None
+
+
+def test_alerts_agree_with_the_kit_geometry_and_energy_model(case):
+    from fleetkit.energy import route_energy_wh
+    from fleetkit.geometry import min_distance, overlapping_pieces
+    from fleetkit.validator import route_pieces
+    sc, plan = case
+    al = opsview.OpsViewer(sc, plan).model()["ops"]["alerts"]
+    routes = parse_plan(plan)[0]
+    by = sc.aircraft_by_id()
+    seps = [a for a in al if a["kind"] == "sep"]
+    assert seps and [a["value"] for a in seps] == sorted(a["value"] for a in seps)
+    a, b = seps[0]["aids"]
+    kit = min(min_distance(x, y, lo, hi) for x, y, lo, hi in overlapping_pieces(route_pieces(routes[a]), route_pieces(routes[b])))
+    assert seps[0]["value"] >= kit - 0.06
+    for a in (x for x in al if x["kind"] == "batt"):
+        ac = by[a["aids"][0]]
+        assert abs(100 * (ac.usable_wh - route_energy_wh(routes[ac.id].waypoints, ac)) / ac.usable_wh - a["value"]) < 0.06
+        assert a["value"] >= -1e-6
+    assert all(a["value"] >= -1e-6 for a in al if a["kind"] == "r4")
+    assert all(a["level"] in ("watch", "ok") for a in al)
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="node n'est pas installé")
 def test_the_page_script_is_valid_javascript():
     proc = subprocess.run(["node", "--check", str(OPS / "app.js")], capture_output=True, text=True)
