@@ -295,9 +295,11 @@ class Policy:
         for aid, clk in self.clocks.items():
             if aid == self.aircraft_id:
                 continue
-            peer_mode = self.peer_state.get(aid, (0.0, 0.0, "route"))[2]
-            # Two on-plan aircraft follow the already-validated plan; skip false-positive holds.
-            if not i_am_off_plan and peer_mode == "route":
+            ps = self.peer_state.get(aid)
+            peer_mode = ps[2] if ps else "route"
+            # Two on-plan aircraft follow the already-validated plan; skip false-positive holds. A peer that
+            # resumed late is not on plan: neither of us would yield if we skipped it.
+            if not i_am_off_plan and peer_mode == "route" and (ps is None or ps[0] - ps[1] < 0.25):
                 continue
             # R8 exemption: effectors engaging the same target near it.
             if (
