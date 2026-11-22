@@ -21,10 +21,11 @@ import os
 import random
 import signal
 import sys
+import threading
 import time
 
 T0 = time.monotonic()  # every budget counts from process start (ROADMAP rule 10)
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # vendored kit helpers live in handin/fk
 
@@ -356,20 +357,23 @@ def _worker(args):
         return (-1.0, None)
 
 
-def _greedy_fallback(scenario: Scenario) -> Optional[dict]:
-    """The kit's greedy plan, validated, or None. Only on a failure path, and only with time left before the alarm.
-
-    Measured at 2.7 s at most on L4. None when the plan is invalid, scores nothing, or the alarm is too close.
-    """
+def _greedy(scenario: Scenario) -> Tuple[float, Optional[dict]]:
+    """(score, plan) of the kit's greedy plan, validated, or (0.0, None) when it is invalid, scores nothing,
+    or the alarm is too close. Measured at 2.7 s on L4 idle, up to 13 s under load."""
     if ALARM_S - (time.monotonic() - T0) < params.FALLBACK_MIN_LEFT_S:
-        return None
+        return (0.0, None)
     try:
         from fk.baseline import greedy_plan
         plan = greedy_plan(scenario)
         result = evaluate(scenario, plan)
-        return plan if result.valid and result.score > 0 else None
+        return (result.score, plan) if result.valid and result.score > 0 else (0.0, None)
     except Exception:
-        return None
+        return (0.0, None)
+
+
+def _greedy_fallback(scenario: Scenario) -> Optional[dict]:
+    """The kit's greedy plan, validated, or None. Only on a failure path, and only with time left before the alarm."""
+    return _greedy(scenario)[1]
 
 
 def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -> dict:
@@ -384,11 +388,16 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
     best = (0.0, empty)
     n_workers = max(1, min(MAX_WORKERS, os.cpu_count() or 1))
     results = []
+    # task 11: the kit's greedy plan is built in a thread while the search runs, so it costs no time on the clock
+    greedy = []
+    helper = threading.Thread(target=lambda: greedy.append(_greedy(scenario)), daemon=True)
     if n_workers > 1:
         pool = None
         try:
             ctx = multiprocessing.get_context("fork")
             pool = ctx.Pool(n_workers)
+            if params.KEEP_BETTER_GREEDY:
+                helper.start()  # after the fork: no thread may be running while the pool forks its workers
             jobs = [pool.apply_async(_worker, ((scenario_dict, deadline, w, n_workers),)) for w in range(n_workers)]
             for job in jobs:
                 try:
@@ -402,6 +411,8 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
         finally:
             if pool is not None:
                 pool.terminate()
+    if params.KEEP_BETTER_GREEDY and helper.ident is None:
+        helper.start()  # serial path: the pool is gone, nothing forks any more
     if not results:
         results = [_search(scenario, deadline, 0, 1)] if time.monotonic() < deadline else []
     for score, plan in results:  # worker-index order, strict >: ties go to the lowest worker
@@ -416,6 +427,10 @@ def solve(scenario: Scenario, scenario_dict: dict, budget_s: float = BUDGET_S) -
             return _greedy_fallback(scenario) or empty
     except Exception:
         return _greedy_fallback(scenario) or empty
+    if helper.ident is not None:  # never below the kit baseline: the greedy plan wins when it scores strictly higher
+        helper.join(None if params.FLEET_ITERS > 0 else max(0.0, deadline - time.monotonic()))
+        if greedy and greedy[0][1] is not None and greedy[0][0] > res.score:
+            return greedy[0][1]
     return best[1]
 
 
