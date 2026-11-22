@@ -49,7 +49,7 @@ def test_an_aborted_aircraft_hovers_and_flags_its_abort():
     p = Policy(sc, plan, "L01")
     action, msg = p.step(obs(30.0, TAU_AT_800, sensed=[RECLASSIFY_C01]))   # L02 crossed at t = 20: nobody in the way
     assert action == {"kind": "hold"}
-    assert msg["hd"] == 1 and msg["ab"] == 1
+    assert msg[0] == 4   # status 4: hold while aborted (list message since #23)
 
 
 def test_an_aborted_aircraft_in_an_on_plan_peers_way_backs_off_within_one_step():
@@ -57,7 +57,7 @@ def test_an_aborted_aircraft_in_an_on_plan_peers_way_backs_off_within_one_step()
     p = Policy(sc, plan, "L01")
     action, msg = p.step(obs(17.0, TAU_AT_800, sensed=[RECLASSIFY_C01]))   # L02 reaches x = 800 at t = 20
     assert action == {"kind": "return"}
-    assert msg["rt"] == 1
+    assert msg[0] == 2   # status 2: return
 
 
 def test_a_co_effector_aborts_when_it_hears_a_flagged_hold():
